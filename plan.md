@@ -13,10 +13,10 @@
 - 이 저장소에는 `README.md`와 `CLAUDE.md`만 있다. Gradle 골격·CI·코드는 아직 없다.
 - 이 컨테이너에는 Java와 Gradle만 있고 **Android SDK는 없다**. 그래서 로컬 빌드로 검증할 수 없고, iOS와 같이 **푸시한 뒤 CI가 그린인지로 검증**한다.
 
-### ❓ 문서 불일치 (확인 필요)
-- `README.md`는 "`tas-ios`가 자리잡은 규약(**네이티브 골격 유지** …)을 그대로 따른다"고 적고 있다.
-- `CLAUDE.md`는 "**웹을 그대로 따라간다.** 플랫폼 관용구를 이유로 다르게 만들지 않는다 (iOS와 다르다)"고 적고 있다.
-- 이 계획은 **더 나중에 쓰인 `CLAUDE.md`를 따른다**. 승인되면 S0에서 `README.md`를 고친다.
+### ✅ 디자인 방침 확정 (2026-10-14)
+- **iOS의 "네이티브 골격"을 따르지 않는다.** 웹 모바일 화면(배치·정보구조·간격·색)을 기준으로 옮기고, 머티리얼 기본값은 웹 값으로 덮어쓴다(`CLAUDE.md`).
+- 예외는 시스템 동작뿐이다(뒤로가기·권한·알림·접근성). 픽셀 단위 일치는 목표로 하지 않는다. 스크롤 감각·키보드 같은 OS 처리 영역은 안드로이드 방식을 따른다.
+- `README.md`에 남아 있던 "네이티브 골격 유지" 문구는 이 결정에 맞춰 고쳤다.
 
 ### ❓ 기술 스택 (제안, 확인 필요)
 | 항목 | 제안 | 근거 |
@@ -51,7 +51,7 @@
 ### S — 기반
 | # | 이슈 | 내용 | 의존 |
 |---|---|---|---|
-| S0 | 문서 정리 | README 불일치 해소, 버전 규약(`versionName` 0.0.0 · `versionCode` 1부터) 명시 | — |
+| S0 | 문서 정리 | ~~README 불일치 해소~~(✅ 완료), 버전 규약(`versionName` 0.0.0 · `versionCode` 1부터) 명시 | — |
 | S1 | 프로젝트 골격 + CI | Gradle KTS(version catalog), `app` 모듈, Compose, 빈 화면 1개. GitHub Actions에 `assembleDebug`와 `testDebugUnitTest` 추가 | S0 |
 | S2 | 디자인 토큰 | 웹 `styles/globalStyle.ts`의 색(`--brand-color #6526d9` 등)·폰트 스케일(10~18 + display 24/32/64)·반경·그림자를 Compose `Theme`로 옮긴다. 머티리얼 기본값을 덮어쓴다. 폰트 패밀리는 `fontStack.ts` 기준 | S1 |
 | S3 | 공용 컴포넌트 브리핑 → 구현 | 웹 `components/ui/`에 대응하는 컴포넌트 목록과 만들어야 하는 이유를 **먼저 승인받는다**: `ServiceChip` · `ReservationStatusBadge`(`RESERVATION_STATUS_BADGE_STYLES`) · `NewCustomerBadge` · `Dot`/`ColorTag` · `ReservationInfoCard` · `ToggleSwitch` · `ConfirmDialog` · Toast · `LoadingOverlay` · `HighlightMatch` · `GuestNotice` | S2 |
@@ -122,5 +122,5 @@
 1. **S0~S6** 기반 → 2. **A1~A3** 게스트로 진입 → 3. **C1·C2·C4·C5** 예약 핵심 → 4. **D1~D2·R1** → 5. **F1~F6** → 6. 나머지 C·D 항목 → 7. 🔒 로그인 묶음(A4·A5·C7·F7·F8·F10·F11, tas 백엔드 이슈 선행) → 8. P
 
 ## 다음 단계
-- 위 ❓ 항목(문서 불일치 · 기술 스택 · 광고 배너 · 다크모드)을 확정한다.
+- 위 ❓ 항목(기술 스택 · 광고 배너 · 다크모드)을 확정한다.
 - 확정되면 GitHub 이슈(에픽 + 서브이슈)를 만들고 S0부터 착수한다.
