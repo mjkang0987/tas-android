@@ -8,7 +8,7 @@ takeaseat(TAS) 서비스의 안드로이드 클라이언트.
 
 ## 상태
 
-저장소만 만든 상태다. 프로젝트 골격(Gradle·Compose), CI, 규약 문서는 아직 없다.
+규약 문서(`CLAUDE.md`)만 있는 상태다. 프로젝트 골격(Gradle·Compose)과 CI는 아직 없다.
 
 ## 세 클라이언트의 관계
 
