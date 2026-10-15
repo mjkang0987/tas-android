@@ -19,7 +19,7 @@
 | 항목 | 값 | 이유 |
 |---|---|---|
 | applicationId | `kr.co.takeaseat.app` | iOS 번들 ID와 같게 |
-| minSdk / target·compileSdk | 26 / 36 | 지시자 선택(26). 36은 로컬 SDK에 설치된 최신 정식 |
+| minSdk / targetSdk / compileSdk | 26 / 36 / 37 | 지시자 선택(26). compileSdk 는 Compose BOM 2026.09(1.12)가 37 이상을 요구 |
 | 툴체인 | Gradle 9.8.1 · AGP 9.4.1 · Kotlin 2.4.21 · Compose BOM 2026.09.00 | 2026-10-16 각 저장소 최신 정식 |
 | 테마 | **라이트만** | 웹에 다크 모드가 없다(웹을 따른다) |
 | 폰트 | 시스템 기본 | 웹도 웹폰트를 싣지 않고 OS 기본 한글 서체를 쓴다(`styles/fontStack.ts`) |
