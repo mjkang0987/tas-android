@@ -42,9 +42,20 @@
 `CalendarHeader`(웹 CalendarDirection+CalendarHeading), `DayTimeline`(Timeline+TimelineTitle), `ReservationCard`(TimelineReservationCard),
 `ServiceChip`(ServiceChipList), `NewCustomerBadge`(동명). 버튼 모양(흰 알약 32dp)은 `PillButton` 하나로 오늘·‹·›가 같이 쓴다.
 
-### 검증
-- `./gradlew assembleDebug testDebugUnitTest` · 에뮬레이터(`Small_Phone`)에서 예시 데이터로 웹과 나란히 비교:
-  카드 높이·내용 단계(full/compact/name)·겹침 2칸·취소/노쇼 빗금·확정대기 딤·현재시각 바·날짜 이동·날짜 선택 · TalkBack 라벨.
+### 검증 (2026-10-17)
+- `./gradlew assembleDebug testDebugUnitTest` 통과(단위 20 — 배율·겹침·색·휴무·첫 방문·스냅샷 읽기/쓰기/복구).
+  서비스 색 기대값은 웹 `buildServiceColorMap()` 을 실제로 돌려 받은 값.
+- 에뮬레이터(`Small_Phone`, 예시 데이터)에서 웹 모바일(375px)과 나란히 비교: 30분 카드 세 줄·20분 한 줄·10분 이름만,
+  겹침 2칸·3칸, 취소/노쇼 빗금, 확정대기 딤+배지, 현재시각 바 + 그 위치로 자동 스크롤(위 여백 72), ‹ › 이동, 날짜 선택(회전해도 유지),
+  TalkBack 라벨(카드 한 문장 "16:00~17:00 신규 최유나 여성커트, 취소").
+- 코드리뷰에서 고친 것: 기본값 키 누락(웹 모양 깨짐), 카드 이중 낭독, 아이콘 변환 중복, 회전 시 날짜 선택 창 누수, 회전마다 파일 재읽기.
+
+### 함정 (다음 화면에도 해당)
+- **한글 줄높이**: Compose 는 대체 글꼴 줄간격을 강제로 켜 `lineHeight` 를 줘도 한글(Noto CJK) 줄이 약 1.45em 아래로 안 준다.
+  웹 1.2em 으로 맞춰야 하는 한 줄 글자는 `ui/components/lineBox` 를 쓴다(CSS line-height 처럼 상자만 고정).
+- **웹 시간축 라벨 어긋남(웹 버그 의심)**: 웹 `TimelineTitle` 은 라벨 가운데를 `30 + 칸/2` 에 두어 30분 단위 매장에서만 정시선(55)과 맞는다
+  (20분 단위면 8px, 60분이면 25px 어긋남). 앱은 단위와 무관하게 정시선에 맞췄다 — 웹 수정은 tas 쪽 별건.
+- 32dp 버튼(오늘·‹ ›)은 웹과 같은 크기 — WCAG 2.2 AA(24) 충족, 안드로이드 권장 48 보다는 작다.
 
 ---
 
