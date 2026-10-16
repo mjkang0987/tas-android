@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -74,9 +74,8 @@ fun ReservationCard(
             .clip(TasShapes.RadiusSm)
             .then(if (cancelled) Modifier.background(TasColors.Gray2).inactiveHatch(noshow) else Modifier.background(color.copy(alpha = 0x12 / 255f)))
             .cardBorder(borderColor)
-            .semantics(mergeDescendants = true) {
-                contentDescription = reservationLabel(reservation, customerName)
-            },
+            // 한 문장으로만 읽는다 — 안의 시각·이름·칩까지 합치면 같은 내용을 두 번 읽는다.
+            .clearAndSetSemantics { contentDescription = reservationLabel(reservation, customerName, isNewCustomer) },
     ) {
         // 웹 카드는 <button> 이라 내용이 세로 가운데에 놓인다. 왼쪽 4px 막대 + 상하좌우 2px(모바일).
         Column(
@@ -147,14 +146,15 @@ fun ReservationCard(
 /** 숫자 폭 고정 — 시각이 흔들리지 않게(웹 font-variant-numeric: tabular-nums). */
 internal val TabularNums = TextStyle(fontFeatureSettings = "tnum")
 
-private fun reservationLabel(r: Reservation, customerName: String?): String {
+private fun reservationLabel(r: Reservation, customerName: String?, isNewCustomer: Boolean): String {
     val state = when (r.status) {
         ReservationStatus.CANCELLED -> ", 취소"
         ReservationStatus.NOSHOW -> ", 노쇼"
         ReservationStatus.REQUESTED -> ", 확정대기"
         else -> ""
     }
-    return "${r.startTime}~${r.endTime} ${customerName ?: "고객"} ${r.service}$state"
+    val newBadge = if (isNewCustomer) "신규 " else ""
+    return "${r.startTime}~${r.endTime} $newBadge${customerName ?: "고객"} ${r.service}$state"
 }
 
 /** 1px 테두리 + 왼쪽 4px 막대(웹 border 1px · border-left-width 4px). */
