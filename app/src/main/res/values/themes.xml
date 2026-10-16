@@ -2,5 +2,7 @@
     <!-- 웹에 다크 모드가 없어 라이트만 둔다. 창 배경은 웹 body(흰색)와 같게. -->
     <style name="Theme.Tas" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/white</item>
+        <!-- 시스템 대화상자(날짜 선택 등)의 강조색 = 웹 brand-color 토큰 -->
+        <item name="android:colorAccent">#6526D9</item>
     </style>
 </resources>

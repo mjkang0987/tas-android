@@ -1,12 +1,7 @@
 package kr.co.takeaseat.app.ui.nav
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathParser
-import androidx.compose.ui.unit.dp
+import kr.co.takeaseat.app.ui.components.svgLineIcon
 
 // 웹 `client/components/layout/AsideMenuIcon.tsx` 의 SVG 를 그대로 옮긴다(viewBox 24, 선 아이콘).
 // SVG 의 rect·circle 은 같은 모양의 path 로 풀어 적었다. 색은 Icon tint 가 덮으므로 검정으로 둔다.
@@ -48,21 +43,6 @@ enum class TabIconKind(
     ),
 }
 
-/** 웹 `StyledMenuIcon`(stroke-linecap/linejoin round, fill none)과 같은 선 아이콘. 선 두께는 탭 상태에 따라 바뀐다. */
+/** 웹 `StyledMenuIcon` 과 같은 선 아이콘. 선 두께는 탭 상태에 따라 바뀐다. */
 fun TabIconKind.toImageVector(strokeWidth: Float): ImageVector =
-    ImageVector.Builder(name = name, defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
-        .apply {
-            strokes.forEach { d ->
-                addPath(
-                    pathData = PathParser().parsePathString(d).toNodes(),
-                    stroke = SolidColor(Color.Black),
-                    strokeLineWidth = strokeWidth,
-                    strokeLineCap = StrokeCap.Round,
-                    strokeLineJoin = StrokeJoin.Round,
-                )
-            }
-            fills.forEach { d ->
-                addPath(pathData = PathParser().parsePathString(d).toNodes(), fill = SolidColor(Color.Black))
-            }
-        }
-        .build()
+    svgLineIcon(viewBox = 24f, strokes = strokes, strokeWidth = strokeWidth, fills = fills, name = name)
