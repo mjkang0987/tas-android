@@ -18,19 +18,19 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import kr.co.takeaseat.app.ui.components.svgLineIcon
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -52,6 +53,19 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 @Composable
 fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    // 대화상자를 컴포지션에 묶는다 — 화면이 사라지면 닫고(창 누수 방지), 회전하면 다시 띄운다.
+    var picking by rememberSaveable { mutableStateOf(false) }
+    if (picking) {
+        DisposableEffect(Unit) {
+            val dialog = DatePickerDialog(context, { _, y, m, d -> onDateChange(LocalDate.of(y, m + 1, d)) }, date.year, date.monthValue - 1, date.dayOfMonth)
+            dialog.setOnDismissListener { picking = false }
+            dialog.show()
+            onDispose {
+                dialog.setOnDismissListener(null)
+                dialog.dismiss()
+            }
+        }
+    }
     // 웹: header padding 4 10 2 + 줄 padding 3 0 5
     Row(
         modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
@@ -62,10 +76,10 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, modifier:
             Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1)
         }
         PillButton(onClick = { onDateChange(date.minusDays(1)) }, description = "이전날짜") {
-            Icon(directionIcon(left = true), contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
+            Icon(arrowLeft, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
         }
         PillButton(onClick = { onDateChange(date.plusDays(1)) }, description = "다음날짜") {
-            Icon(directionIcon(left = false), contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
+            Icon(arrowRight, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
         }
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Row(
@@ -75,9 +89,7 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, modifier:
                     .background(TasColors.Gray2)
                     // 웹 aria-label "날짜 선택" + 값. 보이는 "2026 / 10 / 17" 은 읽지 않는다(아래 clearAndSetSemantics).
                     .semantics { contentDescription = "날짜 선택, ${date.year}년 ${date.monthValue}월 ${date.dayOfMonth}일" }
-                    .clickable(role = Role.Button) {
-                        DatePickerDialog(context, { _, y, m, d -> onDateChange(LocalDate.of(y, m + 1, d)) }, date.year, date.monthValue - 1, date.dayOfMonth).show()
-                    }
+                    .clickable(role = Role.Button) { picking = true }
                     .padding(start = 10.dp, end = 6.dp), // 웹 모바일 padding 0 6 0 10
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -125,18 +137,7 @@ private fun PillButton(
 }
 
 // 웹 DirectionIcon(viewBox 32) · CalendarHeading 셰브론(viewBox 24) 경로 그대로.
-private fun directionIcon(left: Boolean): ImageVector =
-    strokeIcon(32f, if (left) "M18.5 10.5L13 16L18.5 21.5" else "M13.5 10.5L19 16L13.5 21.5")
+private val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
+private val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
 
-private val chevronDown: ImageVector = strokeIcon(24f, "M6 9.5L12 15.5L18 9.5")
-
-private fun strokeIcon(viewBox: Float, path: String): ImageVector =
-    ImageVector.Builder(defaultWidth = viewBox.dp, defaultHeight = viewBox.dp, viewportWidth = viewBox, viewportHeight = viewBox)
-        .addPath(
-            pathData = PathParser().parsePathString(path).toNodes(),
-            stroke = SolidColor(Color.Black),
-            strokeLineWidth = 2.2f,
-            strokeLineCap = StrokeCap.Round,
-            strokeLineJoin = StrokeJoin.Round,
-        )
-        .build()
+private val chevronDown: ImageVector = svgLineIcon(24f, listOf("M6 9.5L12 15.5L18 9.5"), strokeWidth = 2.2f)
