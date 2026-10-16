@@ -20,6 +20,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import java.io.File
+import kr.co.takeaseat.app.data.GuestStore
+import kr.co.takeaseat.app.data.seedDebugData
+import kr.co.takeaseat.app.ui.calendar.CalendarScreen
 import kr.co.takeaseat.app.ui.nav.MobileTabBar
 import kr.co.takeaseat.app.ui.nav.TasTab
 import kr.co.takeaseat.app.ui.theme.TasColors
@@ -33,12 +37,14 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
         )
-        setContent { TasTheme { TasApp() } }
+        // shortcut: 메인 스레드에서 작은 JSON 파일 하나를 읽는다. 데이터가 커지면 백그라운드 로드로 바꾼다.
+        val store = GuestStore(File(filesDir, GuestStore.FILE_NAME)).also(::seedDebugData)
+        setContent { TasTheme { TasApp(store) } }
     }
 }
 
 @Composable
-private fun TasApp() {
+private fun TasApp(store: GuestStore) {
     var tab by rememberSaveable { mutableStateOf(TasTab.Calendar) }
     Column(
         Modifier
@@ -47,7 +53,10 @@ private fun TasApp() {
             .statusBarsPadding(),
     ) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            PlaceholderScreen(tab.label)
+            when (tab) {
+                TasTab.Calendar -> CalendarScreen(store)
+                else -> PlaceholderScreen(tab.label)
+            }
         }
         MobileTabBar(selected = tab, onSelect = { tab = it })
     }
