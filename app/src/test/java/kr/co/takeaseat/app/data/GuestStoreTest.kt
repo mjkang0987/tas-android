@@ -48,6 +48,15 @@ class GuestStoreTest {
         assertFalse(file.readText().contains("null")) // 없는 값은 키를 쓰지 않는다
     }
 
+    @Test fun `기본값과 같은 키도 파일에 쓴다 - 웹 LocalDbSnapshot 모양`() {
+        val file = tempFile()
+        GuestStore(file).update { it.copy(onboarded = true, services = SERVICE_CATALOG, assignees = DEFAULT_ASSIGNEES) }
+        val text = file.readText()
+        for (key in listOf("\"services\"", "\"onboarded\"", "\"storeSettings\"", "\"schedule\"", "\"categoryBaseColors\"")) {
+            assertTrue("$key 가 빠졌다", text.contains(key))
+        }
+    }
+
     @Test fun `망가진 파일은 빈 매장으로 시작하되 원본을 남긴다`() {
         val file = tempFile()
         file.writeText("{not json")

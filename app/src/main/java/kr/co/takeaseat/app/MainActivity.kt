@@ -20,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import java.io.File
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.data.seedDebugData
 import kr.co.takeaseat.app.ui.calendar.CalendarScreen
@@ -37,8 +36,8 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
         )
-        // shortcut: 메인 스레드에서 작은 JSON 파일 하나를 읽는다. 데이터가 커지면 백그라운드 로드로 바꾼다.
-        val store = GuestStore(File(filesDir, GuestStore.FILE_NAME)).also(::seedDebugData)
+        // shortcut: 첫 실행 때 메인 스레드에서 작은 JSON 파일 하나를 읽는다. 데이터가 커지면 백그라운드 로드로 바꾼다.
+        val store = GuestStore.forApp(this).also(::seedDebugData)
         setContent { TasTheme { TasApp(store) } }
     }
 }
