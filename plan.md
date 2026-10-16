@@ -7,6 +7,47 @@
 
 ---
 
+## 🟡 진행 — 2단계: 게스트 데이터 + 캘린더 일 화면 (`claude/android-calendar-day`, #1 위)
+
+### 요구 (지시자 2026-10-17 — "게스트 모드 + 캘린더")
+- 로그인 없이 기기 안 데이터로 동작(웹 게스트 모드). 메인인 캘린더 **일 화면**부터.
+- 이번엔 **보기만**: 날짜 이동 + 시간축 타임라인 + 예약 카드. 예약 추가·상세·드래그는 다음 PR.
+
+### 범위
+| 넣는다 | 다음으로 |
+|---|---|
+| 헤더 1줄: 오늘 · ‹ · › · 날짜(누르면 시스템 날짜 선택) | + 예약, 담당자 필터(전체보기), 고객 검색 |
+| 일 타임라인: 시간축(영업시간), 정시선, 예약 카드, 겹침 좌우 나눔, 현재시각 바(오늘이면 그 위치로 스크롤), 휴무 배경 | 3일·주·월·년 탭, 카드 탭 → 상세, 빈 칸 탭 → 추가, 드래그 이동 |
+| 게스트 저장소: 웹 `LocalDbSnapshot` 과 같은 모양의 JSON 파일 | 온보딩·약관, 로그인·이관 |
+
+### 웹에서 가져오는 것 (하드코딩 금지 — 웹 정의를 옮긴다, 기준: tas `origin/main` v0.61.0)
+- 모델: `features/reservations/model.ts`(Reservation·상태), `features/customers/model.ts`(Customer·`isNewCustomerVisit`),
+  `features/assignees/model.ts`(Assignee·`getAssigneeColor`·`buildAssigneeColorMap`), `features/services/model.ts`
+  (ServiceItem·`CATEGORY_BASE_COLOR_MAP`·`buildServiceColorMap`·`getServiceColor`·`parseServiceString`),
+  `features/store-settings/model.ts`(StoreSettings·`DEFAULT_STORE_SETTINGS`·`normalizeStoreSettings`·`getStoreClosedKind`).
+- 배치: `features/reservations/timeline-scale.ts`(단위·시간당 높이·카드 높이·내용 단계), `utils/timelineRange.ts`,
+  `components/calendar/views/timelineEntries.ts`(겹침 칸 나누기 — 웹 모바일은 접지 않고 전부 나눈다), `inactiveHatch`.
+- 화면: `Timeline.tsx`·`TimelineTitle.tsx`·`TimelineReservationCard.tsx`·`ui/Buttons.tsx` `StyledReserveButton`·
+  `ui/ServiceChip.tsx`·`ui/NewCustomerBadge.tsx`·`CalendarDirection.tsx`·`CalendarHeading.tsx`. 수치는 웹 모바일(375px) 실측값.
+- 저장 모양: `features/local-db/storage.ts` `LocalDbSnapshot` — 같은 키 이름. 나중 로그인 이관(`/api/migrate-local`)이 이 모양을 받는다.
+
+### 구현
+- `domain/` 순수 Kotlin(안드로이드 import 없음) + JVM 단위 테스트: 모델, 색, 배율·범위, 겹침 배치, 휴무 판정.
+- `data/GuestStore`: 앱 내부 파일 `local-db.v1.json` 읽기/쓰기(kotlinx.serialization, 모르는 키 무시), `StateFlow<LocalDbSnapshot>`.
+  디버그 빌드만 예시 데이터 채우기(예약 추가 화면이 없어 확인 수단이 없다 — 다음 PR에서 뺀다).
+- `ui/calendar/`: `CalendarHeader`, `DayTimeline`(시간축 + 본문 한 스크롤), `ReservationCard`, `ServiceChip`, `NewCustomerBadge`.
+- 의존성 추가: `kotlinx-serialization-json`(+ 플러그인). 표준 직렬화 — 손 파서보다 짧고 안전하다.
+
+### 신규 컴포넌트 (웹에 있는 것을 옮기는 것뿐)
+`CalendarHeader`(웹 CalendarDirection+CalendarHeading), `DayTimeline`(Timeline+TimelineTitle), `ReservationCard`(TimelineReservationCard),
+`ServiceChip`(ServiceChipList), `NewCustomerBadge`(동명). 버튼 모양(흰 알약 32dp)은 `PillButton` 하나로 오늘·‹·›가 같이 쓴다.
+
+### 검증
+- `./gradlew assembleDebug testDebugUnitTest` · 에뮬레이터(`Small_Phone`)에서 예시 데이터로 웹과 나란히 비교:
+  카드 높이·내용 단계(full/compact/name)·겹침 2칸·취소/노쇼 빗금·확정대기 딤·현재시각 바·날짜 이동·날짜 선택 · TalkBack 라벨.
+
+---
+
 ## 🟡 진행 — 1단계: 프로젝트 골격 + 하단 탭 (`claude/android-skeleton`)
 
 ### 요구
