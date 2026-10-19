@@ -194,7 +194,7 @@ private fun NaverBookingInfo(bookingId: String, bookingUrl: String?) {
         if (!bookingUrl.isNullOrEmpty()) {
             Text(
                 "바로가기 ↗",
-                color = Color(0xFF03C75A),
+                color = Color(0xFF00803C), // 웹 바로가기 — 흰 바탕 대비 4.5 이상(브랜드 #03C75A 는 2.3)
                 fontSize = TasSizes.XSmallFont,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clickable(role = Role.Button, onClickLabel = "네이버 예약 열기") {

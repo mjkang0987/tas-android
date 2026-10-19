@@ -32,8 +32,8 @@ object TasColors {
     val ClosedWeekdayBg = Color(0, 0, 0).copy(alpha = 0.05f)   // --closed-weekday-bg
     val Icon = Color(0x11, 0x18, 0x27)                         // DirectionIcon stroke #111827
     val LightGray = Color.hsl(0f, 0f, 0.89f)                   // --light-gray-color
-    val Info = Color(0x2D, 0x7F, 0xF9)                         // --info-color #2d7ff9
-    val InfoBg = Color(45, 127, 249).copy(alpha = 0.1f)        // --info-bg
+    val Info = Color(0x16, 0x60, 0xCC)                         // --info-color #1660cc (대비 4.5 이상, 예전 #2d7ff9)
+    val InfoBg = Color(45, 127, 249).copy(alpha = 0.1f)        // --info-bg (배경은 그대로)
     val InfoBorder = Color(45, 127, 249).copy(alpha = 0.2f)    // --info-border
     val Link = Color(0x42, 0x85, 0xF4)                         // 상세 고객명 #4285F4
     val Scrim = Color(15, 23, 42).copy(alpha = 0.4f)           // StyledOverlay 배경

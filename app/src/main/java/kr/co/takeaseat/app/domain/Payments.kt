@@ -24,14 +24,15 @@ fun showsNaverDepositLine(reservation: Reservation, entries: List<PaymentEntry>)
 /** 배지 색(배경, 글자). 웹 값 그대로 — rgba 는 CSS "#RRGGBBAA" 로 옮겼다. 모르는 종류는 웹 기본 회색. */
 data class BadgeColors(val bg: String, val color: String)
 
+// 글자색은 배경 위 대비 4.5:1 이상(WCAG AA) — 2026-10-19 웹·iOS 와 함께 진하게 바꿈(BadgeContrastTest 가 지킨다).
 val RESERVATION_STATUS_BADGE_STYLES: Map<String, BadgeColors> = mapOf(
-    "booked" to BadgeColors("#E8F0FE", "#4285F4"),
-    "cancelled" to BadgeColors("#F1F1F1", "#999999"),
-    "completed" to BadgeColors("#E6F4EA", "#34A853"),
-    "noshow" to BadgeColors("#FCE8E6", "#EA4335"),
+    "booked" to BadgeColors("#E8F0FE", "#1967D2"),
+    "cancelled" to BadgeColors("#F1F1F1", "#666666"),
+    "completed" to BadgeColors("#E6F4EA", "#137333"),
+    "noshow" to BadgeColors("#FCE8E6", "#C5221F"),
     "paid" to BadgeColors("#6526D914", "#6526d9"), // rgba(101, 38, 217, 0.08) — CSS #RRGGBBAA
     "unpaid" to BadgeColors("#FEF3C7", "#92400E"),
-    "requested" to BadgeColors("#FEF7E0", "#a88417"),
+    "requested" to BadgeColors("#FEF7E0", "#806600"),
 )
 
 fun statusBadgeColors(type: String): BadgeColors = RESERVATION_STATUS_BADGE_STYLES[type] ?: BadgeColors("#F1F1F1", "#999999")

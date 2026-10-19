@@ -49,7 +49,7 @@ fun NewCustomerBadge(modifier: Modifier = Modifier) {
 enum class LabelTone(val text: Color, val bg: Color, val border: Color) {
     Warning(TasColors.WarningText, TasColors.WarningBgSoft, TasColors.WarningBorderSoft),
     Info(TasColors.Info, TasColors.InfoBg, TasColors.InfoBorder),
-    Brand(TasColors.White, Color(0xFF2DB400), Color(0xFF269900)), // --naver-color / --naver-color-dark
+    Brand(TasColors.White, Color(0xFF208200), Color(0xFF1A6B00)), // --naver-color / --naver-color-dark (흰 글자 대비 4.5 이상)
 }
 
 /**
