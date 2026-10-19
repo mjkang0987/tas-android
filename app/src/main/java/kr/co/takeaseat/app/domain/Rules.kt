@@ -66,3 +66,73 @@ fun storeClosedKind(settings: StoreSettings, dateKey: String): StoreClosedKind? 
 
 /** 웹 toDateKey 형식 "YYYY-MM-DD". */
 fun LocalDate.toDateKey(): String = toString()
+
+// ── 담당자 고르기(웹 features/assignees/model.ts) ──
+
+fun assigneeStatus(assignee: Assignee): String = assignee.status ?: "재직"
+
+private val koCollator: java.text.Collator = java.text.Collator.getInstance(java.util.Locale.KOREAN)
+
+private fun assigneeNameOrder(name: String): Int = when {
+    name.firstOrNull()?.let { it in 'a'..'z' || it in 'A'..'Z' } == true -> 0
+    name.firstOrNull()?.let { it in '가'..'힣' || it in 'ㄱ'..'ㅣ' } == true -> 1
+    else -> 2
+}
+
+/** 웹 sortAssignees — 영문 → 한글 → 그 밖, 같은 묶음은 가나다순. */
+fun sortAssignees(list: List<Assignee>): List<Assignee> = list.sortedWith { a, b ->
+    val oa = assigneeNameOrder(a.name)
+    val ob = assigneeNameOrder(b.name)
+    if (oa != ob) oa - ob else koCollator.compare(a.name, b.name)
+}
+
+/** 새 예약에 고를 수 있는 담당자(재직), 이름순. */
+fun activeAssignees(assignees: List<Assignee>): List<Assignee> = sortAssignees(assignees).filter { assigneeStatus(it) == "재직" }
+
+/** 웹 getAssigneeAvailabilityState 의 결과. 메시지는 웹 문구 그대로. */
+sealed interface AssigneeAvailability {
+    data object Available : AssigneeAvailability
+    data class OffDay(val message: String) : AssigneeAvailability
+    data class OutsideHours(val message: String) : AssigneeAvailability
+}
+
+fun assigneeAvailability(assignees: List<Assignee>, assigneeId: Int, date: String, startTime: String, endTime: String): AssigneeAvailability {
+    if (assigneeId == 0) return AssigneeAvailability.Available
+    val assignee = assignees.firstOrNull { it.id == assigneeId } ?: return AssigneeAvailability.Available
+    val index = try {
+        LocalDate.parse(date).dayOfWeek.value - 1 // 0=월 … 6=일
+    } catch (_: DateTimeParseException) {
+        null
+    }
+    val schedule = index?.let { assignee.schedule.getOrNull(it) }
+    if (schedule == null || !schedule.enabled) return AssigneeAvailability.OffDay("${assignee.name} 담당자 휴무일입니다.")
+    if (startTime < schedule.start || endTime > schedule.end) {
+        return AssigneeAvailability.OutsideHours("${assignee.name} 담당자 근무시간은 ${schedule.start}~${schedule.end}입니다.")
+    }
+    return AssigneeAvailability.Available
+}
+
+// ── 고객(웹 features/customers/model.ts) ──
+
+fun normalizeTel(tel: String): String = tel.filter { it.isDigit() }
+
+fun isSelectableCustomer(customer: Customer): Boolean = customer.deleted != true
+
+/** 이름과 연락처가 **둘 다** 같은 기존 고객(삭제 고객 제외) — 연락처만 같으면 가족 공유번호일 수 있어 다른 사람으로 본다. */
+fun findExactCustomer(customers: List<Customer>, name: String, tel: String): Customer? {
+    val trimmed = name.trim()
+    val digits = normalizeTel(tel)
+    if (trimmed.isEmpty() || digits.isEmpty()) return null
+    return customers.firstOrNull { isSelectableCustomer(it) && it.name.trim() == trimmed && normalizeTel(it.tel) == digits }
+}
+
+// shortcut: 웹 Intl.Collator('ko', {numeric:true}) 의 숫자 비교("고객2" < "고객10")가 없다, 숫자 든 이름 정렬이 거슬리면 숫자 묶음 비교를 붙인다.
+fun sortCustomersByName(list: List<Customer>): List<Customer> =
+    list.sortedWith { a, b -> koCollator.compare(a.name, b.name).takeIf { it != 0 } ?: (a.id - b.id) }
+
+/** 웹 findOverlap — 같은 날 취소·노쇼 아닌 예약 중 시간이 겹치는 첫 예약. */
+fun findOverlap(reservations: List<Reservation>, date: String, startTime: String, endTime: String, excludeId: Int? = null): Reservation? =
+    reservations.firstOrNull {
+        it.date == date && it.status != ReservationStatus.CANCELLED && it.status != ReservationStatus.NOSHOW &&
+            it.id != excludeId && startTime < it.endTime && endTime > it.startTime
+    }

@@ -1,0 +1,292 @@
+package kr.co.takeaseat.app.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import android.app.Dialog
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.TasShapes
+import kr.co.takeaseat.app.ui.theme.TasSizes
+
+// 웹 `StyledForm` 의 label > strong + input/select(formControlStyle, 36 높이) · `FieldError` inline · `StyledActionButton` 이식.
+
+/** 웹 formControlStyle — 흰 바탕, 1px #e3e3e3, 6 둥글게, 아주 옅은 그림자. 초점이면 테두리 보라 + 바깥 3px 옅은 보라 링. */
+private fun Modifier.formControl(focused: Boolean): Modifier = this
+    .drawBehind {
+        if (focused) {
+            val ring = 3.dp.toPx()
+            drawRoundRect(
+                TasColors.FocusRing,
+                topLeft = Offset(-ring, -ring),
+                size = Size(size.width + ring * 2, size.height + ring * 2),
+                cornerRadius = CornerRadius(6.dp.toPx() + ring),
+            )
+        }
+    }
+    .dropShadow(TasShapes.RadiusMd, Shadow(radius = 2.dp, color = TasColors.Scrim.copy(alpha = 0.04f), offset = DpOffset(0.dp, 1.dp)))
+    .clip(TasShapes.RadiusMd)
+    .background(TasColors.White)
+    .border(1.dp, if (focused) TasColors.Brand else TasColors.LightGray, TasShapes.RadiusMd)
+    .height(36.dp)
+
+@Composable
+private fun FieldLabel(text: String) {
+    // 낭독은 입력 칸이 이름으로 읽는다 — 라벨 글자는 따로 읽지 않는다.
+    Text(text, color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, modifier = Modifier.clearAndSetSemantics {})
+}
+
+/** 웹 FieldError inline — 12, 빨강. 나타나면 낭독기가 읽고, 시트 밖(스크롤 아래)에 있으면 보이는 곳까지 스크롤한다. */
+@Composable
+fun FieldError(message: String, modifier: Modifier = Modifier, scrollKey: Any? = null) {
+    val requester = remember { BringIntoViewRequester() }
+    // scrollKey — 같은 오류로 다시 저장을 눌러도(문구가 같아도) 다시 보여 준다.
+    LaunchedEffect(message, scrollKey) { requester.bringIntoView() }
+    Text(
+        message,
+        color = TasColors.Danger,
+        fontSize = TasSizes.SmallFont,
+        lineHeight = (12 * 1.4).sp,
+        modifier = modifier.bringIntoViewRequester(requester).semantics { liveRegion = LiveRegionMode.Polite },
+    )
+}
+
+/** 라벨 + 한 줄 입력. [suffix] 는 가격 칸의 '원'(입력 오른쪽 정렬). */
+@Composable
+fun TasTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    error: String? = null,
+    errorKey: Any? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    suffix: String? = null,
+    onFocusChange: (Boolean) -> Unit = {},
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(
+                color = TasColors.Black,
+                fontSize = TasSizes.MediumFont,
+                textAlign = if (suffix != null) TextAlign.End else TextAlign.Start,
+            ),
+            cursorBrush = SolidColor(TasColors.Brand),
+            keyboardOptions = keyboardOptions,
+            interactionSource = interaction,
+            modifier = Modifier.fillMaxWidth().onFocusChanged { onFocusChange(it.isFocused) },
+            decorationBox = { inner ->
+                // 라벨·'원'까지 장식 상자 안에 둔다 — 입력 칸 낭독 노드 안에 들어가야 칸이 제 이름으로 읽힌다(바깥에 두면 따로 읽혔다).
+                // 웹 <label> 처럼 라벨을 눌러도 입력 칸에 들어간다.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(label, color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .formControl(focused)
+                                .semantics { if (error != null) error(error) }
+                                .padding(horizontal = 10.dp),
+                            contentAlignment = if (suffix != null) Alignment.CenterEnd else Alignment.CenterStart,
+                        ) {
+                            if (value.isEmpty() && placeholder.isNotEmpty()) {
+                                Text(placeholder, color = TasColors.Placeholder, fontSize = TasSizes.MediumFont, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            inner()
+                        }
+                        if (suffix != null) Text(suffix, color = TasColors.DarkGray, fontSize = TasSizes.MediumFont)
+                    }
+                }
+            },
+        )
+        if (error != null) FieldError(error, scrollKey = errorKey)
+    }
+}
+
+/**
+ * 라벨 + 고르는 칸(웹 select · date · time 이 같은 모양). 누르면 [onClick] — 날짜·시간은 시스템 선택 창을 띄운다.
+ * [valueDescription] 은 낭독용 값(예: "2026년 10월 19일"). 없으면 [valueText].
+ */
+@Composable
+fun TasSelect(
+    label: String,
+    valueText: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    valueDescription: String = valueText,
+    error: String? = null,
+    errorKey: Any? = null,
+    centered: Boolean = false,
+    menu: @Composable () -> Unit = {},
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        FieldLabel(label)
+        Box {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .formControl(focused)
+                    .clickable(interactionSource = interaction, indication = null, role = Role.DropdownList, onClick = onClick)
+                    .semantics {
+                        contentDescription = label
+                        stateDescription = valueDescription
+                        if (error != null) error(error)
+                    }
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    valueText,
+                    color = TasColors.Black,
+                    fontSize = TasSizes.MediumFont,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = if (centered) TextAlign.Center else TextAlign.Start,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!centered) Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(12.dp))
+            }
+            menu()
+        }
+        if (error != null) FieldError(error, scrollKey = errorKey)
+    }
+}
+
+/** 웹 `<select>` — 선택지 중 하나. */
+@Composable
+fun TasSelect(
+    label: String,
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    error: String? = null,
+    errorKey: Any? = null,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    TasSelect(
+        label = label,
+        valueText = options.getOrElse(selectedIndex) { "" },
+        onClick = { open = true },
+        modifier = modifier,
+        error = error,
+        errorKey = errorKey,
+    ) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEachIndexed { index, option ->
+                DropdownMenuItem(
+                    text = { Text(option, fontSize = TasSizes.MediumFont, color = TasColors.Black, fontWeight = if (index == selectedIndex) FontWeight.SemiBold else null) },
+                    onClick = {
+                        open = false
+                        onSelect(index)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** 웹 StyledActionButton(모바일) — 30 높이, 7 둥글게, 좌우 10, 12. [primary] = 보라 바탕 흰 글자. */
+@Composable
+fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false, enabled: Boolean = true) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(7.dp)
+    Box(
+        modifier
+            .heightIn(min = 30.dp)
+            .dropShadow(shape, Shadow(radius = TasSizes.ShadowSmBlur, color = TasColors.ShadowSm, offset = DpOffset(0.dp, TasSizes.ShadowSmOffsetY)))
+            .clip(shape)
+            .background(if (primary) TasColors.Brand else TasColors.White)
+            .then(if (primary) Modifier else Modifier.border(1.dp, TasColors.Border, shape))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            color = if (primary) TasColors.White else TasColors.DarkGray,
+            fontSize = TasSizes.SmallFont,
+            fontWeight = if (primary) FontWeight.SemiBold else FontWeight.Medium,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * 시스템 대화상자(날짜·시간 선택)를 컴포지션에 묶는다 — 화면이 사라지면 닫고(창 누수 방지), 회전하면 다시 띄운다.
+ * 보일 때만 부른다: `if (picking) SystemDialogEffect(onDismissed = { picking = false }) { DatePickerDialog(it, ...) }`.
+ */
+@Composable
+fun SystemDialogEffect(onDismissed: () -> Unit, create: (Context) -> Dialog) {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val dialog = create(context)
+        dialog.setOnDismissListener { onDismissed() }
+        dialog.show()
+        onDispose {
+            dialog.setOnDismissListener(null)
+            dialog.dismiss()
+        }
+    }
+}

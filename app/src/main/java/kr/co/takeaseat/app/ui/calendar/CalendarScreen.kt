@@ -71,10 +71,11 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
     // 열린 예약 상세 — 회전해도 유지
     var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var creating by rememberSaveable { mutableStateOf(false) }
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
 
     Column(modifier.fillMaxSize()) {
-        CalendarHeader(date = date, onDateChange = { dateKey = it.toDateKey() })
+        CalendarHeader(date = date, onDateChange = { dateKey = it.toDateKey() }, onCreate = { creating = true })
         DayTimeline(
             hours = timelineRange(snapshot.storeSettings.businessHours),
             scale = scale,
@@ -106,4 +107,5 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
             )
         }
     }
+    if (creating) ReservationCreateSheet(store, onDismiss = { creating = false })
 }

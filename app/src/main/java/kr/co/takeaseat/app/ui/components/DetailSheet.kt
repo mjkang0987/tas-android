@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -139,8 +141,9 @@ fun DetailSheet(
                                 .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp),
                         ) { footer() }
                     }
-                    // 제스처 내비게이션 막대 아래로 내용이 들어가지 않게 — 시트 배경은 끝까지 깔린다.
-                    if (!wide) Box(Modifier.navigationBarsPadding())
+                    // 제스처 내비게이션 막대·키보드 아래로 내용이 들어가지 않게 — 시트 배경은 끝까지 깔린다(키보드가 뜨면 본문이 줄고 스크롤된다).
+                    // shortcut: 넓은 화면 가운데 창은 키보드를 피하지 않는다, 태블릿에서 가려지면 창을 위로 올린다.
+                    if (!wide) Box(Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)))
                 }
             }
         }
