@@ -41,6 +41,9 @@ object TasColors {
     val ModalHeaderBorder = Color(148, 163, 184).copy(alpha = 0.18f) // --modal-header-border
     val BgSubtle92 = Color(248, 250, 252).copy(alpha = 0.92f)  // --bg-subtle-92
     val BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f)  // --bg-subtle-98
+    val Success = Color(0x24, 0x75, 0x3A)                      // --success-color #24753a
+    val Ink = Color(0x11, 0x18, 0x27)                          // StyledModalMessage 기본 #111827
+    val BgSubtle90 = Color(248, 250, 252).copy(alpha = 0.9f)   // 변경 화면 고객 메모 상자 rgba(248,250,252,.9)
     val Danger = Color(0xC9, 0x3A, 0x30)                       // --danger-color #c93a30
     val DangerBorder = Color(0xFE, 0xCA, 0xCA)                 // --danger-border #fecaca
     val Warning = Color(0xC5, 0x22, 0x1F)                      // --warning-color #C5221F (대비 5.8, 예전 #EA4335 3.9)

@@ -29,7 +29,7 @@ import java.time.format.DateTimeParseException
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.CreateError
 import kr.co.takeaseat.app.domain.CreateField
-import kr.co.takeaseat.app.domain.CreateForm
+import kr.co.takeaseat.app.domain.ReservationForm
 import kr.co.takeaseat.app.domain.RESERVATION_CHANNELS
 import kr.co.takeaseat.app.domain.activeAssignees
 import kr.co.takeaseat.app.domain.applyCreate
@@ -56,10 +56,6 @@ import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
-private val formSaver = Saver<CreateForm, String>(
-    save = { GuestStore.json.encodeToString(CreateForm.serializer(), it) },
-    restore = { GuestStore.json.decodeFromString(CreateForm.serializer(), it) },
-)
 
 /**
  * 웹 `overlays/ReservationCreate.tsx` + `useReservationCreateForm` — 예약 추가 시트.
@@ -75,14 +71,14 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
     val active = remember(snapshot.assignees) { activeAssignees(snapshot.assignees) }
     val customers = remember(snapshot.customers) { sortCustomersByName(snapshot.customers.filter(::isSelectableCustomer)) }
 
-    var form by rememberSaveable(stateSaver = formSaver) {
-        mutableStateOf(CreateForm.initial(LocalDate.now().toDateKey(), roundedStartTime(LocalDateTime.now()), snapshot.assignees))
+    var form by rememberSaveable(stateSaver = reservationFormSaver) {
+        mutableStateOf(ReservationForm.initial(LocalDate.now().toDateKey(), roundedStartTime(LocalDateTime.now()), snapshot.assignees))
     }
     var errorField by rememberSaveable { mutableStateOf<CreateField?>(null) }
     var errorMessage by rememberSaveable { mutableStateOf("") }
     var errorSeq by rememberSaveable { mutableIntStateOf(0) } // 저장 실패마다 +1 — 같은 오류도 다시 보이는 곳으로 스크롤
     var showSuggestions by rememberSaveable { mutableStateOf(false) }
-    fun edit(next: CreateForm) {
+    fun edit(next: ReservationForm) {
         form = next
         errorField = null
     }
@@ -140,119 +136,17 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(labels.service, color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
-                ServiceFields(
-                    catalog = snapshot.services,
-                    catalogMap = catalogMap,
-                    serviceColorMap = serviceColorMap,
-                    selected = form.selectedServices,
-                    onToggle = { edit(form.toggleService(it, catalogMap)) },
-                    totalDuration = sumDurationMinutes(form.selectedServices, catalogMap),
-                    totalPrice = sumPrice(form.selectedServices, catalogMap),
-                )
-                errorFor(CreateField.Service)?.let { FieldError(it, scrollKey = errorSeq) }
-            }
-
-            TasTextField(
-                label = "가격",
-                value = if (form.price == 0) "" else form.price.toString(),
-                onValueChange = { edit(form.changePrice(it)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                suffix = "원",
-            )
-
-            if (active.isNotEmpty()) {
-                // 0 = 미지정. 고를 수 있는 건 재직 담당자뿐.
-                val ids = listOf(0) + active.map { it.id }
-                Column {
-                    TasSelect(
-                        label = labels.assignee,
-                        options = listOf("미지정") + active.map { it.name },
-                        selectedIndex = ids.indexOf(form.assigneeId).coerceAtLeast(0),
-                        onSelect = { edit(form.copy(assigneeId = ids[it])) },
-                        error = errorFor(CreateField.Assignee),
-                        errorKey = errorSeq,
-                    )
-                    if (snapshot.assignees.any { assigneeStatus(it) != "재직" }) {
-                        Text(
-                            "예약 화면에서는 재직 담당자만 새로 선택할 수 있습니다.",
-                            color = TasColors.Caution,
-                            fontSize = TasSizes.XSmallFont,
-                            lineHeight = TasSizes.XSmallFont * 1.5f,
-                            modifier = Modifier.padding(top = 6.dp),
-                        )
-                    }
-                }
-            }
-
-            DateField(form.date, errorFor(CreateField.Date), errorSeq) { edit(form.copy(date = it)) }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    TimeField("시작", form.startTime, Modifier.weight(1f)) { edit(form.changeStartTime(it, catalogMap)) }
-                    TimeField("종료", form.endTime, Modifier.weight(1f)) { edit(form.changeEndTime(it)) }
-                }
-                errorFor(CreateField.Time)?.let { FieldError(it, scrollKey = errorSeq) }
-            }
-
-            TasSelect(
-                label = "예약경로",
-                options = RESERVATION_CHANNELS,
-                selectedIndex = RESERVATION_CHANNELS.indexOf(form.channel).coerceAtLeast(0),
-                onSelect = { edit(form.copy(channel = RESERVATION_CHANNELS[it])) },
-            )
-            TasTextField(
-                label = "요청사항",
-                value = form.memo,
-                onValueChange = { edit(form.copy(memo = it)) },
-                placeholder = "예약 관련 요청사항",
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            ReservationFormFields(
+                form = form,
+                onChange = ::edit,
+                snapshot = snapshot,
+                labels = labels,
+                catalogMap = catalogMap,
+                serviceColorMap = serviceColorMap,
+                currentAssignee = null,
+                errorFor = ::errorFor,
+                errorSeq = errorSeq,
             )
         }
     }
-}
-
-/** 웹 `<input type="date">` 자리 — 누르면 시스템 날짜 선택. */
-@Composable
-private fun DateField(value: String, error: String?, errorKey: Int, onChange: (String) -> Unit) {
-    val date = try {
-        LocalDate.parse(value)
-    } catch (_: DateTimeParseException) {
-        LocalDate.now()
-    }
-    var picking by rememberSaveable { mutableStateOf(false) }
-    if (picking) {
-        SystemDialogEffect(onDismissed = { picking = false }) {
-            DatePickerDialog(it, { _, y, m, d -> onChange(LocalDate.of(y, m + 1, d).toDateKey()) }, date.year, date.monthValue - 1, date.dayOfMonth)
-        }
-    }
-    TasSelect(
-        label = "날짜",
-        valueText = "%d. %02d. %02d.".format(date.year, date.monthValue, date.dayOfMonth),
-        valueDescription = "${date.year}년 ${date.monthValue}월 ${date.dayOfMonth}일",
-        onClick = { picking = true },
-        error = error,
-        errorKey = errorKey,
-        centered = true,
-    )
-}
-
-/** 웹 `<input type="time">` 자리 — 누르면 시스템 시간 선택(24시간). */
-@Composable
-private fun TimeField(label: String, value: String, modifier: Modifier, onChange: (String) -> Unit) {
-    val (h, m) = value.split(':').map { it.toIntOrNull() ?: 0 }.let { it.getOrElse(0) { 0 } to it.getOrElse(1) { 0 } }
-    var picking by rememberSaveable { mutableStateOf(false) }
-    if (picking) {
-        SystemDialogEffect(onDismissed = { picking = false }) {
-            TimePickerDialog(it, { _, hour, minute -> onChange("%02d:%02d".format(hour, minute)) }, h, m, true)
-        }
-    }
-    TasSelect(
-        label = label,
-        valueText = value,
-        valueDescription = "${h}시 ${m}분",
-        onClick = { picking = true },
-        modifier = modifier,
-        centered = true,
-    )
 }

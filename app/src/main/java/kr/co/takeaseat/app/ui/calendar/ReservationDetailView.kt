@@ -3,6 +3,10 @@ package kr.co.takeaseat.app.ui.calendar
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import kr.co.takeaseat.app.domain.ReservationDiff
+import kr.co.takeaseat.app.domain.CustomerMemoTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -115,22 +119,7 @@ fun ReservationDetailView(
         if (memoTags.isNotEmpty()) {
             DetailRow("고객 메모") {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    memoTags.forEach { tag ->
-                        Text(
-                            tag.text,
-                            color = Color.White,
-                            fontSize = TasSizes.XSmallFont,
-                            fontWeight = FontWeight.SemiBold,
-                            // 웹 StyledMemoTag 높이 22(위아래 2 + 18). 한글이 아래로 처지지 않게 기준선으로 가운데(lineBox) — 한 줄 전용이라
-                            // 긴 메모는 말줄임(웹은 줄을 바꾼다).
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.Chip)
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                                .lineBox(18.sp, TasSizes.XSmallFont),
-                        )
-                    }
+                    memoTags.forEach { MemoTag(it) }
                 }
             }
         }
@@ -282,5 +271,84 @@ internal fun ReservationConfirmSummary(
         DetailRow("날짜", gap) { DetailText(reservation.date) }
         DetailRow("시간", gap) { DetailText("${reservation.startTime} ~ ${reservation.endTime}") }
         DetailRow("고객명", gap) { DetailText(customerName) }
+    }
+}
+
+/** 고객 메모 태그 — 웹 ColorTag 알약(흰 글자, 밝은 색은 같은 색을 진하게). 높이 22, 기준선 가운데(한 줄·말줄임 — 웹은 줄을 바꾼다). */
+@Composable
+private fun MemoTag(tag: CustomerMemoTag) {
+    Text(
+        tag.text,
+        color = Color.White,
+        fontSize = TasSizes.XSmallFont,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.Chip)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .lineBox(18.sp, TasSizes.XSmallFont),
+    )
+}
+
+/** 웹 ReservationEditSection 머리 — 변경할 때 위에 고객 메모(테두리 상자 10 둥글게, 아래 14). */
+@Composable
+internal fun EditMemoSection(tags: List<CustomerMemoTag>) {
+    if (tags.isEmpty()) return
+    Column(
+        Modifier
+            .padding(bottom = 14.dp)
+            .fillMaxWidth()
+            .border(1.dp, TasColors.LightGray, RoundedCornerShape(10.dp))
+            .background(TasColors.BgSubtle90, RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("고객 메모", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            tags.forEach { MemoTag(it) }
+        }
+    }
+}
+
+/**
+ * 웹 `ReservationDiffSection` — 변경 확인. 문구 + 회색 상자에 항목마다 "예전(빨강 취소선) → 새 값(초록 굵게)".
+ * [color] 없으면 웹 기본 #111827, 과거 시간이면 --caution-color.
+ */
+@Composable
+internal fun ReservationDiffSummary(message: String, diffs: List<ReservationDiff>, color: Color = TasColors.Ink) {
+    Text(
+        message,
+        color = color,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        lineHeight = (14 * 1.55).sp,
+        modifier = Modifier.padding(bottom = 10.dp).semantics { liveRegion = LiveRegionMode.Polite },
+    )
+    if (diffs.isEmpty()) return
+    Column(
+        Modifier.fillMaxWidth().background(TasColors.Black10, TasShapes.RadiusMd).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        diffs.forEach { diff ->
+            DetailRow(diff.label, 10.dp) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        diff.before,
+                        color = TasColors.Danger,
+                        fontSize = TasSizes.SmallFont,
+                        style = LocalTextStyle.current.copy(textDecoration = TextDecoration.LineThrough),
+                        modifier = Modifier.semantics { contentDescription = "예전 ${diff.before}" },
+                    )
+                    Text(
+                        "→\u00a0${diff.after}",
+                        color = TasColors.Success,
+                        fontSize = TasSizes.SmallFont,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.semantics { contentDescription = "새 값 ${diff.after}" },
+                    )
+                }
+            }
+        }
     }
 }
