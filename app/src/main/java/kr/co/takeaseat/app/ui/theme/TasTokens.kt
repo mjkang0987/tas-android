@@ -43,9 +43,9 @@ object TasColors {
     val BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f)  // --bg-subtle-98
     val Danger = Color(0xC9, 0x3A, 0x30)                       // --danger-color #c93a30
     val DangerBorder = Color(0xFE, 0xCA, 0xCA)                 // --danger-border #fecaca
-    val Warning = Color(0xEA, 0x43, 0x35)                      // --warning-color #EA4335
+    val Warning = Color(0xC5, 0x22, 0x1F)                      // --warning-color #C5221F (대비 5.8, 예전 #EA4335 3.9)
     val Caution = Color(0x80, 0x66, 0x00)                      // --caution-color #806600
-    val Blue = Color.hsl(196f, 1f, 0.45f)                      // --blue-color
+    val Blue = Color.hsl(196f, 1f, 0.32f)                      // --blue-color (대비 5.0, 예전 45% 2.7)
     val Black10 = Color.hsl(0f, 0f, 0f, alpha = 0.03f)         // --black-color-10
     val Placeholder = Color(0x75, 0x75, 0x75)                  // 브라우저 기본 placeholder 실측 #757575
     val FocusRing = Color(101, 38, 217).copy(alpha = 0.12f)    // formControlStyle :focus 3px 링
