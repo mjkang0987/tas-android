@@ -82,6 +82,7 @@ internal fun ReservationDetailSheet(
     val pointSettings = snapshot.storeSettings.pointSettings
     var payment by rememberSaveable(reservation.id, stateSaver = paymentFormSaver) { mutableStateOf(PaymentForm.open(reservation, displayPrice, pointSettings)) }
     var paymentError by rememberSaveable(reservation.id) { mutableStateOf<String?>(null) }
+    var paymentErrorSeq by rememberSaveable(reservation.id) { mutableIntStateOf(0) } // 같은 오류로 다시 눌러도 다시 보이게
     fun edit(next: ReservationForm) {
         form = next
         errorField = null
@@ -159,6 +160,7 @@ internal fun ReservationDetailSheet(
                             val error = validatePayment(payment, reservation, displayPrice, customer?.points ?: 0, labels)
                             if (error != null) {
                                 paymentError = error
+                                paymentErrorSeq++
                             } else {
                                 store.update { applyPayment(it, reservation.id, payment) }
                                 paymentError = null
@@ -224,6 +226,7 @@ internal fun ReservationDetailSheet(
                 naverDeposit = reservation.naverDeposit ?: 0,
                 customerPoints = customer?.points ?: 0,
                 error = paymentError,
+                errorKey = paymentErrorSeq,
             )
             DetailMode.Completing -> ReservationConfirmSummary("이 예약을 완료 처리하시겠습니까?", TasColors.Blue, reservation, customerName, labels)
             DetailMode.Confirming -> ReservationDiffSummary("수정하시겠습니까?", changedFields(reservation, form, snapshot.assignees, labels, knownNames, snapshot.services))

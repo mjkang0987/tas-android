@@ -19,7 +19,12 @@ fun isRevenuePaymentMethod(method: String) = method !in NON_REVENUE_PAYMENT_METH
 
 /** 결제 칸 한 줄(입력 중) — method "" = 아직 안 고름, amount 는 친 그대로(숫자만). */
 @Serializable
-data class PaymentDraft(val method: String = "", val amount: String = "")
+data class PaymentDraft(val method: String = "", val amount: String = "", val key: Long = Random.nextLong()) {
+    // key 는 화면 줄 구분용(저장·비교엔 안 쓴다, 회전 뒤에도 살아남게 난수) — 같은 종류·금액 줄이 있어도 서로 다른 줄
+    override fun equals(other: Any?) = other is PaymentDraft && other.method == method && other.amount == amount
+    override fun hashCode() = 31 * method.hashCode() + amount.hashCode()
+}
+
 
 @Serializable
 data class PointAward(val enabled: Boolean, val amount: String)

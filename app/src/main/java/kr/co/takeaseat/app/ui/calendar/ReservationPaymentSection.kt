@@ -21,6 +21,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,10 +30,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,6 +44,7 @@ import kr.co.takeaseat.app.domain.PointSettings
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.removeEntry
 import kr.co.takeaseat.app.domain.withEntries
+import kr.co.takeaseat.app.ui.components.FieldError
 import kr.co.takeaseat.app.ui.components.TasSelect
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.theme.TasColors
@@ -64,6 +64,7 @@ internal fun ReservationPaymentSection(
     naverDeposit: Int,
     customerPoints: Int,
     error: String?,
+    errorKey: Int,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         FlowRow(
@@ -89,6 +90,8 @@ internal fun ReservationPaymentSection(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             form.entries.forEachIndexed { index, entry ->
+              // 줄을 지우면 아래 줄이 올라온다 — 줄마다 키를 둬야 펼친 목록·입력 초점이 엉뚱한 줄로 옮겨가지 않는다
+              key(entry.key) {
                 // '회원권' 등 목록에 없는 종류가 저장돼 있으면 그 줄에서만 보이게(웹과 같다)
                 val options = if (entry.method.isNotEmpty() && entry.method !in PAYMENT_METHOD_OPTIONS) listOf(entry.method) + PAYMENT_METHOD_OPTIONS else PAYMENT_METHOD_OPTIONS
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -131,6 +134,7 @@ internal fun ReservationPaymentSection(
                         ) { Text("삭제", color = TasColors.Danger, fontSize = TasSizes.SmallFont) }
                     }
                 }
+              }
             }
         }
 
@@ -178,10 +182,8 @@ internal fun ReservationPaymentSection(
             }
         }
 
-        // 저장을 누르고 나오는 안내 — 낭독기도 바로 읽게(웹 role=alert)
-        if (error != null) {
-            Text(error, color = TasColors.Danger, fontSize = TasSizes.SmallFont, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
-        }
+        // 저장을 누르고 나오는 안내 — 낭독기가 읽고, 화면 밖(키보드·긴 줄 아래)이면 보이는 곳까지 스크롤(FieldError)
+        if (error != null) FieldError(error, scrollKey = errorKey)
     }
 }
 
