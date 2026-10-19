@@ -9,6 +9,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
+import kr.co.takeaseat.app.domain.PaymentForm
+import kr.co.takeaseat.app.domain.applyPayment
+import kr.co.takeaseat.app.domain.completeReservation
+import kr.co.takeaseat.app.domain.hasCompletedPayment
+import kr.co.takeaseat.app.domain.open
+import kr.co.takeaseat.app.domain.validatePayment
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import java.time.LocalDateTime
@@ -38,7 +45,12 @@ import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.theme.TasColors
 
 // 웹 ReservationDetailMode 중 지금 있는 것. 예약 전환은 따로 띄우는 확인창(restoring).
-private enum class DetailMode { View, Cancelling, Noshow, Editing, Confirming, PastConfirm }
+private enum class DetailMode { View, Cancelling, Noshow, Editing, Confirming, PastConfirm, Payment, Completing }
+
+private val paymentFormSaver = Saver<PaymentForm, String>(
+    save = { GuestStore.json.encodeToString(PaymentForm.serializer(), it) },
+    restore = { GuestStore.json.decodeFromString(PaymentForm.serializer(), it) },
+)
 
 /**
  * 웹 `overlays/ReservationDetail.tsx` — 예약 상세 시트. 보기 · 취소/노쇼 확인 · 변경(폼 → 바뀐 칸 확인) · 예약 전환 확인창.
@@ -66,6 +78,10 @@ internal fun ReservationDetailSheet(
     var errorField by rememberSaveable(reservation.id) { mutableStateOf<FormField?>(null) }
     var errorMessage by rememberSaveable(reservation.id) { mutableStateOf("") }
     var errorSeq by rememberSaveable(reservation.id) { mutableIntStateOf(0) }
+    val displayPrice = reservation.price ?: servicePriceTotal(reservation.service, snapshot.services)
+    val pointSettings = snapshot.storeSettings.pointSettings
+    var payment by rememberSaveable(reservation.id, stateSaver = paymentFormSaver) { mutableStateOf(PaymentForm.open(reservation, displayPrice, pointSettings)) }
+    var paymentError by rememberSaveable(reservation.id) { mutableStateOf<String?>(null) }
     fun edit(next: ReservationForm) {
         form = next
         errorField = null
@@ -79,14 +95,33 @@ internal fun ReservationDetailSheet(
 
     val customerName = customer?.name ?: "-"
     val actions = detailActions(reservation, customerDeleted = customer?.deleted == true)
+    // 웹 dialogTitle — 보기·변경은 고객 이름, 나머지 모드는 모드 이름(MODE_LABELS)
+    val title = when (mode) {
+        DetailMode.View, DetailMode.Editing -> customer?.name ?: "예약 상세"
+        DetailMode.Confirming, DetailMode.PastConfirm -> "변경 확인"
+        DetailMode.Cancelling -> "예약 취소"
+        DetailMode.Noshow -> "노쇼 처리"
+        DetailMode.Payment -> "결제 처리"
+        DetailMode.Completing -> "예약 완료"
+    }
     DetailSheet(
-        title = customer?.name ?: "예약 상세",
+        title = title,
         onDismiss = onDismiss,
         footer = if (mode == DetailMode.View && actions.isEmpty()) null else {
             {
                 when (mode) {
                     DetailMode.View -> actions.forEach { action ->
                         when (action) {
+                            DetailAction.Pay -> {
+                                // 채운 색은 주 동작 하나만 — 미결제면 결제완료, 결제 후엔 예약완료(웹과 같다)
+                                val paid = hasCompletedPayment(reservation)
+                                ActionButton(if (paid) "결제수단 변경" else "결제완료", tone = if (paid) ActionTone.Default else ActionTone.Primary, onClick = {
+                                    payment = PaymentForm.open(reservation, displayPrice, pointSettings)
+                                    paymentError = null
+                                    mode = DetailMode.Payment
+                                })
+                            }
+                            DetailAction.Complete -> ActionButton("예약완료", tone = ActionTone.Primary, onClick = { mode = DetailMode.Completing })
                             DetailAction.Restore -> ActionButton("예약전환", tone = ActionTone.Primary, onClick = { restoring = true })
                             DetailAction.Cancel -> ActionButton("취소", tone = ActionTone.DangerOutline, onClick = { mode = DetailMode.Cancelling })
                             DetailAction.Noshow -> ActionButton("노쇼", tone = ActionTone.DangerOutline, onClick = { mode = DetailMode.Noshow })
@@ -118,6 +153,26 @@ internal fun ReservationDetailSheet(
                             }
                         })
                     }
+                    DetailMode.Payment -> {
+                        ActionButton("취소", onClick = { mode = DetailMode.View })
+                        ActionButton("결제 저장", tone = ActionTone.Primary, onClick = {
+                            val error = validatePayment(payment, reservation, displayPrice, customer?.points ?: 0, labels)
+                            if (error != null) {
+                                paymentError = error
+                            } else {
+                                store.update { applyPayment(it, reservation.id, payment) }
+                                paymentError = null
+                                mode = DetailMode.View
+                            }
+                        })
+                    }
+                    DetailMode.Completing -> {
+                        ActionButton("취소", onClick = { mode = DetailMode.View })
+                        ActionButton("예약완료", tone = ActionTone.Primary, onClick = {
+                            store.update { completeReservation(it, reservation.id) }
+                            mode = DetailMode.View
+                        })
+                    }
                     DetailMode.Confirming, DetailMode.PastConfirm -> {
                         ActionButton("취소", onClick = { mode = DetailMode.Editing })
                         ActionButton("저장", tone = ActionTone.Primary, onClick = {
@@ -134,7 +189,7 @@ internal fun ReservationDetailSheet(
                 reservation = reservation,
                 customer = customer,
                 isNewCustomer = isNewCustomer,
-                displayPrice = reservation.price ?: servicePriceTotal(reservation.service, snapshot.services),
+                displayPrice = displayPrice,
                 assigneeName = assignee?.name ?: "미지정",
                 assigneeColor = hexColor(assignee?.let { assigneeColor(it) } ?: UNASSIGNED_COLOR),
                 serviceColorMap = serviceColorMap,
@@ -158,6 +213,19 @@ internal fun ReservationDetailSheet(
                     )
                 }
             }
+            DetailMode.Payment -> ReservationPaymentSection(
+                form = payment,
+                onChange = {
+                    payment = it
+                    paymentError = null
+                },
+                settings = pointSettings,
+                displayPrice = displayPrice,
+                naverDeposit = reservation.naverDeposit ?: 0,
+                customerPoints = customer?.points ?: 0,
+                error = paymentError,
+            )
+            DetailMode.Completing -> ReservationConfirmSummary("이 예약을 완료 처리하시겠습니까?", TasColors.Blue, reservation, customerName, labels)
             DetailMode.Confirming -> ReservationDiffSummary("수정하시겠습니까?", changedFields(reservation, form, snapshot.assignees, labels, knownNames, snapshot.services))
             DetailMode.PastConfirm -> ReservationDiffSummary(
                 "현재 시간보다 과거입니다. 변경하시겠습니까?",
