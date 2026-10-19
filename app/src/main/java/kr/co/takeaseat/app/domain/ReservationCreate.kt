@@ -22,7 +22,7 @@ fun roundedStartTime(now: LocalDateTime): String {
 
 /** 화면 회전에도 살아남게 직렬화할 수 있는 한 덩어리로 둔다. customerId 0 = 새 고객. */
 @Serializable
-data class CreateForm(
+data class ReservationForm(
     val customerId: Int = 0,
     val customerQuery: String = "",
     val customerTel: String = "",
@@ -44,7 +44,7 @@ data class CreateForm(
     fun changeCustomerQuery(value: String) =
         if (customerId != 0) copy(customerQuery = value, customerId = 0, customerTel = "") else copy(customerQuery = value)
 
-    fun toggleService(name: String, catalogMap: Map<String, ServiceItem>): CreateForm {
+    fun toggleService(name: String, catalogMap: Map<String, ServiceItem>): ReservationForm {
         val next = if (name in selectedServices) selectedServices - name else selectedServices + name
         val duration = sumDurationMinutes(next, catalogMap)
         return copy(
@@ -55,7 +55,7 @@ data class CreateForm(
         )
     }
 
-    fun changeStartTime(value: String, catalogMap: Map<String, ServiceItem>): CreateForm {
+    fun changeStartTime(value: String, catalogMap: Map<String, ServiceItem>): ReservationForm {
         val duration = sumDurationMinutes(selectedServices, catalogMap)
         val end = if (!isEndTimeManual && selectedServices.isNotEmpty() && duration > 0) calcEndTime(value, duration) else endTime
         return copy(startTime = value, endTime = end)
@@ -67,7 +67,7 @@ data class CreateForm(
     fun changePrice(raw: String) = copy(price = raw.filter { it.isDigit() }.take(9).toIntOrNull() ?: 0, isPriceManual = true)
 
     companion object {
-        fun initial(date: String, startTime: String, assignees: List<Assignee>) = CreateForm(
+        fun initial(date: String, startTime: String, assignees: List<Assignee>) = ReservationForm(
             date = date,
             startTime = startTime,
             endTime = calcEndTime(startTime, 30),
@@ -81,7 +81,7 @@ enum class CreateField { Customer, Service, Assignee, Date, Time }
 data class CreateError(val field: CreateField, val message: String)
 
 /** 웹 validate() — 같은 순서·같은 문구. */
-fun validateCreate(form: CreateForm, snapshot: LocalDbSnapshot, labels: StoreLabels): CreateError? {
+fun validateCreate(form: ReservationForm, snapshot: LocalDbSnapshot, labels: StoreLabels): CreateError? {
     val isNewCustomer = form.customerId == 0
     if (activeAssignees(snapshot.assignees).isNotEmpty() && form.assigneeId == 0) {
         return CreateError(CreateField.Assignee, "${labels.assignee}를 선택해주세요.")
@@ -115,7 +115,7 @@ fun validateCreate(form: CreateForm, snapshot: LocalDbSnapshot, labels: StoreLab
  * 추천에서 안 골랐어도 이름·연락처가 같은 기존 고객이 있으면 그 고객에 붙인다(중복 고객 방지).
  * 새 번호는 최댓값 + 1 — 삭제(익명)된 고객도 세야 그 번호를 새 고객이 덮어쓰지 않는다.
  */
-fun applyCreate(form: CreateForm, snapshot: LocalDbSnapshot): LocalDbSnapshot {
+fun applyCreate(form: ReservationForm, snapshot: LocalDbSnapshot): LocalDbSnapshot {
     var customers = snapshot.customers
     val customerId = if (form.customerId != 0) {
         form.customerId

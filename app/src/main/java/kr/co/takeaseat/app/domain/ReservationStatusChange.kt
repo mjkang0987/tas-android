@@ -5,13 +5,19 @@ import kotlin.random.Random
 
 // 웹 `store/calendarStore.ts` cancelReservation·restoreReservation(게스트 경로) 이식 — 스냅샷을 받아 바뀐 스냅샷을 돌려준다.
 
-/** 상세 하단 버튼 — 웹 ReservationDetailFooterActions 보기 모드. 결제·변경·완료·삭제는 아직 없다(삭제는 웹도 게스트엔 없다). */
-enum class DetailAction { Cancel, Noshow, Restore }
+/**
+ * 상세 하단 버튼 — 웹 ReservationDetailFooterActions 보기 모드(차례도 웹과 같다). 결제완료·예약완료는 아직 없다.
+ * 삭제는 웹도 게스트엔 없다(owner·manager 만). 삭제(익명)된 고객의 예약은 변경을 막는다(웹과 같다).
+ */
+enum class DetailAction { Cancel, Noshow, Edit, Restore }
 
-fun detailActions(reservation: Reservation): List<DetailAction> = when (reservation.status) {
+fun detailActions(reservation: Reservation, customerDeleted: Boolean = false): List<DetailAction> = when (reservation.status) {
     ReservationStatus.REQUESTED -> emptyList() // 확정·거절은 온라인 예약(로그인) 전용
     ReservationStatus.CANCELLED, ReservationStatus.NOSHOW -> listOf(DetailAction.Restore)
-    else -> if (hasCompletedPayment(reservation)) emptyList() else listOf(DetailAction.Cancel, DetailAction.Noshow)
+    else -> buildList {
+        if (!hasCompletedPayment(reservation)) addAll(listOf(DetailAction.Cancel, DetailAction.Noshow))
+        if (!customerDeleted) add(DetailAction.Edit)
+    }
 }
 
 private fun historyEntry(before: Reservation, after: Reservation, now: Instant) =
