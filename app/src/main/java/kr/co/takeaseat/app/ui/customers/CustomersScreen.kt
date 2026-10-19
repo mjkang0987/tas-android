@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import kr.co.takeaseat.app.domain.MEMO_TAG_COLORS
 import kr.co.takeaseat.app.domain.addMemoTag
-import kr.co.takeaseat.app.domain.canAddMemoTag
 import kr.co.takeaseat.app.domain.removeMemoTag
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -93,6 +92,7 @@ import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
 import kr.co.takeaseat.app.ui.components.hexColor
+import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -176,7 +176,11 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     stats = statsById[customer.id] ?: customerStats(emptyList(), today),
                     matchedTags = match.matchedTags,
                     open = open,
-                    onToggle = { openIds = if (open) openIds - customer.id else openIds + customer.id },
+                    onToggle = {
+                        openIds = if (open) openIds - customer.id else openIds + customer.id
+                        // 편집 중에 접으면 편집도 끝 — 다시 펼쳤을 때 편집 칸·키보드가 갑자기 뜨지 않게
+                        if (open && tagEditingId == customer.id) { tagEditingId = null; tagInput = "" }
+                    },
                     serviceColorMap = serviceColorMap,
                 ) {
                     CustomerExpanded(
@@ -190,12 +194,10 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                                 onInput = { tagInput = it },
                                 onColor = { tagColor = it },
                                 onAdd = {
-                                    // 못 더하면(빈 글자·같은 태그) 입력도 그대로 — 웹과 같다
-                                    if (customer.canAddMemoTag(tagInput)) {
-                                        val text = tagInput
-                                        store.update { addMemoTag(it, customer.id, text, tagColor) }
-                                        tagInput = ""
-                                    }
+                                    // 못 더하면(빈 글자·같은 태그) 입력도 그대로 — 웹과 같다. 판단은 저장소의 최신 값으로.
+                                    var added = false
+                                    store.update { s -> addMemoTag(s, customer.id, tagInput, tagColor).also { added = it !== s } }
+                                    if (added) tagInput = ""
                                 },
                                 onRemove = { text -> store.update { removeMemoTag(it, customer.id, text) } },
                                 onStart = { tagEditingId = customer.id; tagInput = "" },
@@ -414,7 +416,9 @@ private fun MemoTagSection(
             }
         }
         val focus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { focus.requestFocus() } // 웹 autoFocus
+        // 웹 autoFocus — 편집을 열 때 한 번만. 목록을 스크롤해 이 줄이 다시 그려질 때·회전 뒤엔 다시 잡지 않는다(키보드가 갑자기 뜸).
+        var autoFocused by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(Unit) { if (!autoFocused) { autoFocused = true; focus.requestFocus() } }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             TasTextField(
                 label = "메모 태그 입력",
@@ -459,7 +463,9 @@ private fun MemoButton(text: String, onClick: () -> Unit, description: String = 
 private fun MemoChip(tag: CustomerMemoTag, small: Boolean = false, onRemove: (() -> Unit)? = null) {
     if (onRemove != null) {
         Row(Modifier.background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.RadiusSm).padding(start = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(tag.text, color = TasColors.White, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            // 긴 태그도 ✕ 자리는 남긴다(글자가 줄을 다 차지하면 ✕ 가 0 폭이 되어 지울 수 없었다)
+            Text(tag.text, color = TasColors.White, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false).lineBox(18.sp, TasSizes.XSmallFont))
             Box(
                 Modifier
                     .size(24.dp)
@@ -476,8 +482,11 @@ private fun MemoChip(tag: CustomerMemoTag, small: Boolean = false, onRemove: (()
         fontSize = if (small) TasSizes.TinyFont else TasSizes.XSmallFont,
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         modifier = Modifier
             .background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.RadiusSm)
-            .padding(horizontal = if (small) 6.dp else 8.dp, vertical = if (small) 1.dp else 2.dp),
+            .padding(horizontal = if (small) 6.dp else 8.dp, vertical = if (small) 1.dp else 2.dp)
+            // 줄 높이 고정 + 글자 가운데 — 영문(VIP)·한글 태그 높이가 달라 위아래가 어긋났다(상세 시트 MemoTag 와 같게)
+            .lineBox(if (small) 14.sp else 18.sp, if (small) TasSizes.TinyFont else TasSizes.XSmallFont),
     )
 }

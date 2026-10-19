@@ -81,7 +81,7 @@ val MEMO_TAG_COLORS = listOf(
 )
 
 /** 웹 addTag 의 조건 — 앞뒤 공백 빼고 비었거나 같은 글자 태그가 이미 있으면 못 더한다. */
-fun Customer.canAddMemoTag(text: String): Boolean = text.trim().let { t -> t.isNotEmpty() && memoTags.orEmpty().none { it.text == t } }
+private fun Customer.canAddMemoTag(text: String): Boolean = text.trim().let { t -> t.isNotEmpty() && memoTags.orEmpty().none { it.text == t } }
 
 /** 웹 addTag — 끝에 붙인다. 못 더하면 그대로. */
 fun addMemoTag(snapshot: LocalDbSnapshot, customerId: Int, text: String, color: String): LocalDbSnapshot {
