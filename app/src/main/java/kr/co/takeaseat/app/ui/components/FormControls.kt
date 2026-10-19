@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActionScope
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -44,6 +47,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -54,6 +58,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
@@ -113,6 +118,18 @@ fun FieldError(message: String, modifier: Modifier = Modifier, scrollKey: Any? =
     )
 }
 
+private val LineBreaks = Regex("[\\r\\n]")
+
+/** 한 줄 칸의 새 글자에서 줄바꿈을 뺀다. 줄바꿈 한 글자만 들어왔으면(엔터) 두 번째 값이 true. */
+internal fun stripLineBreaks(old: String, new: String): Pair<String, Boolean> {
+    if (!LineBreaks.containsMatchIn(new)) return new to false
+    return new.replace(LineBreaks, "") to (new.length == old.length + 1)
+}
+
+private val NoDefaultKeyboardAction = object : KeyboardActionScope {
+    override fun defaultKeyboardAction(imeAction: ImeAction) = Unit
+}
+
 /** 라벨 + 한 줄 입력. [suffix] 는 가격 칸의 '원'(입력 오른쪽 정렬). */
 @Composable
 fun TasTextField(
@@ -124,6 +141,7 @@ fun TasTextField(
     error: String? = null,
     errorKey: Any? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     suffix: String? = null,
     onFocusChange: (Boolean) -> Unit = {},
     showLabel: Boolean = true,
@@ -133,10 +151,28 @@ fun TasTextField(
     val fontSize = if (compact) TasSizes.SmallFont else TasSizes.MediumFont
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val focusManager = LocalFocusManager.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { v ->
+                // 한 줄 칸인데 하드웨어 키보드 엔터·붙여넣기는 줄바꿈을 넣는다(IME 가 글자로 보냄) — 빼고, 엔터 한 번이면 칸의 키보드 동작(완료·다음·검색)으로
+                val (text, enterPressed) = stripLineBreaks(value, v)
+                if (text != v) {
+                    onValueChange(text)
+                    if (enterPressed) {
+                        val action = when (keyboardOptions.imeAction) {
+                            ImeAction.Next -> keyboardActions.onNext
+                            ImeAction.Search -> keyboardActions.onSearch
+                            ImeAction.Go -> keyboardActions.onGo
+                            ImeAction.Send -> keyboardActions.onSend
+                            else -> keyboardActions.onDone
+                        }
+                        if (action != null) action(NoDefaultKeyboardAction)
+                        else if (keyboardOptions.imeAction == ImeAction.Next) focusManager.moveFocus(FocusDirection.Next)
+                    }
+                } else onValueChange(v)
+            },
             singleLine = true,
             enabled = enabled,
             textStyle = TextStyle(
@@ -147,6 +183,7 @@ fun TasTextField(
             ),
             cursorBrush = SolidColor(TasColors.Brand),
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             interactionSource = interaction,
             modifier = Modifier.fillMaxWidth().onFocusChanged { onFocusChange(it.isFocused) },
             decorationBox = { inner ->
