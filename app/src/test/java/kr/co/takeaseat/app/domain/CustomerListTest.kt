@@ -3,6 +3,7 @@ package kr.co.takeaseat.app.domain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,5 +55,18 @@ class CustomerListTest {
         val byTag = searchCustomers(list, "vip").single()
         assertEquals("VIP 단골", byTag.matchedTags.single().text)
         assertEquals(2, searchCustomers(list, "  ").size)
+    }
+
+    @Test fun `메모 태그 - 공백 빼고 끝에 추가, 빈 글자·같은 글자는 그대로, 삭제는 같은 글자`() {
+        val snap = LocalDbSnapshot(customers = listOf(Customer(id = 1, name = "김", tel = "010", memoTags = listOf(CustomerMemoTag("VIP", "#9334E6")))))
+        val added = addMemoTag(snap, 1, "  단골 ", "#4285F4")
+        assertEquals(listOf("VIP", "단골"), added.customers.single().memoTags!!.map { it.text })
+        assertEquals("#4285F4", added.customers.single().memoTags!!.last().color)
+        assertSame(snap, addMemoTag(snap, 1, "   ", "#4285F4"))
+        assertSame(snap, addMemoTag(snap, 1, "VIP ", "#4285F4"))
+        assertSame(snap, addMemoTag(snap, 9, "단골", "#4285F4"))
+        assertEquals(listOf("단골"), removeMemoTag(added, 1, "VIP").customers.single().memoTags!!.map { it.text })
+        // 태그가 없던 고객도 추가된다
+        assertEquals(1, addMemoTag(snap.copy(customers = listOf(Customer(id = 1, name = "김", tel = "010"))), 1, "a", "#4285F4").customers.single().memoTags!!.size)
     }
 }

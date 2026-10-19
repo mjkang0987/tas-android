@@ -73,3 +73,26 @@ fun searchCustomers(ordered: List<Customer>, query: String): List<CustomerMatch>
         if (hit) CustomerMatch(c, tags) else null
     }
 }
+
+/** 웹 address.tsx TAG_COLORS — 메모 태그 색 8개(낭독 이름과 함께). */
+val MEMO_TAG_COLORS = listOf(
+    "#4285F4" to "파랑", "#34A853" to "초록", "#EA4335" to "빨강", "#FBBC04" to "노랑",
+    "#FF6D01" to "주황", "#46BDC6" to "청록", "#9334E6" to "보라", "#E91E8C" to "분홍",
+)
+
+/** 웹 addTag 의 조건 — 앞뒤 공백 빼고 비었거나 같은 글자 태그가 이미 있으면 못 더한다. */
+fun Customer.canAddMemoTag(text: String): Boolean = text.trim().let { t -> t.isNotEmpty() && memoTags.orEmpty().none { it.text == t } }
+
+/** 웹 addTag — 끝에 붙인다. 못 더하면 그대로. */
+fun addMemoTag(snapshot: LocalDbSnapshot, customerId: Int, text: String, color: String): LocalDbSnapshot {
+    val customer = snapshot.customers.firstOrNull { it.id == customerId } ?: return snapshot
+    if (!customer.canAddMemoTag(text)) return snapshot
+    val next = customer.copy(memoTags = customer.memoTags.orEmpty() + CustomerMemoTag(text.trim(), color))
+    return snapshot.copy(customers = snapshot.customers.map { if (it.id == customerId) next else it })
+}
+
+/** 웹 removeTag — 같은 글자 태그를 뺀다. */
+fun removeMemoTag(snapshot: LocalDbSnapshot, customerId: Int, text: String): LocalDbSnapshot =
+    snapshot.copy(customers = snapshot.customers.map { c ->
+        if (c.id == customerId) c.copy(memoTags = c.memoTags.orEmpty().filter { it.text != text }) else c
+    })
