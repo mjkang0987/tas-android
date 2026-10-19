@@ -125,6 +125,10 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val serviceColorMap = remember(snapshot.services, snapshot.categoryBaseColors) { buildServiceColorMap(snapshot.services, snapshot.categoryBaseColors) }
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
+    // 편집 중인 고객이 검색에서 빠지면(지운 태그로 검색 중 등) 편집도 끝 — 검색을 지웠을 때 편집 칸이 남아 있지 않게
+    LaunchedEffect(matches) {
+        if (tagEditingId != null && matches.none { it.customer.id == tagEditingId }) { tagEditingId = null; tagInput = "" }
+    }
 
     Column(modifier.fillMaxSize()) {
         // 웹 Header(모바일) — 높이 48, 제목 18 굵게 #525252, 아래 1px
