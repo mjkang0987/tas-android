@@ -45,6 +45,7 @@ import kr.co.takeaseat.app.domain.sumPrice
 import kr.co.takeaseat.app.domain.toDateKey
 import kr.co.takeaseat.app.domain.validateCreate
 import kr.co.takeaseat.app.ui.components.ActionButton
+import kr.co.takeaseat.app.ui.components.ActionTone
 import kr.co.takeaseat.app.ui.components.CustomerAutocomplete
 import kr.co.takeaseat.app.ui.components.DetailSheet
 import kr.co.takeaseat.app.ui.components.FieldError
@@ -91,20 +92,18 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
         title = "예약 추가",
         onDismiss = onDismiss,
         footer = {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, androidx.compose.ui.Alignment.End)) {
-                ActionButton("취소", onClick = onDismiss)
-                ActionButton("저장", primary = true, onClick = {
-                    val error: CreateError? = validateCreate(form, store.snapshot.value, labels)
-                    if (error != null) {
-                        errorField = error.field
-                        errorMessage = error.message
-                        errorSeq++
-                    } else {
-                        store.update { applyCreate(form, it) }
-                        onDismiss()
-                    }
-                })
-            }
+            ActionButton("취소", onClick = onDismiss)
+            ActionButton("저장", tone = ActionTone.Primary, onClick = {
+                val error: CreateError? = validateCreate(form, store.snapshot.value, labels)
+                if (error != null) {
+                    errorField = error.field
+                    errorMessage = error.message
+                    errorSeq++
+                } else {
+                    store.update { applyCreate(form, it) }
+                    onDismiss()
+                }
+            })
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

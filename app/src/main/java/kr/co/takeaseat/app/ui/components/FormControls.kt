@@ -248,26 +248,46 @@ fun TasSelect(
     }
 }
 
-/** 웹 StyledActionButton(모바일) — 30 높이, 7 둥글게, 좌우 10, 12. [primary] = 보라 바탕 흰 글자. */
+/** 웹 StyledActionButton 의 $primary / $danger / $dangerOutline. */
+enum class ActionTone { Default, Primary, Danger, DangerOutline }
+
+/** 웹 StyledActionButton(모바일) — 30 높이, 7 둥글게, 좌우 10, 12. 채운 것(주·위험)은 흰 글자 600, 나머지 500. */
 @Composable
-fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false, enabled: Boolean = true) {
+fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, tone: ActionTone = ActionTone.Default, enabled: Boolean = true) {
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(7.dp)
+    val filled = tone == ActionTone.Primary || tone == ActionTone.Danger
     Box(
         modifier
             .heightIn(min = 30.dp)
             .dropShadow(shape, Shadow(radius = TasSizes.ShadowSmBlur, color = TasColors.ShadowSm, offset = DpOffset(0.dp, TasSizes.ShadowSmOffsetY)))
             .clip(shape)
-            .background(if (primary) TasColors.Brand else TasColors.White)
-            .then(if (primary) Modifier else Modifier.border(1.dp, TasColors.Border, shape))
+            .background(
+                when (tone) {
+                    ActionTone.Primary -> TasColors.Brand
+                    ActionTone.Danger -> TasColors.Danger
+                    else -> TasColors.White
+                },
+            )
+            .then(
+                when (tone) {
+                    ActionTone.Default -> Modifier.border(1.dp, TasColors.Border, shape)
+                    ActionTone.DangerOutline -> Modifier.border(1.dp, TasColors.DangerBorder, shape)
+                    else -> Modifier
+                },
+            )
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text,
-            color = if (primary) TasColors.White else TasColors.DarkGray,
+            color = when (tone) {
+                ActionTone.Default -> TasColors.DarkGray
+                ActionTone.DangerOutline -> TasColors.Danger
+                else -> TasColors.White
+            },
             fontSize = TasSizes.SmallFont,
-            fontWeight = if (primary) FontWeight.SemiBold else FontWeight.Medium,
+            fontWeight = if (tone == ActionTone.Default) FontWeight.Medium else FontWeight.SemiBold,
             maxLines = 1,
         )
     }

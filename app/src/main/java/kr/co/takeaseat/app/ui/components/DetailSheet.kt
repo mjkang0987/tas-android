@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -70,13 +71,14 @@ private val SheetEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f) // 웹 layer �
 /**
  * 웹 `ModalStyles` 모바일 바텀시트(StyledOverlay + StyledDetail + StyledHeader) 이식.
  * 시스템 대화상자 창에 띄운다 — 뒤로가기·화면 낭독기 초점 가두기를 플랫폼이 해 준다(배경 어둡게는 끄고 웹 색으로 직접 칠한다).
- * 바깥(어두운 곳)을 누르거나 닫기·뒤로가기로 닫힌다. [footer] 는 웹 StyledFooter 자리(버튼 줄).
+ * 바깥(어두운 곳)을 누르거나 닫기·뒤로가기로 닫힌다. [footer] 는 웹 StyledFooter 자리(버튼 줄). [centered] 는 확인창.
  */
 @Composable
 fun DetailSheet(
     title: String,
     onDismiss: () -> Unit,
-    footer: (@Composable () -> Unit)? = null,
+    footer: (@Composable RowScope.() -> Unit)? = null,
+    centered: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Dialog(
@@ -102,8 +104,13 @@ fun DetailSheet(
             // 키보드·낭독기 초점이 된다. 그쪽은 닫기 버튼·뒤로가기가 같은 일을 한다.
             Box(Modifier.matchParentSize().pointerInput(onDismiss) { detectTapGestures { onDismiss() } })
             // 웹: 640px 이하 바텀시트, 넘으면 가운데 창(폭 min(360, 90%), 높이 80%, 10 둥글게).
-            val wide = maxWidth > 640.dp
-            val shape = if (wide) TasShapes.Modal else TasShapes.SheetTop
+            // [centered] = 웹 StyledConfirmModal — 짧은 확인창은 모바일에서도 가운데 카드(12 둥글게)로 띄운다.
+            val wide = centered || maxWidth > 640.dp
+            val shape = when {
+                maxWidth > 640.dp -> TasShapes.Modal
+                centered -> TasShapes.ConfirmMobile
+                else -> TasShapes.SheetTop
+            }
             val riseFrom = with(LocalDensity.current) { (if (wide) 12 else 32).dp.roundToPx() }
             AnimatedVisibility(
                 visible = shown,
@@ -139,7 +146,10 @@ fun DetailSheet(
                                 .fillMaxWidth()
                                 .drawBehind { drawRect(TasColors.ModalHeaderBorder, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
                                 .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp),
-                        ) { footer() }
+                        ) {
+                            // 웹 StyledFooter — 오른쪽 정렬, 간격 6(--modal-footer-gap)
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End), content = footer)
+                        }
                     }
                     // 제스처 내비게이션 막대·키보드 아래로 내용이 들어가지 않게 — 시트 배경은 끝까지 깔린다(키보드가 뜨면 본문이 줄고 스크롤된다).
                     // shortcut: 넓은 화면 가운데 창은 키보드를 피하지 않는다, 태블릿에서 가려지면 창을 위로 올린다.

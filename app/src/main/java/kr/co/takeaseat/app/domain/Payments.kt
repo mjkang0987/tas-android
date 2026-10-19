@@ -36,3 +36,11 @@ val RESERVATION_STATUS_BADGE_STYLES: Map<String, BadgeColors> = mapOf(
 )
 
 fun statusBadgeColors(type: String): BadgeColors = RESERVATION_STATUS_BADGE_STYLES[type] ?: BadgeColors("#F1F1F1", "#999999")
+
+/** 웹 pointRefundOnCancel — 취소·삭제 때 고객 적립금에 더할 값(결제에 쓴 적립금 반환 − 그 결제로 준 적립 회수). 이미 취소면 0. */
+fun pointRefundOnCancel(reservation: Reservation): Int {
+    if (reservation.status == ReservationStatus.CANCELLED) return 0
+    if (!hasCompletedPayment(reservation)) return 0
+    val used = reservation.paymentEntries.orEmpty().filter { it.method == "적립금" }.sumOf { it.amount }
+    return used - (reservation.pointEarned ?: 0)
+}

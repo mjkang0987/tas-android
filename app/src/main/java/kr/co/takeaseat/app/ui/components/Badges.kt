@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -143,7 +144,44 @@ fun StatusBadge(type: String, text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** 웹 `AssigneeLabel`(ColorTag) — 담당자 색 알약, 흰 글자. */
+/**
+ * 웹 `features/colors/contrast.ts` backgroundForWhiteText — 흰 글자를 얹는 색 바탕(메모 태그·담당자 라벨)은
+ * 흰 글자가 4.5:1 이 될 때까지 같은 색을 진하게(색상·채도 유지, 밝기만 0.01씩 내림). 이미 진하면 그대로.
+ * 바탕은 사장님이 고른 색이라 다른 색으로 바꾸지 않는다(노랑 #FBBC04 → #926D02).
+ */
+fun backgroundForWhiteText(color: Color): Color {
+    fun whiteContrast(c: Color) = 1.05 / (c.luminance() + 0.05)
+    if (whiteContrast(color) >= 4.5) return color
+    // RGB → HSL (웹 toHsl 과 같은 식). 웹(JS)은 배정밀도 — 반올림 경계에서 같은 색이 나오게 Double 로 계산한다.
+    val r = Math.round(color.red * 255) / 255.0
+    val g = Math.round(color.green * 255) / 255.0
+    val b = Math.round(color.blue * 255) / 255.0
+    val max = maxOf(r, g, b)
+    val min = minOf(r, g, b)
+    val l0 = (max + min) / 2
+    val d = max - min
+    val s = if (d == 0.0) 0.0 else if (l0 > 0.5) d / (2 - max - min) else d / (max + min)
+    val h = when {
+        d == 0.0 -> 0.0
+        max == r -> ((g - b) / d + (if (g < b) 6 else 0)) * 60
+        max == g -> ((b - r) / d + 2) * 60
+        else -> ((r - g) / d + 4) * 60
+    }
+    var l = l0
+    while (l > 0) {
+        val a = s * minOf(l, 1 - l)
+        fun f(n: Int): Int {
+            val k = (n + h / 30) % 12
+            return Math.round(255 * (l - a * maxOf(minOf(k - 3, 9 - k, 1.0), -1.0))).toInt()
+        }
+        val candidate = Color(f(0), f(8), f(4))
+        if (whiteContrast(candidate) >= 4.5) return candidate
+        l -= 0.01
+    }
+    return Color.Black
+}
+
+/** 웹 `AssigneeLabel`(ColorTag) — 담당자 색 알약, 흰 글자(밝은 색은 바탕을 진하게). */
 @Composable
 fun AssigneeLabel(name: String, color: Color, modifier: Modifier = Modifier) {
     Text(
@@ -154,7 +192,7 @@ fun AssigneeLabel(name: String, color: Color, modifier: Modifier = Modifier) {
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
         modifier = modifier
-            .background(color, TasShapes.Chip)
+            .background(backgroundForWhiteText(color), TasShapes.Chip)
             .padding(horizontal = 8.dp, vertical = 2.dp)
             .lineBox(14.sp, TasSizes.XSmallFont), // 웹 높이 18 = 2 + 14 + 2
     )

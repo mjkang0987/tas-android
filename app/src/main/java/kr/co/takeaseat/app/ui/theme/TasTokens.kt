@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
 // 웹에서 바뀌면 여기도 같이 바꾼다. 쓰는 것만 옮기고, 화면이 늘 때 필요한 토큰을 더한다.
 object TasColors {
     val Black = Color.hsl(0f, 0f, 0.13f)                       // --black-color
-    val DarkGray2 = Color.hsl(0f, 0f, 0.45f)                   // --dark-gray-color2
+    val DarkGray2 = Color.hsl(0f, 0f, 0.43f)                   // --dark-gray-color2 (옅은 회색 바탕 4.8, 예전 45% 4.43)
     val White = Color.hsl(0f, 0f, 1f)                          // --white-color
     val White60 = Color.hsl(0f, 0f, 1f, alpha = 0.6f)          // --white-color-60
     val Brand = Color(0x65, 0x26, 0xD9)                        // --brand-color #6526d9
@@ -35,15 +35,17 @@ object TasColors {
     val Info = Color(0x16, 0x60, 0xCC)                         // --info-color #1660cc (대비 4.5 이상, 예전 #2d7ff9)
     val InfoBg = Color(45, 127, 249).copy(alpha = 0.1f)        // --info-bg (배경은 그대로)
     val InfoBorder = Color(45, 127, 249).copy(alpha = 0.2f)    // --info-border
-    val Link = Color(0x42, 0x85, 0xF4)                         // 상세 고객명 #4285F4
+    val Link = Color(0x19, 0x67, 0xD2)                         // 상세 고객명 #1967D2 (대비 5.3, 예전 #4285F4 3.6)
     val Scrim = Color(15, 23, 42).copy(alpha = 0.4f)           // StyledOverlay 배경
     val ModalBorder = Color(148, 163, 184).copy(alpha = 0.22f) // --modal-border
     val ModalHeaderBorder = Color(148, 163, 184).copy(alpha = 0.18f) // --modal-header-border
     val BgSubtle92 = Color(248, 250, 252).copy(alpha = 0.92f)  // --bg-subtle-92
     val BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f)  // --bg-subtle-98
     val Danger = Color(0xC9, 0x3A, 0x30)                       // --danger-color #c93a30
+    val DangerBorder = Color(0xFE, 0xCA, 0xCA)                 // --danger-border #fecaca
+    val Warning = Color(0xC5, 0x22, 0x1F)                      // --warning-color #C5221F (대비 5.8, 예전 #EA4335 3.9)
     val Caution = Color(0x80, 0x66, 0x00)                      // --caution-color #806600
-    val Blue = Color.hsl(196f, 1f, 0.45f)                      // --blue-color
+    val Blue = Color.hsl(196f, 1f, 0.32f)                      // --blue-color (대비 5.0, 예전 45% 2.7)
     val Black10 = Color.hsl(0f, 0f, 0f, alpha = 0.03f)         // --black-color-10
     val Placeholder = Color(0x75, 0x75, 0x75)                  // 브라우저 기본 placeholder 실측 #757575
     val FocusRing = Color(101, 38, 217).copy(alpha = 0.12f)    // formControlStyle :focus 3px 링
@@ -69,4 +71,5 @@ object TasShapes {
     val RadiusMd = RoundedCornerShape(6.dp)                    // --radius-md
     val SheetTop = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp) // --modal-radius-mobile, 바텀시트
     val Modal = RoundedCornerShape(10.dp)                      // --modal-radius, 넓은 화면 가운데 창
+    val ConfirmMobile = RoundedCornerShape(12.dp)              // --modal-radius-mobile, 모바일 가운데 확인창
 }
