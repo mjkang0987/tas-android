@@ -15,10 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kr.co.takeaseat.app.domain.parseServiceString
 import kr.co.takeaseat.app.domain.serviceColor
+import kr.co.takeaseat.app.domain.statusBadgeColors
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -42,21 +44,29 @@ fun NewCustomerBadge(modifier: Modifier = Modifier) {
     )
 }
 
-/** 웹 `LabelBadge` tone=warning shape=pill size=sm — 확정대기 표시. */
+enum class LabelTone(val text: Color, val bg: Color, val border: Color) {
+    Warning(TasColors.WarningText, TasColors.WarningBgSoft, TasColors.WarningBorderSoft),
+    Info(TasColors.Info, TasColors.InfoBg, TasColors.InfoBorder),
+}
+
+/**
+ * 웹 `ui/LabelBadge.tsx`(size sm) — 연한 배경 + 진한 글자 + 1px 테두리. pill 은 알약, soft 는 6 둥글게.
+ * 확정대기(warning pill), 예약경로(info soft, 글자 10) 등. 쓰는 톤만 옮겼다.
+ */
 @Composable
-fun WarningPillBadge(text: String, modifier: Modifier = Modifier) {
+fun LabelBadge(text: String, tone: LabelTone, modifier: Modifier = Modifier, pill: Boolean = false, fontSize: TextUnit = TasSizes.XSmallFont) {
+    val shape = if (pill) TasShapes.Chip else TasShapes.RadiusMd
     Text(
         text = text,
-        color = TasColors.WarningText,
-        fontSize = TasSizes.XSmallFont,
-        lineHeight = 1.2.em,
+        color = tone.text,
+        fontSize = fontSize,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         modifier = modifier
-            .background(TasColors.WarningBgSoft, TasShapes.Chip)
-            .border(1.dp, TasColors.WarningBorderSoft, TasShapes.Chip)
+            .background(tone.bg, shape)
+            .border(1.dp, tone.border, shape)
             .padding(horizontal = 6.dp, vertical = 3.dp)
-            .lineBox(13.2.sp),
+            .lineBox((fontSize.value * 1.2f).sp),
     )
 }
 
@@ -95,10 +105,46 @@ fun ServiceChipList(
     }
 }
 
-/** "#RRGGBB" / "#RGB" → Color. 망가진 값은 웹 기본 회색(#999). */
+/** "#RRGGBB" / "#RGB" / "#AARRGGBB" → Color. 망가진 값은 웹 기본 회색(#999). */
 fun hexColor(hex: String): Color {
     val raw = hex.removePrefix("#")
     val full = if (raw.length == 3) raw.map { "$it$it" }.joinToString("") else raw
-    val value = full.takeIf { it.length == 6 }?.toLongOrNull(16) ?: 0x999999L
-    return Color(0xFF000000 or value)
+    return when (full.length) {
+        8 -> full.toLongOrNull(16)?.let { Color(it) }
+        6 -> full.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
+        else -> null
+    } ?: Color(0xFF999999)
+}
+
+/** 웹 `ReservationStatusBadge` — 결제완료·미결제·취소·노쇼·완료·확정대기. 색은 RESERVATION_STATUS_BADGE_STYLES. */
+@Composable
+fun StatusBadge(type: String, text: String, modifier: Modifier = Modifier) {
+    val colors = statusBadgeColors(type)
+    Text(
+        text = text,
+        color = hexColor(colors.color),
+        fontSize = TasSizes.XSmallFont,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        modifier = modifier
+            .background(hexColor(colors.bg), TasShapes.RadiusSm)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .lineBox(13.2.sp),
+    )
+}
+
+/** 웹 `AssigneeLabel`(ColorTag) — 담당자 색 알약, 흰 글자. */
+@Composable
+fun AssigneeLabel(name: String, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = name,
+        color = Color.White,
+        fontSize = TasSizes.XSmallFont,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        modifier = modifier
+            .background(color, TasShapes.Chip)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .lineBox(13.2.sp),
+    )
 }
