@@ -139,3 +139,9 @@ fun parseServiceString(str: String, knownNames: Set<String>? = null): List<Strin
     }
     return result
 }
+
+/** 웹 sumPrice — 서비스 문자열의 각 서비스 가격 합(카탈로그에 없는 이름은 0). 예약에 가격이 없을 때 쓴다. */
+fun servicePriceTotal(service: String, catalog: List<ServiceItem>): Int {
+    val byName = catalog.associateBy { it.name }
+    return parseServiceString(service, byName.keys).sumOf { byName[it]?.price ?: 0 }
+}
