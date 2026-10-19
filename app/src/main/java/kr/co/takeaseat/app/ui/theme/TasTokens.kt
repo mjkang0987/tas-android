@@ -42,6 +42,8 @@ object TasColors {
     val BgSubtle92 = Color(248, 250, 252).copy(alpha = 0.92f)  // --bg-subtle-92
     val BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f)  // --bg-subtle-98
     val Danger = Color(0xC9, 0x3A, 0x30)                       // --danger-color #c93a30
+    val DangerBorder = Color(0xFE, 0xCA, 0xCA)                 // --danger-border #fecaca
+    val Warning = Color(0xEA, 0x43, 0x35)                      // --warning-color #EA4335
     val Caution = Color(0x80, 0x66, 0x00)                      // --caution-color #806600
     val Blue = Color.hsl(196f, 1f, 0.45f)                      // --blue-color
     val Black10 = Color.hsl(0f, 0f, 0f, alpha = 0.03f)         // --black-color-10
@@ -69,4 +71,5 @@ object TasShapes {
     val RadiusMd = RoundedCornerShape(6.dp)                    // --radius-md
     val SheetTop = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp) // --modal-radius-mobile, 바텀시트
     val Modal = RoundedCornerShape(10.dp)                      // --modal-radius, 넓은 화면 가운데 창
+    val ConfirmMobile = RoundedCornerShape(12.dp)              // --modal-radius-mobile, 모바일 가운데 확인창
 }
