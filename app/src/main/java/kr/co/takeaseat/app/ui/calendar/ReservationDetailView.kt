@@ -54,6 +54,7 @@ import kr.co.takeaseat.app.ui.components.NewCustomerBadge
 import kr.co.takeaseat.app.ui.components.ServiceChipList
 import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.hexColor
+import kr.co.takeaseat.app.ui.components.readableTextOn
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -113,14 +114,15 @@ fun ReservationDetailView(
             DetailRow("고객 메모") {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     memoTags.forEach { tag ->
+                        val bg = hexColor(tag.color)
                         Text(
                             tag.text,
-                            color = Color.White,
+                            color = readableTextOn(bg),
                             fontSize = TasSizes.XSmallFont,
                             fontWeight = FontWeight.SemiBold,
                             // 웹 태그는 최소 22 에 글이 길면 줄을 바꿔 커진다 — 한 줄 상자(lineBox)를 쓰지 않는다.
                             modifier = Modifier
-                                .background(hexColor(tag.color), TasShapes.Chip)
+                                .background(bg, TasShapes.Chip)
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                                 .heightIn(min = 18.dp)
                                 .wrapContentHeight(Alignment.CenterVertically),

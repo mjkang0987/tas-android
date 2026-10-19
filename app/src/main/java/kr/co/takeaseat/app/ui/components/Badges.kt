@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -143,12 +144,21 @@ fun StatusBadge(type: String, text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** 웹 `AssigneeLabel`(ColorTag) — 담당자 색 알약, 흰 글자. */
+/**
+ * 웹 `features/colors/contrast.ts` readableTextOn — 색 바탕(메모 태그·담당자 라벨) 위 글자는 흰·순검정 중 대비가 큰 쪽.
+ * 바탕은 사장님이 고른 색이라 바꿀 수 없다(노랑 위 흰 글자는 1.6:1). 둘 중 나은 쪽은 어떤 바탕이든 4.58 이상.
+ */
+fun readableTextOn(background: Color): Color {
+    val l = background.luminance()
+    return if ((1.05f) / (l + 0.05f) >= (l + 0.05f) / 0.05f) Color.White else Color.Black
+}
+
+/** 웹 `AssigneeLabel`(ColorTag) — 담당자 색 알약, 글자는 바탕에 맞춰 흰·검. */
 @Composable
 fun AssigneeLabel(name: String, color: Color, modifier: Modifier = Modifier) {
     Text(
         text = name,
-        color = Color.White,
+        color = readableTextOn(color),
         fontSize = TasSizes.XSmallFont,
         lineHeight = TasSizes.XSmallFont,
         fontWeight = FontWeight.SemiBold,

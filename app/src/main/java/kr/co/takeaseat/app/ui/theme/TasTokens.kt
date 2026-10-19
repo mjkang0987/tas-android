@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
 // 웹에서 바뀌면 여기도 같이 바꾼다. 쓰는 것만 옮기고, 화면이 늘 때 필요한 토큰을 더한다.
 object TasColors {
     val Black = Color.hsl(0f, 0f, 0.13f)                       // --black-color
-    val DarkGray2 = Color.hsl(0f, 0f, 0.45f)                   // --dark-gray-color2
+    val DarkGray2 = Color.hsl(0f, 0f, 0.43f)                   // --dark-gray-color2 (옅은 회색 바탕 4.8, 예전 45% 4.43)
     val White = Color.hsl(0f, 0f, 1f)                          // --white-color
     val White60 = Color.hsl(0f, 0f, 1f, alpha = 0.6f)          // --white-color-60
     val Brand = Color(0x65, 0x26, 0xD9)                        // --brand-color #6526d9
@@ -35,7 +35,7 @@ object TasColors {
     val Info = Color(0x16, 0x60, 0xCC)                         // --info-color #1660cc (대비 4.5 이상, 예전 #2d7ff9)
     val InfoBg = Color(45, 127, 249).copy(alpha = 0.1f)        // --info-bg (배경은 그대로)
     val InfoBorder = Color(45, 127, 249).copy(alpha = 0.2f)    // --info-border
-    val Link = Color(0x42, 0x85, 0xF4)                         // 상세 고객명 #4285F4
+    val Link = Color(0x19, 0x67, 0xD2)                         // 상세 고객명 #1967D2 (대비 5.3, 예전 #4285F4 3.6)
     val Scrim = Color(15, 23, 42).copy(alpha = 0.4f)           // StyledOverlay 배경
     val ModalBorder = Color(148, 163, 184).copy(alpha = 0.22f) // --modal-border
     val ModalHeaderBorder = Color(148, 163, 184).copy(alpha = 0.18f) // --modal-header-border
