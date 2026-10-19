@@ -1,0 +1,58 @@
+package kr.co.takeaseat.app.domain
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class CustomerListTest {
+    private val today = "2026-10-19"
+    private fun r(id: Int, date: String, start: String, status: String? = ReservationStatus.ACTIVE, service: String = "커트") =
+        Reservation(id = id, date = date, startTime = start, endTime = start, service = service, customerId = 1, status = status)
+
+    @Test fun `초성 검색`() {
+        assertEquals("ㄱㅁㅅ", chosungOf("김민수"))
+        assertTrue(matchesChosung("김민수", "ㅁㅅ"))
+        assertFalse(matchesChosung("김민수", "ㄱ민")) // 초성만으로 된 질의가 아니면 X
+        assertFalse(matchesChosung("김민수", ""))
+    }
+
+    @Test fun `통계 - 지난 진행은 완료, 최근 서비스는 취소·노쇼 빼고 가장 늦은 것`() {
+        val list = listOf(
+            r(1, "2026-10-01", "10:00", service = "옛날"), r(2, "2026-10-25", "11:00", service = "다음주"),
+            r(3, "2026-10-30", "10:00", ReservationStatus.CANCELLED, "취소된"), r(4, "2026-10-19", "09:00", ReservationStatus.NOSHOW),
+            r(5, "2026-10-19", "15:00", ReservationStatus.COMPLETED, "오늘"),
+        )
+        val s = customerStats(list, today)
+        assertEquals("다음주", s.recentService)
+        assertEquals(1, s.count(CustomerReservationGroup.Booked))
+        assertEquals(2, s.count(CustomerReservationGroup.Completed))
+        assertEquals(1, s.count(CustomerReservationGroup.Cancelled))
+        assertEquals(1, s.count(CustomerReservationGroup.Noshow))
+        assertNull(customerStats(emptyList(), today).recentService)
+        // 묶음: 예약·완료·취소·노쇼 차례, 안은 미래 → 과거
+        val groups = groupedCustomerReservations(list, today)
+        assertEquals(listOf(CustomerReservationGroup.Booked, CustomerReservationGroup.Completed, CustomerReservationGroup.Cancelled, CustomerReservationGroup.Noshow), groups.map { it.first })
+        assertEquals(listOf(5, 1), groups[1].second.map { it.id })
+    }
+
+    @Test fun `정렬 - 영문 먼저, 가나다, 삭제 고객 제외`() {
+        val list = listOf(Customer(1, "하늘", ""), Customer(2, "Amy", ""), Customer(3, "가람", ""), Customer(4, "삭제된 고객", "", deleted = true))
+        assertEquals(listOf("Amy", "가람", "하늘"), customerListOrder(list).map { it.name })
+    }
+
+    @Test fun `검색 - 이름·초성·연락처(하이픈 무시)·메모 태그`() {
+        val list = listOf(
+            Customer(1, "김민지", "01012345678", memoTags = listOf(CustomerMemoTag("VIP 단골", "#9334E6"))),
+            Customer(2, "Bob", "01099990000"),
+        )
+        assertEquals(listOf(1), searchCustomers(list, "민지").map { it.customer.id })
+        assertEquals(listOf(1), searchCustomers(list, "ㄱㅁ").map { it.customer.id })
+        assertEquals(listOf(2), searchCustomers(list, "9999-0000").map { it.customer.id })
+        assertEquals(listOf(2), searchCustomers(list, "bob").map { it.customer.id })
+        val byTag = searchCustomers(list, "vip").single()
+        assertEquals("VIP 단골", byTag.matchedTags.single().text)
+        assertEquals(2, searchCustomers(list, "  ").size)
+    }
+}

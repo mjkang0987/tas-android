@@ -88,7 +88,8 @@ private fun Modifier.formControl(focused: Boolean, compact: Boolean = false): Mo
         .clip(shape)
         .background(TasColors.White)
         .border(1.dp, if (focused) TasColors.Brand else TasColors.LightGray, shape)
-        .height(if (compact) 30.dp else 36.dp)
+        // 최소 높이 — 큰 글자(시스템 글꼴 크기)에선 글자에 맞춰 늘어난다(고정이면 글자가 잘렸다)
+        .heightIn(min = if (compact) 30.dp else 36.dp)
 }
 
 @Composable
