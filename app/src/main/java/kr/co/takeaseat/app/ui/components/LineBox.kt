@@ -20,7 +20,12 @@ private const val INK_CENTER_EM = 0.38f
  *   11:6 로 어긋났다). 그래서 상자가 아니라 기준선으로 맞춘다.
  * 한 줄짜리 글자에만 쓴다.
  */
-fun Modifier.lineBox(lineHeight: TextUnit, fontSize: TextUnit): Modifier = layout { measurable, constraints ->
+fun Modifier.lineBox(lineHeight: TextUnit, fontSize: TextUnit): Modifier {
+    require(lineHeight.isSp && fontSize.isSp) { "lineBox 는 sp 만 받는다(em 은 글자 크기 없이는 픽셀로 못 바꾼다)" }
+    return lineBoxLayout(lineHeight, fontSize)
+}
+
+private fun Modifier.lineBoxLayout(lineHeight: TextUnit, fontSize: TextUnit): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
     val height = lineHeight.roundToPx().coerceIn(constraints.minHeight, constraints.maxHeight)
     val baseline = placeable[FirstBaseline]

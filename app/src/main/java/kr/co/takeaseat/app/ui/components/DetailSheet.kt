@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -51,7 +50,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -98,13 +96,9 @@ fun DetailSheet(
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         ) {
             // 바깥을 누르면 닫는다. 시트와 **형제**로 둔다 — 부모에 clickable 을 걸면 시트 안 글자가 전부 그 하나로 합쳐져
-            // 화면 낭독기가 행을 하나씩 읽지 못했다. 낭독기에선 닫기 버튼·뒤로가기가 같은 일을 해 이 영역은 숨긴다.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
-                    .clearAndSetSemantics {},
-            )
+            // 화면 낭독기가 행을 하나씩 읽지 못했다. clickable 대신 손가락 탭만 받는다 — clickable 이면 보이지 않는 화면 전체가
+            // 키보드·낭독기 초점이 된다. 그쪽은 닫기 버튼·뒤로가기가 같은 일을 한다.
+            Box(Modifier.matchParentSize().pointerInput(onDismiss) { detectTapGestures { onDismiss() } })
             // 웹: 640px 이하 바텀시트, 넘으면 가운데 창(폭 min(360, 90%), 높이 80%, 10 둥글게).
             val wide = maxWidth > 640.dp
             val shape = if (wide) TasShapes.Modal else TasShapes.SheetTop

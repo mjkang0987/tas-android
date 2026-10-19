@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -49,7 +50,6 @@ import kr.co.takeaseat.app.ui.components.NewCustomerBadge
 import kr.co.takeaseat.app.ui.components.ServiceChipList
 import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.hexColor
-import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -115,11 +115,12 @@ fun ReservationDetailView(
                             fontSize = TasSizes.XSmallFont,
                             lineHeight = TasSizes.XSmallFont,
                             fontWeight = FontWeight.SemiBold,
+                            // 웹 태그는 최소 22 에 글이 길면 줄을 바꿔 커진다 — 한 줄 상자(lineBox)를 쓰지 않는다.
                             modifier = Modifier
-                                .heightIn(min = 22.dp)
                                 .background(hexColor(tag.color), TasShapes.Chip)
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
-                                .lineBox(18.sp, TasSizes.XSmallFont),
+                                .heightIn(min = 18.dp)
+                                .wrapContentHeight(Alignment.CenterVertically),
                         )
                     }
                 }
@@ -156,7 +157,7 @@ private fun PaymentValue(reservation: Reservation) {
         }
         val deposit = reservation.naverDeposit ?: 0
         val depositRows = entries.filter { it.method == "네이버 예약금" }.sumOf { it.amount }
-        if (reservation.naverBookingId != null && deposit > 0 && depositRows != deposit) NaverDepositLine(deposit)
+        if (!reservation.naverBookingId.isNullOrEmpty() && deposit > 0 && depositRows != deposit) NaverDepositLine(deposit)
     }
 }
 
@@ -209,6 +210,8 @@ private fun NaverBookingInfo(bookingId: String, bookingUrl: String?) {
         lineHeight = 1.45.em,
         modifier = Modifier
             .padding(top = 8.dp)
+            // 따로 읽는다 — 행에 합치면 바로가기보다 먼저 읽혀 보이는 차례와 어긋난다.
+            .semantics(mergeDescendants = true) {}
             .background(Color(3, 199, 90).copy(alpha = 0.08f), RoundedCornerShape(8.dp))
             .padding(horizontal = 10.dp, vertical = 9.dp),
     )

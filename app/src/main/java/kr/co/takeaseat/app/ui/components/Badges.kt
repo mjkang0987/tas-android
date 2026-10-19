@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
@@ -99,6 +100,9 @@ fun ServiceChipList(
                 fontSize = TasSizes.XSmallFont,
                 lineHeight = TasSizes.XSmallFont,
                 fontWeight = FontWeight.SemiBold,
+                // 한 줄 상자(lineBox)라 줄이 넘치면 알약 밖으로 그려진다 — 한 줄로 두고 넘치면 말줄임.
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .background(color.copy(alpha = 0x18 / 255f), TasShapes.Chip)
                     .padding(horizontal = 7.dp, vertical = 3.dp)
