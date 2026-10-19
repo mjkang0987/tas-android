@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -95,6 +97,9 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val ordered = remember(snapshot.customers) { customerListOrder(snapshot.customers) }
     val matches = remember(ordered, query) { searchCustomers(ordered, query) }
     val byCustomer = remember(snapshot.reservations) { snapshot.reservations.groupBy { it.customerId } }
+    // 고객별 통계는 예약이 바뀔 때만 — 검색어를 칠 때마다 행마다 다시 세지 않게
+    val statsById = remember(byCustomer, today) { byCustomer.mapValues { (_, list) -> customerStats(list, today) } }
+    val assigneeNames = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.name } }
     val serviceColorMap = remember(snapshot.services, snapshot.categoryBaseColors) { buildServiceColorMap(snapshot.services, snapshot.categoryBaseColors) }
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
@@ -104,7 +109,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .heightIn(min = 48.dp)
                 .drawBehind { drawRect(TasColors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
                 .padding(horizontal = 10.dp),
             contentAlignment = Alignment.CenterStart,
@@ -146,13 +151,13 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                 val open = customer.id in openIds
                 CustomerRow(
                     customer = customer,
-                    stats = customerStats(reservations, today),
+                    stats = statsById[customer.id] ?: customerStats(emptyList(), today),
                     matchedTags = match.matchedTags,
                     open = open,
                     onToggle = { openIds = if (open) openIds - customer.id else openIds + customer.id },
                     serviceColorMap = serviceColorMap,
                 ) {
-                    CustomerExpanded(customer, reservations, today, serviceColorMap, assigneeColors, snapshot.assignees.associate { it.id to it.name }, snapshot.services) { detailId = it.id }
+                    CustomerExpanded(customer, reservations, today, serviceColorMap, assigneeColors, assigneeNames, snapshot.services) { detailId = it.id }
                 }
             }
             item { Box(Modifier.height(16.dp)) }
@@ -209,14 +214,20 @@ private fun CustomerRow(
                 Text(customer.name, color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 // 웹 tel: 링크 — 누르면 전화 앱(번호만 채움)
-                Text(
-                    formatTel(customer.tel),
-                    color = TasColors.DarkGray,
-                    fontSize = 14.sp,
-                    modifier = Modifier.clickable(role = Role.Button, onClickLabel = "전화 걸기") {
-                        runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${customer.tel}"))) }
-                    },
-                )
+                if (customer.tel.isNotBlank()) {
+                    Text(
+                        formatTel(customer.tel),
+                        color = TasColors.DarkGray,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            // 누르는 영역 높이 24 이상(WCAG 2.5.8) — 글자 줄(약 19)보다 조금 키운다
+                            .heightIn(min = 24.dp)
+                            .wrapContentHeight(Alignment.CenterVertically)
+                            .clickable(role = Role.Button, onClickLabel = "전화 걸기") {
+                                runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${customer.tel}"))) }
+                            },
+                    )
+                }
               }
                 // 웹 StyledArrow — 오른쪽 작은 삼각형(펼치면 아래로)
                 Box(
@@ -240,10 +251,18 @@ private fun CustomerRow(
                 Text("최근 서비스", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
                 if (stats.recentService != null) ServiceChipList(stats.recentService, serviceColorMap) else Text("-", fontSize = TasSizes.SmallFont, color = TasColors.Black)
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
-                Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            // 자리가 모자라면(좁은 폰·큰 글자) 상태 배지가 아랫줄로 내려간다(웹 flex-wrap)
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
+                    Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     StatusBadge("booked", "예약(${stats.count(CustomerReservationGroup.Booked)})")
                     StatusBadge("cancelled", "취소(${stats.count(CustomerReservationGroup.Cancelled)})")
                     StatusBadge("completed", "완료(${stats.count(CustomerReservationGroup.Completed)})")
