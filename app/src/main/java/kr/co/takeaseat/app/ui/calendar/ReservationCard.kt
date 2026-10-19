@@ -182,7 +182,7 @@ private fun Modifier.cardBorder(color: Color) = drawBehind {
  * 웹 `inactiveHatch` — repeating-linear-gradient(-45deg, 줄 0 6px, 투명 6px 12px).
  * 취소는 무채색, 노쇼는 붉은 기운(매출이 빈 자리라 눈에 걸려야 한다).
  */
-private fun Modifier.inactiveHatch(noshow: Boolean) = drawBehind {
+internal fun Modifier.inactiveHatch(noshow: Boolean) = drawBehind {
     val stripe = if (noshow) Color(201, 58, 48).copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.05f)
     val step = 12.dp.toPx() / sqrt(2f)
     drawRect(
