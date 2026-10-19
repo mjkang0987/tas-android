@@ -40,7 +40,7 @@ fun NewCustomerBadge(modifier: Modifier = Modifier) {
             .widthIn(min = 14.dp)
             .background(TasColors.NewCustomerBg, TasShapes.RadiusSm)
             .padding(horizontal = 4.dp, vertical = 2.dp)
-            .lineBox(10.sp), // 웹 높이 14 = 줄 10(line-height 1) + 2·2
+            .lineBox(10.sp, TasSizes.TinyFont), // 웹 높이 14 = 줄 10(line-height 1) + 2·2
     )
 }
 
@@ -60,13 +60,15 @@ fun LabelBadge(text: String, tone: LabelTone, modifier: Modifier = Modifier, pil
         text = text,
         color = tone.text,
         fontSize = fontSize,
+        lineHeight = fontSize,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         modifier = modifier
             .background(tone.bg, shape)
             .border(1.dp, tone.border, shape)
-            .padding(horizontal = 6.dp, vertical = 3.dp)
-            .lineBox((fontSize.value * 1.2f).sp),
+            // 웹은 1px 테두리가 패딩 바깥에 붙는다(높이 = 1 + 3 + 줄 + 3 + 1). 안드로이드 border 는 안쪽에 그려 1dp 를 더한다.
+            .padding(horizontal = 7.dp, vertical = 4.dp)
+            .lineBox((fontSize.value * 1.2f).sp, fontSize),
     )
 }
 
@@ -94,12 +96,12 @@ fun ServiceChipList(
                 text = name,
                 color = if (muted) TasColors.DarkGray2 else color,
                 fontSize = TasSizes.XSmallFont,
-                lineHeight = 1.2.em,
+                lineHeight = TasSizes.XSmallFont,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
                     .background(color.copy(alpha = 0x18 / 255f), TasShapes.Chip)
                     .padding(horizontal = 7.dp, vertical = 3.dp)
-                    .lineBox(13.2.sp), // 웹 칩 19.2 = 11 × 1.2 + 3·2
+                    .lineBox(13.2.sp, TasSizes.XSmallFont), // 웹 칩 19.2 = 11 × 1.2 + 3·2
             )
         }
     }
@@ -124,12 +126,13 @@ fun StatusBadge(type: String, text: String, modifier: Modifier = Modifier) {
         text = text,
         color = hexColor(colors.color),
         fontSize = TasSizes.XSmallFont,
+        lineHeight = TasSizes.XSmallFont, // 줄높이를 글자 크기로 — 1.2em 이면 한글이 아래로 2dp 처져 보였다(신규 배지와 같은 방식)
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
         modifier = modifier
             .background(hexColor(colors.bg), TasShapes.RadiusSm)
             .padding(horizontal = 8.dp, vertical = 3.dp)
-            .lineBox(13.2.sp),
+            .lineBox(14.sp, TasSizes.XSmallFont), // 웹 높이 20 = 3 + 14 + 3
     )
 }
 
@@ -140,11 +143,12 @@ fun AssigneeLabel(name: String, color: Color, modifier: Modifier = Modifier) {
         text = name,
         color = Color.White,
         fontSize = TasSizes.XSmallFont,
+        lineHeight = TasSizes.XSmallFont,
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
         modifier = modifier
             .background(color, TasShapes.Chip)
             .padding(horizontal = 8.dp, vertical = 2.dp)
-            .lineBox(13.2.sp),
+            .lineBox(14.sp, TasSizes.XSmallFont), // 웹 높이 18 = 2 + 14 + 2
     )
 }

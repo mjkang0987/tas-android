@@ -104,7 +104,7 @@ fun ReservationCard(
                     fontWeight = FontWeight.SemiBold,
                     style = LocalTextStyle.current.merge(TabularNums),
                     maxLines = 1,
-                    modifier = Modifier.lineBox(14.5.sp), // 웹 실측
+                    modifier = Modifier.lineBox(14.5.sp, TasSizes.SmallFont), // 웹 실측
                 )
                 if (!customerName.isNullOrEmpty()) {
                     // 웹 .detail 줄 = 신규 배지 높이 14
@@ -116,7 +116,7 @@ fun ReservationCard(
                             fontSize = TasSizes.TinyFont,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.lineBox(11.5.sp),
+                            modifier = Modifier.lineBox(11.5.sp, TasSizes.TinyFont),
                         )
                     }
                 }
@@ -142,7 +142,7 @@ fun ReservationCard(
                         textDecoration = decoration,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth().lineBox(12.sp), // 10 × 1.2
+                        modifier = Modifier.fillMaxWidth().lineBox(12.sp, TasSizes.TinyFont), // 10 × 1.2
                     )
                 }
             }

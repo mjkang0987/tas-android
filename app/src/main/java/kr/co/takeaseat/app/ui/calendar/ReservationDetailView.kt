@@ -109,12 +109,13 @@ fun ReservationDetailView(
                             tag.text,
                             color = Color.White,
                             fontSize = TasSizes.XSmallFont,
+                            lineHeight = TasSizes.XSmallFont,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .heightIn(min = 22.dp)
                                 .background(hexColor(tag.color), TasShapes.Chip)
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
-                                .lineBox(18.sp),
+                                .lineBox(18.sp, TasSizes.XSmallFont),
                         )
                     }
                 }
