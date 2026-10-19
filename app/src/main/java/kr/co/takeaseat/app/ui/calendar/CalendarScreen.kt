@@ -16,6 +16,10 @@ import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
+import kr.co.takeaseat.app.domain.assigneeColor
+import kr.co.takeaseat.app.domain.servicePriceTotal
+import kr.co.takeaseat.app.domain.storeLabels
+import kr.co.takeaseat.app.ui.components.DetailSheet
 import kr.co.takeaseat.app.domain.buildAssigneeColorMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.firstVisitDates
@@ -65,6 +69,10 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     }
 
     val scrollState = rememberScrollState()
+    // 열린 예약 상세 — 회전해도 유지
+    var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
+
     Column(modifier.fillMaxSize()) {
         CalendarHeader(date = date, onDateChange = { dateKey = it.toDateKey() })
         DayTimeline(
@@ -75,7 +83,26 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
             isToday = date == today,
             closedKind = storeClosedKind(snapshot.storeSettings, dateKey),
             scrollState = scrollState,
+            onReservationClick = { detailId = it },
             modifier = Modifier.weight(1f),
         )
+    }
+
+    val detail = detailId?.let { id -> snapshot.reservations.firstOrNull { it.id == id } }
+    if (detail != null) {
+        val customer = customers[detail.customerId]
+        val assignee = detail.assigneeId?.let { id -> snapshot.assignees.firstOrNull { it.id == id } }
+        DetailSheet(title = customer?.name ?: "예약 상세", onDismiss = { detailId = null }) {
+            ReservationDetailView(
+                reservation = detail,
+                customer = customer,
+                isNewCustomer = isNewCustomerVisit(firstVisit[detail.customerId], detail.date),
+                displayPrice = detail.price ?: servicePriceTotal(detail.service, snapshot.services),
+                assigneeName = assignee?.name ?: "미지정",
+                assigneeColor = hexColor(assignee?.let { assigneeColor(it) } ?: UNASSIGNED_COLOR),
+                serviceColorMap = serviceColorMap,
+                labels = labels,
+            )
+        }
     }
 }
