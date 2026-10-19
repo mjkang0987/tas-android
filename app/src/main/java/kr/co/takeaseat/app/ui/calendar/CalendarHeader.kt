@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,7 +30,6 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -40,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import kr.co.takeaseat.app.ui.components.ChevronDownIcon
+import kr.co.takeaseat.app.ui.components.SystemDialogEffect
 import kr.co.takeaseat.app.ui.components.svgLineIcon
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
@@ -47,23 +47,14 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
  * 웹 헤더 1줄(`CalendarDirection` + `CalendarHeading`) — 일 뷰 기준.
- * 날짜를 누르면 시스템 날짜 선택이 뜬다(웹도 네이티브 `<input type="date">`).
- * shortcut: + 예약 버튼은 예약 추가 화면이 생길 때 붙인다.
+ * 날짜를 누르면 시스템 날짜 선택이 뜬다(웹도 네이티브 `<input type="date">`). 오른쪽 끝은 모바일 '+ 예약'.
  */
 @Composable
-fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    // 대화상자를 컴포지션에 묶는다 — 화면이 사라지면 닫고(창 누수 방지), 회전하면 다시 띄운다.
+fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate: () -> Unit, modifier: Modifier = Modifier) {
     var picking by rememberSaveable { mutableStateOf(false) }
     if (picking) {
-        DisposableEffect(Unit) {
-            val dialog = DatePickerDialog(context, { _, y, m, d -> onDateChange(LocalDate.of(y, m + 1, d)) }, date.year, date.monthValue - 1, date.dayOfMonth)
-            dialog.setOnDismissListener { picking = false }
-            dialog.show()
-            onDispose {
-                dialog.setOnDismissListener(null)
-                dialog.dismiss()
-            }
+        SystemDialogEffect(onDismissed = { picking = false }) {
+            DatePickerDialog(it, { _, y, m, d -> onDateChange(LocalDate.of(y, m + 1, d)) }, date.year, date.monthValue - 1, date.dayOfMonth)
         }
     }
     // 웹: header padding 4 10 2 + 줄 padding 3 0 5
@@ -102,8 +93,24 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, modifier:
                     maxLines = 1,
                     modifier = Modifier.clearAndSetSemantics {},
                 )
-                Icon(chevronDown, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
+                Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
             }
+        }
+        // 웹 StyledMobileAddPill — 보라 알약 32, 좌 9·우 13, 보라 그림자 0 4 12
+        Row(
+            Modifier
+                .height(32.dp)
+                .dropShadow(TasShapes.Chip, Shadow(radius = 12.dp, color = TasColors.BrandShadow, offset = DpOffset(0.dp, 4.dp)))
+                .clip(TasShapes.Chip)
+                .background(TasColors.Brand)
+                .clickable(role = Role.Button, onClick = onCreate)
+                .semantics { contentDescription = "예약 추가" }
+                .padding(start = 9.dp, end = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Icon(plusIcon, contentDescription = null, tint = TasColors.White, modifier = Modifier.size(15.dp))
+            Text("예약", color = TasColors.White, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clearAndSetSemantics {})
         }
     }
 }
@@ -136,8 +143,8 @@ private fun PillButton(
     ) { content() }
 }
 
-// 웹 DirectionIcon(viewBox 32) · CalendarHeading 셰브론(viewBox 24) 경로 그대로.
+// 웹 DirectionIcon(viewBox 32) 경로 그대로.
 private val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
 private val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
 
-private val chevronDown: ImageVector = svgLineIcon(24f, listOf("M6 9.5L12 15.5L18 9.5"), strokeWidth = 2.2f)
+private val plusIcon: ImageVector = svgLineIcon(24f, listOf("M12 5v14M5 12h14"), strokeWidth = 2.3f)
