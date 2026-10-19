@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import kr.co.takeaseat.app.ui.components.AddPill
 import kr.co.takeaseat.app.ui.components.ChevronDownIcon
 import kr.co.takeaseat.app.ui.components.SystemDialogEffect
 import kr.co.takeaseat.app.ui.components.svgLineIcon
@@ -96,22 +97,7 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate:
                 Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
             }
         }
-        // 웹 StyledMobileAddPill — 보라 알약 32, 좌 9·우 13, 보라 그림자 0 4 12
-        Row(
-            Modifier
-                .height(32.dp)
-                .dropShadow(TasShapes.Chip, Shadow(radius = 12.dp, color = TasColors.BrandShadow, offset = DpOffset(0.dp, 4.dp)))
-                .clip(TasShapes.Chip)
-                .background(TasColors.Brand)
-                .clickable(role = Role.Button, onClick = onCreate)
-                .semantics { contentDescription = "예약 추가" }
-                .padding(start = 9.dp, end = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
-        ) {
-            Icon(plusIcon, contentDescription = null, tint = TasColors.White, modifier = Modifier.size(15.dp))
-            Text("예약", color = TasColors.White, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clearAndSetSemantics {})
-        }
+        AddPill("예약", description = "예약 추가", onClick = onCreate)
     }
 }
 
@@ -146,5 +132,3 @@ private fun PillButton(
 // 웹 DirectionIcon(viewBox 32) 경로 그대로.
 private val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
 private val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
-
-private val plusIcon: ImageVector = svgLineIcon(24f, listOf("M12 5v14M5 12h14"), strokeWidth = 2.3f)
