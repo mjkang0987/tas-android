@@ -74,6 +74,7 @@ fun DayTimeline(
     isToday: Boolean,
     closedKind: StoreClosedKind?,
     scrollState: ScrollState,
+    onReservationClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val hourHeight = scale.hourHeight.dp
@@ -131,6 +132,7 @@ fun DayTimeline(
                         customerName = item.customerName,
                         isNewCustomer = item.isNewCustomer,
                         serviceColorMap = serviceColorMap,
+                        onClick = { onReservationClick(r.id) },
                         modifier = Modifier
                             .offset(x = CARD_INSET_LEFT + (width + LANE_GAP) * lane.index, y = top)
                             .size(width, height),

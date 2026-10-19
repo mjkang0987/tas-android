@@ -1,6 +1,7 @@
 package kr.co.takeaseat.app.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +23,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -41,7 +45,8 @@ import kr.co.takeaseat.app.domain.ReservationStatus
 import kr.co.takeaseat.app.domain.cardDetailForHeight
 import kr.co.takeaseat.app.ui.components.NewCustomerBadge
 import kr.co.takeaseat.app.ui.components.ServiceChipList
-import kr.co.takeaseat.app.ui.components.WarningPillBadge
+import kr.co.takeaseat.app.ui.components.LabelBadge
+import kr.co.takeaseat.app.ui.components.LabelTone
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
@@ -59,8 +64,10 @@ fun ReservationCard(
     customerName: String?,
     isNewCustomer: Boolean,
     serviceColorMap: Map<String, String>,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val openDetail = onClick // 아래 semantics 블록의 onClick(...) 과 이름이 겹치지 않게
     val status = reservation.status
     val cancelled = status == ReservationStatus.CANCELLED || status == ReservationStatus.NOSHOW
     val noshow = status == ReservationStatus.NOSHOW
@@ -74,8 +81,13 @@ fun ReservationCard(
             .clip(TasShapes.RadiusSm)
             .then(if (cancelled) Modifier.background(TasColors.Gray2).inactiveHatch(noshow) else Modifier.background(color.copy(alpha = 0x12 / 255f)))
             .cardBorder(borderColor)
+            .clickable(role = Role.Button, onClickLabel = "예약 상세 보기", onClick = openDetail)
             // 한 문장으로만 읽는다 — 안의 시각·이름·칩까지 합치면 같은 내용을 두 번 읽는다.
-            .clearAndSetSemantics { contentDescription = reservationLabel(reservation, customerName, isNewCustomer) },
+            .clearAndSetSemantics {
+                contentDescription = reservationLabel(reservation, customerName, isNewCustomer)
+                role = Role.Button
+                onClick(label = "예약 상세 보기") { openDetail(); true }
+            },
     ) {
         // 웹 카드는 <button> 이라 내용이 세로 가운데에 놓인다. 왼쪽 4px 막대 + 상하좌우 2px(모바일).
         Column(
@@ -92,7 +104,7 @@ fun ReservationCard(
                     fontWeight = FontWeight.SemiBold,
                     style = LocalTextStyle.current.merge(TabularNums),
                     maxLines = 1,
-                    modifier = Modifier.lineBox(14.5.sp), // 웹 실측
+                    modifier = Modifier.lineBox(14.5.sp, TasSizes.SmallFont), // 웹 실측
                 )
                 if (!customerName.isNullOrEmpty()) {
                     // 웹 .detail 줄 = 신규 배지 높이 14
@@ -104,11 +116,11 @@ fun ReservationCard(
                             fontSize = TasSizes.TinyFont,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.lineBox(11.5.sp),
+                            modifier = Modifier.lineBox(11.5.sp, TasSizes.TinyFont),
                         )
                     }
                 }
-                ServiceChipList(reservation.service, serviceColorMap, muted = cancelled)
+                ServiceChipList(reservation.service, serviceColorMap, muted = cancelled, gap = 4.dp)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     if (isNewCustomer) NewCustomerBadge()
@@ -130,7 +142,7 @@ fun ReservationCard(
                         textDecoration = decoration,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth().lineBox(12.sp), // 10 × 1.2
+                        modifier = Modifier.fillMaxWidth().lineBox(12.sp, TasSizes.TinyFont), // 10 × 1.2
                     )
                 }
             }
@@ -138,7 +150,7 @@ fun ReservationCard(
         if (status == ReservationStatus.REQUESTED) {
             // 아직 수락 전인 신청 — 있지만 정해지지 않았다
             Box(Modifier.matchParentSize().background(Color.White.copy(alpha = 0.72f)))
-            if (height >= 34.dp) WarningPillBadge("확정대기", Modifier.align(Alignment.Center))
+            if (height >= 34.dp) LabelBadge("확정대기", LabelTone.Warning, Modifier.align(Alignment.Center), pill = true)
         }
     }
 }

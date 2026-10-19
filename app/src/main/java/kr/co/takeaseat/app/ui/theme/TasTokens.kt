@@ -31,10 +31,21 @@ object TasColors {
     val ClosedDateBg = Color(201, 58, 48).copy(alpha = 0.07f)  // --closed-date-bg
     val ClosedWeekdayBg = Color(0, 0, 0).copy(alpha = 0.05f)   // --closed-weekday-bg
     val Icon = Color(0x11, 0x18, 0x27)                         // DirectionIcon stroke #111827
+    val LightGray = Color.hsl(0f, 0f, 0.89f)                   // --light-gray-color
+    val Info = Color(0x16, 0x60, 0xCC)                         // --info-color #1660cc (대비 4.5 이상, 예전 #2d7ff9)
+    val InfoBg = Color(45, 127, 249).copy(alpha = 0.1f)        // --info-bg (배경은 그대로)
+    val InfoBorder = Color(45, 127, 249).copy(alpha = 0.2f)    // --info-border
+    val Link = Color(0x42, 0x85, 0xF4)                         // 상세 고객명 #4285F4
+    val Scrim = Color(15, 23, 42).copy(alpha = 0.4f)           // StyledOverlay 배경
+    val ModalBorder = Color(148, 163, 184).copy(alpha = 0.22f) // --modal-border
+    val ModalHeaderBorder = Color(148, 163, 184).copy(alpha = 0.18f) // --modal-header-border
+    val BgSubtle92 = Color(248, 250, 252).copy(alpha = 0.92f)  // --bg-subtle-92
+    val BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f)  // --bg-subtle-98
 }
 
 object TasSizes {
     val LargeFont = 16.sp                                      // --large-font
+    val MediumFont = 13.sp                                     // --medium-font
     val SmallFont = 12.sp                                      // --small-font
     val XSmallFont = 11.sp                                     // --xsmall-font
     val TinyFont = 10.sp                                       // --tiny-font
@@ -48,4 +59,7 @@ object TasSizes {
 object TasShapes {
     val Chip = RoundedCornerShape(percent = 50)                // --chip-radius: 999px
     val RadiusSm = RoundedCornerShape(4.dp)                    // --radius-sm
+    val RadiusMd = RoundedCornerShape(6.dp)                    // --radius-md
+    val SheetTop = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp) // --modal-radius-mobile, 바텀시트
+    val Modal = RoundedCornerShape(10.dp)                      // --modal-radius, 넓은 화면 가운데 창
 }
