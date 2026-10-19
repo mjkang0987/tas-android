@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import kr.co.takeaseat.app.domain.Customer
 import kr.co.takeaseat.app.domain.Reservation
@@ -221,8 +223,8 @@ private fun NaverBookingInfo(bookingId: String, bookingUrl: String?) {
 
 /** 웹 dt(60, 13 500 #525252) + dd(13). 낭독기는 항목명·값을 한 번에 읽는다(누를 수 있는 값은 따로 남는다). */
 @Composable
-private fun DetailRow(term: String, value: @Composable ColumnScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+private fun DetailRow(term: String, gap: androidx.compose.ui.unit.Dp = 12.dp, value: @Composable ColumnScope.() -> Unit) {
+    Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(gap)) {
         Text(
             term,
             color = TasColors.DarkGray,
@@ -242,4 +244,38 @@ private fun DetailText(
     style: androidx.compose.ui.text.TextStyle = LocalTextStyle.current,
 ) {
     Text(text, color = color, fontSize = TasSizes.MediumFont, style = style, modifier = modifier)
+}
+
+/**
+ * 웹 `ReservationStaticDiffSection`(취소·노쇼 확인) / 예약 전환 확인창 본문 — 색 문구 + 서비스·날짜·시간·고객명.
+ * [boxed] = 취소·노쇼(옅은 회색 상자, 간격 4/10). 예약 전환은 상자 없이 간격 8/12, 문구 아래 16.
+ */
+@Composable
+internal fun ReservationConfirmSummary(
+    message: String,
+    color: Color,
+    reservation: Reservation,
+    customerName: String,
+    labels: StoreLabels,
+    boxed: Boolean = true,
+) {
+    Text(
+        message,
+        color = color,
+        fontSize = 14.sp, // --modal-message-font
+        fontWeight = FontWeight.SemiBold,
+        lineHeight = (14 * 1.55).sp,
+        // 버튼을 누르면 본문이 확인 문구로 바뀐다 — 낭독기가 바뀐 걸 알게 읽어 준다.
+        modifier = Modifier.padding(bottom = if (boxed) 10.dp else 16.dp).semantics { liveRegion = LiveRegionMode.Polite },
+    )
+    Column(
+        (if (boxed) Modifier.fillMaxWidth().background(TasColors.Black10, TasShapes.RadiusMd).padding(12.dp) else Modifier.fillMaxWidth()),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val gap = if (boxed) 10.dp else 12.dp
+        DetailRow(labels.service, gap) { DetailText(reservation.service) }
+        DetailRow("날짜", gap) { DetailText(reservation.date) }
+        DetailRow("시간", gap) { DetailText("${reservation.startTime} ~ ${reservation.endTime}") }
+        DetailRow("고객명", gap) { DetailText(customerName) }
+    }
 }
