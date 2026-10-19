@@ -4,6 +4,23 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import kr.co.takeaseat.app.domain.MEMO_TAG_COLORS
+import kr.co.takeaseat.app.domain.addMemoTag
+import kr.co.takeaseat.app.domain.canAddMemoTag
+import kr.co.takeaseat.app.domain.removeMemoTag
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,7 +100,8 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 /**
  * 웹 `/address`(고객 명단) 모바일 — 헤더 · 소개(CUSTOMER) · 검색(이름·초성·연락처·메모) · 고객 행(펼치면 메모 태그 + 예약 묶음 카드).
  * 예약 카드를 누르면 캘린더와 같은 예약 상세 시트.
- * shortcut: 메모 태그 추가·수정, 고객 추가·병합(선택 체크), 적립금 충전, 고객명 → 고객 상세는 다음 단계(10).
+ * 펼친 행의 메모 태그는 추가·삭제(웹 AddressCustomerTags — 한 번에 한 고객).
+ * shortcut: 고객 추가·병합(선택 체크), 적립금 충전, 고객명 → 고객 상세는 다음 조각(10-2~).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -92,6 +110,10 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var query by rememberSaveable { mutableStateOf("") }
     var openIds by rememberSaveable { mutableStateOf(listOf<Int>()) }
     var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    // 웹 address.tsx — 메모 태그는 한 번에 한 고객만 편집, 입력·고른 색은 화면에 하나
+    var tagEditingId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var tagInput by rememberSaveable { mutableStateOf("") }
+    var tagColor by rememberSaveable { mutableStateOf(MEMO_TAG_COLORS[0].first) }
     val today = LocalDate.now().toDateKey()
 
     val ordered = remember(snapshot.customers) { customerListOrder(snapshot.customers) }
@@ -157,7 +179,30 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     onToggle = { openIds = if (open) openIds - customer.id else openIds + customer.id },
                     serviceColorMap = serviceColorMap,
                 ) {
-                    CustomerExpanded(customer, reservations, today, serviceColorMap, assigneeColors, assigneeNames, snapshot.services) { detailId = it.id }
+                    CustomerExpanded(
+                        reservations, today, serviceColorMap, assigneeColors, assigneeNames, snapshot.services,
+                        memoSection = {
+                            MemoTagSection(
+                                tags = customer.memoTags.orEmpty(),
+                                editing = tagEditingId == customer.id,
+                                input = tagInput,
+                                color = tagColor,
+                                onInput = { tagInput = it },
+                                onColor = { tagColor = it },
+                                onAdd = {
+                                    // 못 더하면(빈 글자·같은 태그) 입력도 그대로 — 웹과 같다
+                                    if (customer.canAddMemoTag(tagInput)) {
+                                        val text = tagInput
+                                        store.update { addMemoTag(it, customer.id, text, tagColor) }
+                                        tagInput = ""
+                                    }
+                                },
+                                onRemove = { text -> store.update { removeMemoTag(it, customer.id, text) } },
+                                onStart = { tagEditingId = customer.id; tagInput = "" },
+                                onFinish = { tagEditingId = null; tagInput = "" },
+                            )
+                        },
+                    ) { detailId = it.id }
                 }
             }
             item { Box(Modifier.height(16.dp)) }
@@ -277,22 +322,17 @@ private fun CustomerRow(
 /** 펼친 행 — 메모 태그(없으면 '메모 없음'), 예약 묶음(예약·완료·취소·노쇼, 카드는 미래 → 과거). */
 @Composable
 private fun CustomerExpanded(
-    customer: Customer,
     reservations: List<Reservation>,
     today: String,
     serviceColorMap: Map<String, String>,
     assigneeColors: Map<Int, String>,
     assigneeNames: Map<Int, String>,
     catalog: List<ServiceItem>,
+    memoSection: @Composable () -> Unit,
     onReservationClick: (Reservation) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        val tags = customer.memoTags.orEmpty()
-        if (tags.isEmpty()) {
-            Text("메모 없음", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont)
-        } else {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { MemoChip(it) } }
-        }
+        memoSection()
         val groups = groupedCustomerReservations(reservations, today)
         if (groups.isEmpty()) {
             Text("등록된 데이터가 없습니다", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
@@ -317,9 +357,119 @@ private fun CustomerExpanded(
     }
 }
 
-/** 메모 태그 — 웹 ColorTag(soft, 4 둥글게). 검색에 걸린 태그는 작게(10, 위아래 1). */
+/**
+ * 웹 AddressCustomerTags — 보기: 태그(없으면 '메모 없음') + '추가'/'수정'.
+ * 편집: 태그마다 ✕ → 색 8개 → 입력(자동 초점, 엔터 = 추가) + '추가' + '완료'.
+ */
 @Composable
-private fun MemoChip(tag: CustomerMemoTag, small: Boolean = false) {
+private fun MemoTagSection(
+    tags: List<CustomerMemoTag>,
+    editing: Boolean,
+    input: String,
+    color: String,
+    onInput: (String) -> Unit,
+    onColor: (String) -> Unit,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit,
+    onStart: () -> Unit,
+    onFinish: () -> Unit,
+) {
+    if (!editing) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (tags.isEmpty()) {
+                Text("메모 없음", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont, modifier = Modifier.weight(1f))
+            } else {
+                FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    tags.forEach { MemoChip(it) }
+                }
+            }
+            MemoButton(if (tags.isEmpty()) "추가" else "수정", onStart, description = if (tags.isEmpty()) "메모 태그 추가" else "메모 태그 수정")
+        }
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (tags.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                tags.forEach { tag -> MemoChip(tag, onRemove = { onRemove(tag.text) }) }
+            }
+        }
+        // 웹 18 동그라미(고른 색은 2px 진회색 테두리) — 누르는 영역은 24
+        Row(Modifier.selectableGroup()) {
+            MEMO_TAG_COLORS.forEach { (hex, name) ->
+                val selected = color == hex
+                Box(
+                    Modifier
+                        .size(24.dp)
+                        .selectable(selected, role = Role.RadioButton) { onColor(hex) }
+                        .semantics { contentDescription = "태그 색 $name" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        Modifier
+                            .size(18.dp)
+                            .background(hexColor(hex), CircleShape)
+                            .border(2.dp, if (selected) TasColors.DarkGray else Color.Transparent, CircleShape),
+                    )
+                }
+            }
+        }
+        val focus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { focus.requestFocus() } // 웹 autoFocus
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TasTextField(
+                label = "메모 태그 입력",
+                value = input,
+                onValueChange = onInput,
+                placeholder = "태그 입력",
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                // 엔터 = 추가, 키보드는 그대로(이어서 칠 수 있게 — 웹과 같다)
+                keyboardActions = KeyboardActions(onDone = { onAdd() }),
+                showLabel = false,
+                compact = true,
+                modifier = Modifier.weight(1f, fill = false).widthIn(max = 200.dp).focusRequester(focus),
+            )
+            MemoButton("추가", onAdd)
+            MemoButton("완료", onFinish)
+        }
+    }
+}
+
+/** 웹 StyledMemoButton — 28 높이, 1px 옅은 회색 테두리, 4 둥글게, 흰 바탕, 10 진회색. */
+@Composable
+private fun MemoButton(text: String, onClick: () -> Unit, description: String = text) {
+    val shape = RoundedCornerShape(4.dp)
+    Box(
+        Modifier
+            .heightIn(min = 28.dp)
+            .clip(shape)
+            .background(TasColors.White)
+            .border(1.dp, TasColors.LightGray, shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description }
+            .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, color = TasColors.DarkGray, fontSize = TasSizes.TinyFont, modifier = Modifier.clearAndSetSemantics {}) }
+}
+
+/**
+ * 메모 태그 — 웹 ColorTag(soft, 4 둥글게). 검색에 걸린 태그는 작게(10, 위아래 1).
+ * [onRemove] 가 있으면 편집 중 — 글자 뒤 ✕(누르는 영역 24, 웹처럼 흐리게 하지 않아 흰 글자 대비 유지).
+ */
+@Composable
+private fun MemoChip(tag: CustomerMemoTag, small: Boolean = false, onRemove: (() -> Unit)? = null) {
+    if (onRemove != null) {
+        Row(Modifier.background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.RadiusSm).padding(start = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(tag.text, color = TasColors.White, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Box(
+                Modifier
+                    .size(24.dp)
+                    .clickable(role = Role.Button, onClick = onRemove)
+                    .semantics { contentDescription = "${tag.text} 태그 삭제" },
+                contentAlignment = Alignment.Center,
+            ) { Text("✕", color = TasColors.White, fontSize = TasSizes.TinyFont, modifier = Modifier.clearAndSetSemantics {}) }
+        }
+        return
+    }
     Text(
         tag.text,
         color = TasColors.White,
