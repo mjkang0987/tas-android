@@ -7,12 +7,14 @@ import java.time.format.DateTimeParseException
 // 웹 `ReservationDetail.tsx` 변경 모드 + `reservationDetailUtils.ts`(buildReservationFormState·buildDraftReservation·getChangedFields·
 // buildSyncedPaidReservation) + `calendarStore.updateReservation`(게스트) 이식. 바꾸기 규칙은 예약 추가와 같은 [ReservationForm] 을 쓴다.
 
-/** 웹 buildReservationFormState — 예약을 폼으로. 서비스는 아는 이름(옛 이름 포함)으로 나눈다. */
-fun ReservationForm.Companion.fromReservation(reservation: Reservation, knownServiceNames: Set<String>) = ReservationForm(
+/**
+ * 웹 buildReservationFormState — 예약을 폼으로. 서비스는 아는 이름(옛 이름 포함)으로 나눈다.
+ * 가격이 없으면 [catalog](매장 카탈로그) 합 — 상세 화면과 같은 값(웹은 기본 카탈로그라 매장 가격을 바꾸면 화면마다 달랐다).
+ */
+fun ReservationForm.Companion.fromReservation(reservation: Reservation, knownServiceNames: Set<String>, catalog: List<ServiceItem>) = ReservationForm(
     customerId = reservation.customerId,
     selectedServices = parseServiceString(reservation.service, knownServiceNames),
-    // 웹 resolveReservationPrice — 가격이 없으면 기본 카탈로그 합(웹이 기본 카탈로그를 쓴다)
-    price = reservation.price ?: servicePriceTotal(reservation.service, SERVICE_CATALOG),
+    price = reservation.price ?: servicePriceTotal(reservation.service, catalog),
     assigneeId = reservation.assigneeId ?: 0,
     date = reservation.date,
     startTime = reservation.startTime,
@@ -47,10 +49,11 @@ fun changedFields(
     assignees: List<Assignee>,
     labels: StoreLabels,
     knownServiceNames: Set<String>,
+    catalog: List<ServiceItem>,
 ): List<ReservationDiff> {
     val draft = draftReservation(original, form, knownServiceNames)
     fun name(id: Int?) = id?.takeIf { it != 0 }?.let { a -> assignees.firstOrNull { it.id == a }?.name } ?: "미지정"
-    val beforePrice = original.price ?: servicePriceTotal(original.service, SERVICE_CATALOG)
+    val beforePrice = original.price ?: servicePriceTotal(original.service, catalog)
     return buildList {
         if (original.service != draft.service) add(ReservationDiff(labels.service, original.service, draft.service))
         if ((original.assigneeId ?: 0) != form.assigneeId) add(ReservationDiff(labels.assignee, name(original.assigneeId), name(form.assigneeId)))
@@ -66,23 +69,23 @@ fun changedFields(
 }
 
 /** 웹 validateForm(변경) — 고객 칸이 없고, 겹침에서 자기 자신은 뺀다. */
-fun validateEdit(original: Reservation, form: ReservationForm, snapshot: LocalDbSnapshot, labels: StoreLabels): CreateError? {
+fun validateEdit(original: Reservation, form: ReservationForm, snapshot: LocalDbSnapshot, labels: StoreLabels): FormError? {
     if (activeAssignees(snapshot.assignees).isNotEmpty() && form.assigneeId == 0) {
-        return CreateError(CreateField.Assignee, "${labels.assignee}를 선택해주세요.")
+        return FormError(FormField.Assignee, "${labels.assignee}를 선택해주세요.")
     }
-    if (form.selectedServices.isEmpty()) return CreateError(CreateField.Service, "${labels.service}를 선택해주세요.")
-    if (form.date.isEmpty()) return CreateError(CreateField.Date, "날짜를 선택해주세요.")
-    if (form.startTime.isEmpty()) return CreateError(CreateField.Time, "시작 시간을 입력해주세요.")
-    if (form.endTime.isEmpty()) return CreateError(CreateField.Time, "종료 시간을 입력해주세요.")
-    if (form.startTime >= form.endTime) return CreateError(CreateField.Time, "시작 시간은 종료 시간보다 앞서야 합니다.")
+    if (form.selectedServices.isEmpty()) return FormError(FormField.Service, "${labels.service}를 선택해주세요.")
+    if (form.date.isEmpty()) return FormError(FormField.Date, "날짜를 선택해주세요.")
+    if (form.startTime.isEmpty()) return FormError(FormField.Time, "시작 시간을 입력해주세요.")
+    if (form.endTime.isEmpty()) return FormError(FormField.Time, "종료 시간을 입력해주세요.")
+    if (form.startTime >= form.endTime) return FormError(FormField.Time, "시작 시간은 종료 시간보다 앞서야 합니다.")
     when (val a = assigneeAvailability(snapshot.assignees, form.assigneeId, form.date, form.startTime, form.endTime)) {
-        is AssigneeAvailability.OffDay -> return CreateError(CreateField.Date, a.message)
-        is AssigneeAvailability.OutsideHours -> return CreateError(CreateField.Time, a.message)
+        is AssigneeAvailability.OffDay -> return FormError(FormField.Date, a.message)
+        is AssigneeAvailability.OutsideHours -> return FormError(FormField.Time, a.message)
         AssigneeAvailability.Available -> Unit
     }
     findOverlap(snapshot.reservations, form.date, form.startTime, form.endTime, excludeId = original.id)?.let { overlap ->
         val name = snapshot.customers.firstOrNull { it.id == overlap.customerId }?.name ?: "-"
-        return CreateError(CreateField.Time, "$name 예약(${overlap.startTime}~${overlap.endTime})과 시간이 겹칩니다.")
+        return FormError(FormField.Time, "$name 예약(${overlap.startTime}~${overlap.endTime})과 시간이 겹칩니다.")
     }
     return null
 }

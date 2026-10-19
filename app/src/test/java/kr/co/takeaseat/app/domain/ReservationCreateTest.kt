@@ -72,7 +72,7 @@ class ReservationCreateTest {
         assertEquals("연락처 형식을 확인해주세요.", validateCreate(valid().copy(customerTel = "0212345678"), base, labels)?.message)
         assertEquals("서비스를 선택해주세요.", validateCreate(valid().toggleService("남성커트", catalog), base, labels)?.message)
         assertEquals("시작 시간은 종료 시간보다 앞서야 합니다.", validateCreate(valid().changeEndTime("09:00"), base, labels)?.message)
-        assertEquals(CreateField.Date, validateCreate(valid().copy(date = "2026-10-18"), base, labels)?.field) // 일요일 휴무
+        assertEquals(FormField.Date, validateCreate(valid().copy(date = "2026-10-18"), base, labels)?.field) // 일요일 휴무
         assertEquals("담당자 1 담당자 근무시간은 10:00~20:00입니다.", validateCreate(valid().copy(startTime = "09:00"), base, labels)?.message)
         assertNull(validateCreate(valid(), base, labels))
         // 기존 고객을 골랐으면 연락처 형식은 보지 않는다(웹과 같다)

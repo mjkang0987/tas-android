@@ -76,36 +76,36 @@ data class ReservationForm(
     }
 }
 
-enum class CreateField { Customer, Service, Assignee, Date, Time }
+enum class FormField { Customer, Service, Assignee, Date, Time }
 
-data class CreateError(val field: CreateField, val message: String)
+data class FormError(val field: FormField, val message: String)
 
 /** 웹 validate() — 같은 순서·같은 문구. */
-fun validateCreate(form: ReservationForm, snapshot: LocalDbSnapshot, labels: StoreLabels): CreateError? {
+fun validateCreate(form: ReservationForm, snapshot: LocalDbSnapshot, labels: StoreLabels): FormError? {
     val isNewCustomer = form.customerId == 0
     if (activeAssignees(snapshot.assignees).isNotEmpty() && form.assigneeId == 0) {
-        return CreateError(CreateField.Assignee, "${labels.assignee}를 선택해주세요.")
+        return FormError(FormField.Assignee, "${labels.assignee}를 선택해주세요.")
     }
-    if (form.customerQuery.isBlank()) return CreateError(CreateField.Customer, "고객명을 입력해주세요.")
-    if (isNewCustomer && form.customerTel.isBlank()) return CreateError(CreateField.Customer, "연락처를 입력해주세요.")
+    if (form.customerQuery.isBlank()) return FormError(FormField.Customer, "고객명을 입력해주세요.")
+    if (isNewCustomer && form.customerTel.isBlank()) return FormError(FormField.Customer, "연락처를 입력해주세요.")
     if (isNewCustomer && !KOREAN_MOBILE_PHONE.matches(normalizeTel(form.customerTel))) {
-        return CreateError(CreateField.Customer, "연락처 형식을 확인해주세요.")
+        return FormError(FormField.Customer, "연락처 형식을 확인해주세요.")
     }
-    if (form.selectedServices.isEmpty()) return CreateError(CreateField.Service, "${labels.service}를 선택해주세요.")
-    if (form.date.isEmpty()) return CreateError(CreateField.Date, "날짜를 선택해주세요.")
-    if (form.startTime.isEmpty()) return CreateError(CreateField.Time, "시작 시간을 입력해주세요.")
-    if (form.endTime.isEmpty()) return CreateError(CreateField.Time, "종료 시간을 입력해주세요.")
-    if (form.startTime >= form.endTime) return CreateError(CreateField.Time, "시작 시간은 종료 시간보다 앞서야 합니다.")
+    if (form.selectedServices.isEmpty()) return FormError(FormField.Service, "${labels.service}를 선택해주세요.")
+    if (form.date.isEmpty()) return FormError(FormField.Date, "날짜를 선택해주세요.")
+    if (form.startTime.isEmpty()) return FormError(FormField.Time, "시작 시간을 입력해주세요.")
+    if (form.endTime.isEmpty()) return FormError(FormField.Time, "종료 시간을 입력해주세요.")
+    if (form.startTime >= form.endTime) return FormError(FormField.Time, "시작 시간은 종료 시간보다 앞서야 합니다.")
 
     when (val a = assigneeAvailability(snapshot.assignees, form.assigneeId, form.date, form.startTime, form.endTime)) {
-        is AssigneeAvailability.OffDay -> return CreateError(CreateField.Date, a.message)
-        is AssigneeAvailability.OutsideHours -> return CreateError(CreateField.Time, a.message)
+        is AssigneeAvailability.OffDay -> return FormError(FormField.Date, a.message)
+        is AssigneeAvailability.OutsideHours -> return FormError(FormField.Time, a.message)
         AssigneeAvailability.Available -> Unit
     }
 
     findOverlap(snapshot.reservations, form.date, form.startTime, form.endTime)?.let { overlap ->
         val name = snapshot.customers.firstOrNull { it.id == overlap.customerId }?.name ?: "-"
-        return CreateError(CreateField.Time, "$name 예약(${overlap.startTime}~${overlap.endTime})과 시간이 겹칩니다.")
+        return FormError(FormField.Time, "$name 예약(${overlap.startTime}~${overlap.endTime})과 시간이 겹칩니다.")
     }
     return null
 }

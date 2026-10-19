@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import java.time.LocalDateTime
 import kr.co.takeaseat.app.data.GuestStore
-import kr.co.takeaseat.app.domain.CreateField
+import kr.co.takeaseat.app.domain.FormField
 import kr.co.takeaseat.app.domain.DetailAction
 import kr.co.takeaseat.app.domain.Reservation
 import kr.co.takeaseat.app.domain.ReservationForm
@@ -62,17 +62,17 @@ internal fun ReservationDetailSheet(
 
     var mode by rememberSaveable(reservation.id) { mutableStateOf(DetailMode.View) }
     var restoring by rememberSaveable(reservation.id) { mutableStateOf(false) }
-    var form by rememberSaveable(reservation.id, stateSaver = reservationFormSaver) { mutableStateOf(ReservationForm.fromReservation(reservation, knownNames)) }
-    var errorField by rememberSaveable(reservation.id) { mutableStateOf<CreateField?>(null) }
+    var form by rememberSaveable(reservation.id, stateSaver = reservationFormSaver) { mutableStateOf(ReservationForm.fromReservation(reservation, knownNames, snapshot.services)) }
+    var errorField by rememberSaveable(reservation.id) { mutableStateOf<FormField?>(null) }
     var errorMessage by rememberSaveable(reservation.id) { mutableStateOf("") }
     var errorSeq by rememberSaveable(reservation.id) { mutableIntStateOf(0) }
     fun edit(next: ReservationForm) {
         form = next
         errorField = null
     }
-    fun errorFor(field: CreateField) = errorMessage.takeIf { errorField == field }
+    fun errorFor(field: FormField) = errorMessage.takeIf { errorField == field }
     fun startEditing() {
-        form = ReservationForm.fromReservation(reservation, knownNames) // 웹: 열 때마다 저장된 값으로 다시
+        form = ReservationForm.fromReservation(reservation, knownNames, snapshot.services) // 웹: 열 때마다 저장된 값으로 다시
         errorField = null
         mode = DetailMode.Editing
     }
@@ -112,7 +112,7 @@ internal fun ReservationDetailSheet(
                                     errorSeq++
                                 }
                                 // 웹: 바뀐 게 없으면 확인 없이 보기로
-                                changedFields(reservation, form, snapshot.assignees, labels, knownNames).isEmpty() -> mode = DetailMode.View
+                                changedFields(reservation, form, snapshot.assignees, labels, knownNames, snapshot.services).isEmpty() -> mode = DetailMode.View
                                 isPastStart(form, LocalDateTime.now()) -> mode = DetailMode.PastConfirm
                                 else -> mode = DetailMode.Confirming
                             }
@@ -158,10 +158,10 @@ internal fun ReservationDetailSheet(
                     )
                 }
             }
-            DetailMode.Confirming -> ReservationDiffSummary("수정하시겠습니까?", changedFields(reservation, form, snapshot.assignees, labels, knownNames))
+            DetailMode.Confirming -> ReservationDiffSummary("수정하시겠습니까?", changedFields(reservation, form, snapshot.assignees, labels, knownNames, snapshot.services))
             DetailMode.PastConfirm -> ReservationDiffSummary(
                 "현재 시간보다 과거입니다. 변경하시겠습니까?",
-                changedFields(reservation, form, snapshot.assignees, labels, knownNames),
+                changedFields(reservation, form, snapshot.assignees, labels, knownNames, snapshot.services),
                 TasColors.Caution,
             )
         }

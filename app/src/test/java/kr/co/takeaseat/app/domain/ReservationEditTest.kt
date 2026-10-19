@@ -21,27 +21,30 @@ class ReservationEditTest {
         reservations = listOf(original),
         assignees = DEFAULT_ASSIGNEES,
     )
-    private fun form() = ReservationForm.fromReservation(original, known)
+    private fun form() = ReservationForm.fromReservation(original, known, SERVICE_CATALOG)
 
     @Test fun `예약을 폼으로 - 그대로면 바뀐 칸 없음`() {
         val f = form()
         assertEquals(listOf("남성커트"), f.selectedServices)
         assertEquals(18000, f.price)
-        assertEquals(emptyList<ReservationDiff>(), changedFields(original, f, snap.assignees, labels, known))
+        assertEquals(emptyList<ReservationDiff>(), changedFields(original, f, snap.assignees, labels, known, SERVICE_CATALOG))
         // 가격이 없던 옛 예약은 카탈로그 합, 경로가 없으면 전화예약
-        val legacy = ReservationForm.fromReservation(original.copy(price = null, channel = null, service = "남자 일반펌"), known)
+        val legacy = ReservationForm.fromReservation(original.copy(price = null, channel = null, service = "남자 일반펌"), known, SERVICE_CATALOG)
         assertEquals(50000, legacy.price)
         assertEquals("전화예약", legacy.channel)
+        // 매장 카탈로그 가격을 쓴다(상세 화면과 같은 값)
+        val storeCatalog = SERVICE_CATALOG.map { if (it.name == "남성커트") it.copy(price = 22000) else it }
+        assertEquals(22000, ReservationForm.fromReservation(original.copy(price = null), known, storeCatalog).price)
         // 경로 없던 예약을 그대로 두면 변경 없음, 바꾸면 '전화예약 → 현장방문'
         val noChannel = original.copy(channel = null)
-        val nf = ReservationForm.fromReservation(noChannel, known)
-        assertTrue(changedFields(noChannel, nf, snap.assignees, labels, known).isEmpty())
-        assertEquals(ReservationDiff("예약경로", "전화예약", "현장방문"), changedFields(noChannel, nf.copy(channel = "현장방문"), snap.assignees, labels, known).single())
+        val nf = ReservationForm.fromReservation(noChannel, known, SERVICE_CATALOG)
+        assertTrue(changedFields(noChannel, nf, snap.assignees, labels, known, SERVICE_CATALOG).isEmpty())
+        assertEquals(ReservationDiff("예약경로", "전화예약", "현장방문"), changedFields(noChannel, nf.copy(channel = "현장방문"), snap.assignees, labels, known, SERVICE_CATALOG).single())
     }
 
     @Test fun `바뀐 칸 - 웹 차례·표기`() {
         val f = form().toggleService("크리닉", catalog).copy(channel = "현장방문", memo = "앞머리", assigneeId = 0)
-        val diffs = changedFields(original, f, snap.assignees, labels, known)
+        val diffs = changedFields(original, f, snap.assignees, labels, known, SERVICE_CATALOG)
         assertEquals(listOf("서비스", "담당자", "종료시간", "가격", "요청사항", "예약경로"), diffs.map { it.label })
         assertEquals(ReservationDiff("서비스", "남성커트", "남성커트+크리닉"), diffs[0])
         assertEquals(ReservationDiff("담당자", "담당자 1", "미지정"), diffs[1])
@@ -50,9 +53,9 @@ class ReservationEditTest {
 
     @Test fun `서비스를 안 건드리면 원래 문자열 그대로(띄어쓰기 달라도 변경 아님)`() {
         val spaced = original.copy(service = "남성커트 + 크리닉")
-        val f = ReservationForm.fromReservation(spaced, known)
+        val f = ReservationForm.fromReservation(spaced, known, SERVICE_CATALOG)
         assertEquals("남성커트 + 크리닉", draftReservation(spaced, f, known).service)
-        assertTrue(changedFields(spaced, f, snap.assignees, labels, known).isEmpty())
+        assertTrue(changedFields(spaced, f, snap.assignees, labels, known, SERVICE_CATALOG).isEmpty())
     }
 
     @Test fun `검사 - 자기 자신과는 안 겹치고 다른 예약과는 겹친다`() {
@@ -76,12 +79,12 @@ class ReservationEditTest {
         assertEquals(original, next.history.single().before)
 
         val paidOne = original.copy(paymentEntries = listOf(PaymentEntry("카드", 18000)), paymentCompleted = true)
-        val p = applyEdit(snap.copy(reservations = listOf(paidOne)), paidOne, ReservationForm.fromReservation(paidOne, known).changePrice("25000"), known, now)
+        val p = applyEdit(snap.copy(reservations = listOf(paidOne)), paidOne, ReservationForm.fromReservation(paidOne, known, SERVICE_CATALOG).changePrice("25000"), known, now)
         assertEquals(listOf(PaymentEntry("카드", 25000)), p.reservations.single().paymentEntries)
         assertEquals("카드", p.reservations.single().paymentMethod)
 
         val paidTwo = original.copy(paymentEntries = listOf(PaymentEntry("카드", 10000), PaymentEntry("현금", 8000)), paymentCompleted = true)
-        val p2 = applyEdit(snap.copy(reservations = listOf(paidTwo)), paidTwo, ReservationForm.fromReservation(paidTwo, known).changePrice("25000"), known, now)
+        val p2 = applyEdit(snap.copy(reservations = listOf(paidTwo)), paidTwo, ReservationForm.fromReservation(paidTwo, known, SERVICE_CATALOG).changePrice("25000"), known, now)
         assertEquals(paidTwo.paymentEntries, p2.reservations.single().paymentEntries)
     }
 }

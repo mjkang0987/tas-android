@@ -27,8 +27,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import kr.co.takeaseat.app.data.GuestStore
-import kr.co.takeaseat.app.domain.CreateError
-import kr.co.takeaseat.app.domain.CreateField
+import kr.co.takeaseat.app.domain.FormError
+import kr.co.takeaseat.app.domain.FormField
 import kr.co.takeaseat.app.domain.ReservationForm
 import kr.co.takeaseat.app.domain.RESERVATION_CHANNELS
 import kr.co.takeaseat.app.domain.activeAssignees
@@ -74,7 +74,7 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
     var form by rememberSaveable(stateSaver = reservationFormSaver) {
         mutableStateOf(ReservationForm.initial(LocalDate.now().toDateKey(), roundedStartTime(LocalDateTime.now()), snapshot.assignees))
     }
-    var errorField by rememberSaveable { mutableStateOf<CreateField?>(null) }
+    var errorField by rememberSaveable { mutableStateOf<FormField?>(null) }
     var errorMessage by rememberSaveable { mutableStateOf("") }
     var errorSeq by rememberSaveable { mutableIntStateOf(0) } // 저장 실패마다 +1 — 같은 오류도 다시 보이는 곳으로 스크롤
     var showSuggestions by rememberSaveable { mutableStateOf(false) }
@@ -82,7 +82,7 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
         form = next
         errorField = null
     }
-    fun errorFor(field: CreateField) = errorMessage.takeIf { errorField == field }
+    fun errorFor(field: FormField) = errorMessage.takeIf { errorField == field }
 
     DetailSheet(
         title = "예약 추가",
@@ -90,7 +90,7 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
         footer = {
             ActionButton("취소", onClick = onDismiss)
             ActionButton("저장", tone = ActionTone.Primary, onClick = {
-                val error: CreateError? = validateCreate(form, store.snapshot.value, labels)
+                val error: FormError? = validateCreate(form, store.snapshot.value, labels)
                 if (error != null) {
                     errorField = error.field
                     errorMessage = error.message
@@ -131,7 +131,7 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
                     onValueChange = { edit(form.copy(customerTel = it)) },
                     placeholder = "01012345678",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                    error = errorFor(CreateField.Customer),
+                    error = errorFor(FormField.Customer),
                     errorKey = errorSeq,
                 )
             }

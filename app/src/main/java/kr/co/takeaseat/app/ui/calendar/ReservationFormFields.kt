@@ -23,7 +23,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.Assignee
-import kr.co.takeaseat.app.domain.CreateField
+import kr.co.takeaseat.app.domain.FormField
 import kr.co.takeaseat.app.domain.LocalDbSnapshot
 import kr.co.takeaseat.app.domain.RESERVATION_CHANNELS
 import kr.co.takeaseat.app.domain.ReservationForm
@@ -61,7 +61,7 @@ internal fun ReservationFormFields(
     catalogMap: Map<String, ServiceItem>,
     serviceColorMap: Map<String, String>,
     currentAssignee: Assignee?,
-    errorFor: (CreateField) -> String?,
+    errorFor: (FormField) -> String?,
     errorSeq: Int,
 ) {
     val active = activeAssignees(snapshot.assignees)
@@ -76,7 +76,7 @@ internal fun ReservationFormFields(
             totalDuration = sumDurationMinutes(form.selectedServices, catalogMap),
             totalPrice = sumPrice(form.selectedServices, catalogMap),
         )
-        errorFor(CreateField.Service)?.let { FieldError(it, scrollKey = errorSeq) }
+        errorFor(FormField.Service)?.let { FieldError(it, scrollKey = errorSeq) }
     }
 
     TasTextField(
@@ -99,7 +99,7 @@ internal fun ReservationFormFields(
                 options = names,
                 selectedIndex = ids.indexOf(form.assigneeId).coerceAtLeast(0),
                 onSelect = { onChange(form.copy(assigneeId = ids[it])) },
-                error = errorFor(CreateField.Assignee),
+                error = errorFor(FormField.Assignee),
                 errorKey = errorSeq,
             )
             if (snapshot.assignees.any { assigneeStatus(it) != "재직" }) {
@@ -116,13 +116,13 @@ internal fun ReservationFormFields(
         }
     }
 
-    DateField(form.date, errorFor(CreateField.Date), errorSeq) { onChange(form.copy(date = it)) }
+    DateField(form.date, errorFor(FormField.Date), errorSeq) { onChange(form.copy(date = it)) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TimeField("시작", form.startTime, Modifier.weight(1f)) { onChange(form.changeStartTime(it, catalogMap)) }
             TimeField("종료", form.endTime, Modifier.weight(1f)) { onChange(form.changeEndTime(it)) }
         }
-        errorFor(CreateField.Time)?.let { FieldError(it, scrollKey = errorSeq) }
+        errorFor(FormField.Time)?.let { FieldError(it, scrollKey = errorSeq) }
     }
 
     TasSelect(
