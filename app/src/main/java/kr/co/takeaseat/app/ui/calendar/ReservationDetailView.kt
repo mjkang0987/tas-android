@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -54,7 +55,8 @@ import kr.co.takeaseat.app.ui.components.NewCustomerBadge
 import kr.co.takeaseat.app.ui.components.ServiceChipList
 import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.hexColor
-import kr.co.takeaseat.app.ui.components.readableTextOn
+import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
+import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -114,18 +116,19 @@ fun ReservationDetailView(
             DetailRow("고객 메모") {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     memoTags.forEach { tag ->
-                        val bg = hexColor(tag.color)
                         Text(
                             tag.text,
-                            color = readableTextOn(bg),
+                            color = Color.White,
                             fontSize = TasSizes.XSmallFont,
                             fontWeight = FontWeight.SemiBold,
-                            // 웹 태그는 최소 22 에 글이 길면 줄을 바꿔 커진다 — 한 줄 상자(lineBox)를 쓰지 않는다.
+                            // 웹 StyledMemoTag 높이 22(위아래 2 + 18). 한글이 아래로 처지지 않게 기준선으로 가운데(lineBox) — 한 줄 전용이라
+                            // 긴 메모는 말줄임(웹은 줄을 바꾼다).
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
-                                .background(bg, TasShapes.Chip)
+                                .background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.Chip)
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
-                                .heightIn(min = 18.dp)
-                                .wrapContentHeight(Alignment.CenterVertically),
+                                .lineBox(18.sp, TasSizes.XSmallFont),
                         )
                     }
                 }

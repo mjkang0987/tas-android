@@ -4,10 +4,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import kotlin.math.max
 import kotlin.math.min
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kr.co.takeaseat.app.ui.components.hexColor
-import kr.co.takeaseat.app.ui.components.readableTextOn
+import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
 
 /** 글자색으로 쓰는 토큰 — 흰 바탕·옅은 회색(#F7F7F7) 위 4.5:1 이상. 웹 badgeContrast.test.ts '글자색 토큰 대비' 와 같은 기준. */
 class TextColorContrastTest {
@@ -29,15 +30,19 @@ class TextColorContrastTest {
         }
     }
 
-    @Test fun `색 바탕 위 글자 - 메모 태그·담당자 팔레트와 회색 전부 4_5 이상, 노랑은 검정 보라는 흰`() {
-        val palette = listOf("#4285F4", "#34A853", "#EA4335", "#FBBC04", "#FF6D01", "#46BDC6", "#9334E6", "#E91E8C",
-            "#6526D9", "#2D7FF9", "#E85D75", "#00A896", "#FB8C00", "#6D6F78", "#7E57C2").map(::hexColor) +
-            (0..255).map { Color(it, it, it) }
-        for (bg in palette) {
-            val r = ratio(readableTextOn(bg), bg)
-            assertTrue("$bg 대비 $r", r >= 4.5)
+    @Test fun `흰 글자 바탕 - 밝은 색만 같은 색을 진하게, 웹과 같은 값`() {
+        // 웹 features/colors/contrast.ts backgroundForWhiteText 결과
+        val expected = mapOf(
+            "#4285F4" to "#206ff2", "#34A853" to "#298542", "#EA4335" to "#e42718", "#FBBC04" to "#926d02",
+            "#FF6D01" to "#c35300", "#46BDC6" to "#2a8087", "#9334E6" to "#9334E6", "#E91E8C" to "#dd1682",
+            "#2D7FF9" to "#0f6df8", "#E85D75" to "#e12c4b", "#00A896" to "#008476", "#FB8C00" to "#ae6100",
+        )
+        for ((input, out) in expected) {
+            assertEquals(input, hexColor(out), backgroundForWhiteText(hexColor(input)))
         }
-        assertTrue(readableTextOn(hexColor("#FBBC04")) == Color.Black)
-        assertTrue(readableTextOn(hexColor("#6526D9")) == Color.White)
+        for (v in 0..255) {
+            val bg = backgroundForWhiteText(Color(v, v, v))
+            assertTrue("회색 $v", ratio(Color.White, bg) >= 4.5)
+        }
     }
 }
