@@ -27,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -79,6 +82,8 @@ fun ReservationDetailView(
     assigneeColor: Color,
     serviceColorMap: Map<String, String>,
     labels: StoreLabels,
+    historyCount: Int = 0,
+    onOpenHistory: () -> Unit = {},
 ) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -130,6 +135,33 @@ fun ReservationDetailView(
             val bookingId = reservation.naverBookingId?.takeIf { it.isNotEmpty() }
             if (bookingId != null) NaverBookingInfo(bookingId, reservation.naverBookingUrl)
             else LabelBadge(reservation.channel ?: "전화예약", LabelTone.Info, fontSize = TasSizes.TinyFont)
+        }
+        if (historyCount > 0) HistoryButton(historyCount, onOpenHistory)
+    }
+}
+
+/** 웹 StyledHistorySection + StyledHistoryButton — 위 구분선(위 16·안 12), 흰 바탕 버튼 "변경 이력 (N)" + 오른쪽 ›. */
+@Composable
+private fun HistoryButton(count: Int, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .padding(top = 8.dp) // 행 간격 8 + 8 = 웹 margin-top 16
+            .fillMaxWidth()
+            .drawBehind { drawRect(TasColors.LightGray, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+            .padding(top = 12.dp),
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .background(TasColors.White)
+                .border(1.dp, TasColors.LightGray, RoundedCornerShape(6.dp))
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("변경 이력 ($count)", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Text("\u203A", color = TasColors.Gray, fontSize = TasSizes.LargeFont, modifier = Modifier.clearAndSetSemantics {})
         }
     }
 }
@@ -331,24 +363,28 @@ internal fun ReservationDiffSummary(message: String, diffs: List<ReservationDiff
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         diffs.forEach { diff ->
-            DetailRow(diff.label, 10.dp) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        diff.before,
-                        color = TasColors.Danger,
-                        fontSize = TasSizes.SmallFont,
-                        style = LocalTextStyle.current.copy(textDecoration = TextDecoration.LineThrough),
-                        modifier = Modifier.semantics { contentDescription = "예전 ${diff.before}" },
-                    )
-                    Text(
-                        "→\u00a0${diff.after}",
-                        color = TasColors.Success,
-                        fontSize = TasSizes.SmallFont,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.semantics { contentDescription = "새 값 ${diff.after}" },
-                    )
-                }
-            }
+            DetailRow(diff.label, 10.dp) { DiffValue(diff, TasSizes.SmallFont, 8.dp) }
         }
+    }
+}
+
+/** 웹 StyledDiffGridDel → StyledDiffGridIns — 예전 값(빨강 취소선) → 새 값(초록 굵게). 변경 확인·변경 이력이 같이 쓴다. */
+@Composable
+internal fun DiffValue(diff: ReservationDiff, fontSize: androidx.compose.ui.unit.TextUnit, gap: androidx.compose.ui.unit.Dp) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), itemVerticalAlignment = Alignment.CenterVertically) {
+        Text(
+            diff.before,
+            color = TasColors.Danger,
+            fontSize = fontSize,
+            style = LocalTextStyle.current.copy(textDecoration = TextDecoration.LineThrough),
+            modifier = Modifier.semantics { contentDescription = "예전 ${diff.before}" },
+        )
+        Text(
+            "→\u00a0${diff.after}",
+            color = TasColors.Success,
+            fontSize = fontSize,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.semantics { contentDescription = "새 값 ${diff.after}" },
+        )
     }
 }

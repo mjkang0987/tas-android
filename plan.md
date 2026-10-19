@@ -7,6 +7,28 @@
 
 ---
 
+## 🟡 진행 — 8단계: 예약 변경 이력 (`claude/android-reservation-history`, #7 위)
+
+### 요구 (지시자 2026-10-19 — "안드로이드 진행")
+- 상세 아래 "변경 이력 (N)" → 이력 시트(최근 것부터). 상세 화면 웹 기능 중 남은 마지막 부분.
+
+### 웹에서 가져오는 것 (기준 tas v0.64.6)
+- `ReservationViewSection` 이력 버튼(위 구분선, 흰 바탕 12 600, 오른쪽 ›) · `ReservationHistoryLayer`(제목 + 부제목, 뒤 어둡기 0.24,
+  카드: 시각 11 + 종류 배지(취소 neutral·노쇼 danger·예약완료 success·예약전환 네이버 초록·변경 info), 종류별 바탕·테두리, 항목명 40 + 예전 → 새 값 11).
+- `getHistoryDiffs`: 상태가 바뀐 줄은 상태 한 줄, 아니면 결제상태 · 결제수단(줄 "종류 · 금액") · 칸별 — 옛 예약 경로는 전화예약(웹 #294).
+- `formatTimestamp`: 기기 시간대 "yyyy-MM-dd HH:mm".
+
+### 구현
+- `domain/ReservationHistory.kt`(historyKind·historyDiffs·formatHistoryTimestamp) + 단위 4. `ReservationHistorySheet.kt`(웹 이력 레이어 이식).
+- `DetailSheet` 에 부제목·뒤 어둡기 색, `LabelBadge` 에 Neutral·Danger·Success(대비 7.0·4.65·4.52), 예전→새 값을 `DiffValue` 로 묶어 변경 확인과 공용.
+
+### 검증 (2026-10-19)
+- 단위 61. 에뮬레이터: 앞 단계에서 쌓인 이력 9건 — 결제·예약완료·변경(경로·서비스·가격)·예약전환·노쇼 카드 색·배지, 시각, 뒤로가기는 이력만 닫힘.
+  처음엔 '결제상태'(네 글자)가 값에 붙고 부제목이 "보여줍/니다"로 끊겨 → 항목명 뒤 간격 10, 부제목 어절 단위 줄바꿈.
+- 남은 것: 예약완료 카드(연초록 #E6F4EA) 위 빨강 취소선 글자 4.48:1 — 웹도 같다(색 바꾸면 웹과 함께).
+
+---
+
 ## 🟡 진행 — 7단계: 결제(결제완료·결제수단 변경·예약완료) (`claude/android-reservation-payment`, #6 위)
 
 ### 요구 (지시자 2026-10-19 — "계속 진행")

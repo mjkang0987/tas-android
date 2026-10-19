@@ -74,6 +74,8 @@ internal fun ReservationDetailSheet(
 
     var mode by rememberSaveable(reservation.id) { mutableStateOf(DetailMode.View) }
     var restoring by rememberSaveable(reservation.id) { mutableStateOf(false) }
+    var historyOpen by rememberSaveable(reservation.id) { mutableStateOf(false) }
+    val history = snapshot.history.filter { it.reservationId == reservation.id }
     var form by rememberSaveable(reservation.id, stateSaver = reservationFormSaver) { mutableStateOf(ReservationForm.fromReservation(reservation, knownNames, snapshot.services)) }
     var errorField by rememberSaveable(reservation.id) { mutableStateOf<FormField?>(null) }
     var errorMessage by rememberSaveable(reservation.id) { mutableStateOf("") }
@@ -196,6 +198,8 @@ internal fun ReservationDetailSheet(
                 assigneeColor = hexColor(assignee?.let { assigneeColor(it) } ?: UNASSIGNED_COLOR),
                 serviceColorMap = serviceColorMap,
                 labels = labels,
+                historyCount = history.size,
+                onOpenHistory = { historyOpen = true },
             )
             DetailMode.Cancelling -> ReservationConfirmSummary("이 예약을 취소하시겠습니까?", TasColors.Danger, reservation, customerName, labels)
             DetailMode.Noshow -> ReservationConfirmSummary("이 예약을 노쇼 처리하시겠습니까?", TasColors.Warning, reservation, customerName, labels)
@@ -236,6 +240,9 @@ internal fun ReservationDetailSheet(
                 TasColors.Caution,
             )
         }
+    }
+    if (historyOpen) {
+        ReservationHistorySheet(history, snapshot.assignees, labels, onDismiss = { historyOpen = false })
     }
     if (restoring) {
         DetailSheet(

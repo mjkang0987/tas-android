@@ -51,6 +51,9 @@ enum class LabelTone(val text: Color, val bg: Color, val border: Color) {
     Warning(TasColors.WarningText, TasColors.WarningBgSoft, TasColors.WarningBorderSoft),
     Info(TasColors.Info, TasColors.InfoBg, TasColors.InfoBorder),
     Brand(TasColors.White, Color(0xFF208200), Color(0xFF1A6B00)), // --naver-color / --naver-color-dark (흰 글자 대비 4.5 이상)
+    Neutral(Color(0xFF475569), Color(241, 245, 249).copy(alpha = 0.92f), Color(203, 213, 225).copy(alpha = 0.95f)), // --neutral-* (7.0)
+    Danger(TasColors.Danger, TasColors.DangerBg, TasColors.DangerBorder), // --danger-* (4.65)
+    Success(Color(0xFF15803D), Color(34, 197, 94).copy(alpha = 0.12f), Color(34, 197, 94).copy(alpha = 0.2f)), // --success-* (4.52)
 }
 
 /**

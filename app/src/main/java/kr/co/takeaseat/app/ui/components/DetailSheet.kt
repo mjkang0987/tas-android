@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +66,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
+import kr.co.takeaseat.app.ui.theme.TasSizes
 
 private val SheetEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f) // 웹 layer 애니메이션 곡선
 
@@ -79,6 +81,8 @@ fun DetailSheet(
     onDismiss: () -> Unit,
     footer: (@Composable RowScope.() -> Unit)? = null,
     centered: Boolean = false,
+    subtitle: String? = null,
+    scrim: Color = TasColors.Scrim,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Dialog(
@@ -95,7 +99,7 @@ fun DetailSheet(
         BoxWithConstraints(
             Modifier
                 .fillMaxSize()
-                .background(TasColors.Scrim.copy(alpha = TasColors.Scrim.alpha * scrimAlpha))
+                .background(scrim.copy(alpha = scrim.alpha * scrimAlpha))
                 // 가로 내비게이션 막대·노치 아래로 닫기 버튼이 들어가지 않게(가로 화면 3버튼 내비게이션)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         ) {
@@ -132,7 +136,7 @@ fun DetailSheet(
                         .border(1.dp, TasColors.ModalBorder, shape)
                         .semantics { paneTitle = title },
                 ) {
-                    SheetHeader(title, onDismiss)
+                    SheetHeader(title, subtitle, onDismiss)
                     Column(
                         Modifier
                             .weight(1f, fill = false)
@@ -161,7 +165,7 @@ fun DetailSheet(
 }
 
 @Composable
-private fun SheetHeader(title: String, onDismiss: () -> Unit) {
+private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -174,16 +178,32 @@ private fun SheetHeader(title: String, onDismiss: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            color = Color.Black,
-            fontSize = 16.sp, // --modal-title-font
-            fontWeight = FontWeight.Bold,
-            letterSpacing = (-0.02f * 16).sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        // 웹 StyledHeaderTitleGroup — 제목 아래 부제목(12 500, 간격 4)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = title,
+                color = Color.Black,
+                fontSize = 16.sp, // --modal-title-font
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.02f * 16).sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    color = TasColors.DarkGray2,
+                    fontSize = TasSizes.SmallFont,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = (12 * 1.45).sp,
+                    // 한글 단어 중간에서 줄이 바뀌지 않게 어절 단위로
+                    style = androidx.compose.material3.LocalTextStyle.current.copy(
+                        lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph.copy(wordBreak = androidx.compose.ui.text.style.LineBreak.WordBreak.Phrase),
+                    ),
+                )
+            }
+        }
         // 웹 CloseIconButton(모바일 34) — 흰 바탕, 연회색 테두리, 6 둥글게, X 14
         Box(
             Modifier
