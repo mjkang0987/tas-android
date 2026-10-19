@@ -61,4 +61,5 @@ object TasShapes {
     val RadiusSm = RoundedCornerShape(4.dp)                    // --radius-sm
     val RadiusMd = RoundedCornerShape(6.dp)                    // --radius-md
     val SheetTop = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp) // --modal-radius-mobile, 바텀시트
+    val Modal = RoundedCornerShape(10.dp)                      // --modal-radius, 넓은 화면 가운데 창
 }

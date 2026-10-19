@@ -4,6 +4,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +22,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -41,8 +48,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -85,26 +94,39 @@ fun DetailSheet(
             Modifier
                 .fillMaxSize()
                 .background(TasColors.Scrim.copy(alpha = TasColors.Scrim.alpha * scrimAlpha))
-                // 바깥을 누르면 닫는다 — 화면 낭독기에는 닫기 버튼·뒤로가기가 같은 일을 하므로 이 영역은 읽히지 않게 둔다.
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = "닫기", onClick = onDismiss),
-            contentAlignment = Alignment.BottomCenter,
+                // 가로 내비게이션 막대·노치 아래로 닫기 버튼이 들어가지 않게(가로 화면 3버튼 내비게이션)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         ) {
-            val maxSheetHeight = maxHeight * 0.9f // 웹 max-height 90dvh
+            // 바깥을 누르면 닫는다. 시트와 **형제**로 둔다 — 부모에 clickable 을 걸면 시트 안 글자가 전부 그 하나로 합쳐져
+            // 화면 낭독기가 행을 하나씩 읽지 못했다. 낭독기에선 닫기 버튼·뒤로가기가 같은 일을 해 이 영역은 숨긴다.
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+                    .clearAndSetSemantics {},
+            )
+            // 웹: 640px 이하 바텀시트, 넘으면 가운데 창(폭 min(360, 90%), 높이 80%, 10 둥글게).
+            val wide = maxWidth > 640.dp
+            val shape = if (wide) TasShapes.Modal else TasShapes.SheetTop
+            val riseFrom = with(LocalDensity.current) { (if (wide) 12 else 32).dp.roundToPx() }
             AnimatedVisibility(
                 visible = shown,
-                enter = slideInVertically(tween(260, easing = SheetEasing)) { it },
+                modifier = Modifier.align(if (wide) Alignment.Center else Alignment.BottomCenter),
+                // 웹 sheetSlideUp/layerPopIn — 32px 아래에서 올라오며 0.6 → 1 로 진해진다.
+                enter = slideInVertically(tween(if (wide) 220 else 260, easing = SheetEasing)) { riseFrom } +
+                    fadeIn(tween(if (wide) 220 else 260, easing = SheetEasing), initialAlpha = 0.6f),
             ) {
                 Column(
                     Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = maxSheetHeight)
+                        .then(if (wide) Modifier.width(minOf(360.dp, maxWidth * 0.9f)) else Modifier.fillMaxWidth())
+                        .heightIn(max = maxHeight * (if (wide) 0.8f else 0.9f))
                         // 시트 안을 누른 건 바깥 닫기로 새지 않게 여기서 받는다(동작 없음).
                         .pointerInput(Unit) { detectTapGestures { } }
-                        .clip(TasShapes.SheetTop)
+                        .clip(shape)
                         // 웹은 뒤를 흐리게(backdrop blur) 한 위에 98% 흰색이라 뒤 글자가 안 읽힌다. 흐림이 없으니 바닥을 불투명 흰색으로 깐다.
                         .background(Color.White)
                         .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.98f), TasColors.BgSubtle98)))
-                        .border(1.dp, TasColors.ModalBorder, TasShapes.SheetTop)
+                        .border(1.dp, TasColors.ModalBorder, shape)
                         .semantics { paneTitle = title },
                 ) {
                     SheetHeader(title, onDismiss)
@@ -124,7 +146,7 @@ fun DetailSheet(
                         ) { footer() }
                     }
                     // 제스처 내비게이션 막대 아래로 내용이 들어가지 않게 — 시트 배경은 끝까지 깔린다.
-                    Box(Modifier.navigationBarsPadding())
+                    if (!wide) Box(Modifier.navigationBarsPadding())
                 }
             }
         }
