@@ -7,6 +7,31 @@
 
 ---
 
+## 🟡 진행 — 3단계: 예약 상세(보기) (`claude/android-reservation-detail`, #2 위)
+
+### 요구 (지시자 2026-10-19 — "일단 쭉 진행", 신규 컴포넌트 승인)
+- 일 타임라인의 예약 카드를 누르면 웹 모바일처럼 아래에서 올라오는 상세 레이어. 이번엔 **보기만** — 수정·결제·취소 버튼은 다음.
+
+### 웹에서 가져오는 것 (기준 tas v0.64.1, 모바일 375px 실측)
+- `ReservationViewSection.tsx` 행 차례·조건: 상태(진행 외) · 날짜 · 시간 · 서비스(칩) · 가격 · 결제(배지 위 한 줄 + 종류·금액 목록,
+  결제완료인데 줄 없으면 '미입력', 네이버 예약금 줄) · 고객명(신규 배지) · 연락처(누르면 전화) · 고객 메모 태그 · 요청사항 · 적립금 ·
+  담당자(색 알약) · 예약경로(채널 태그). 회원권·쿠폰은 로그인 전용이라 게스트에선 없다.
+- `ModalStyles` 바텀시트: 배경 rgba(15,23,42,.4), 위만 12 둥글게, 테두리 rgba(148,163,184,.22), 최대 높이 90%, 0.26초 올라옴.
+  헤더 padding 8/14 · 제목 16 굵게 · 닫기 34 정사각(테두리 #e3e3e3, 6 둥글게). 본문 padding 12/14/24, 표 60 + 나머지, 간격 8/12,
+  항목명 13 500 #525252, 값 13.
+- `ReservationStatusBadge`(RESERVATION_STATUS_BADGE_STYLES), `ColorTag`/`AssigneeLabel`, `LabelBadge` info soft(채널),
+  `features/store-settings/labels.ts`(업종별 '서비스'·'담당자' 표시어).
+
+### 신규 컴포넌트 (승인됨)
+`DetailSheet`(웹 ModalStyles StyledOverlay+StyledDetail+Header — 이후 추가·결제 레이어도 쓴다), `ReservationDetailView`
+(웹 ReservationViewSection), `StatusBadge`(웹 ReservationStatusBadge), `AssigneeLabel`(웹 동명/ColorTag).
+
+### 검증
+- 단위: 업종 라벨, 결제 줄 풀기(웹 getPaymentEntries — 옛 데이터 paymentMethod 폴백). 에뮬레이터: 카드 → 시트, 행 표시, 뒤로가기·
+  바깥 탭·닫기로 닫힘, TalkBack(시트 제목·닫기).
+
+---
+
 ## 🟡 진행 — 2단계: 게스트 데이터 + 캘린더 일 화면 (`claude/android-calendar-day`, #1 위)
 
 ### 요구 (지시자 2026-10-17 — "게스트 모드 + 캘린더")
