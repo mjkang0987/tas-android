@@ -11,7 +11,7 @@ class ReservationCreateTest {
     private val kim = Customer(id = 3, name = "김민수", tel = "01011112222")
     // 2026-10-19 = 월요일. 기본 담당자는 평일 10~20시.
     private val base = LocalDbSnapshot(customers = listOf(kim), assignees = DEFAULT_ASSIGNEES)
-    private fun form() = CreateForm.initial("2026-10-19", "10:00", base.assignees)
+    private fun form() = ReservationForm.initial("2026-10-19", "10:00", base.assignees)
     private fun valid() = form().changeCustomerQuery("새고객").copy(customerTel = "010-2222-3333").toggleService("남성커트", catalog)
 
     @Test fun `시작 시각 - 30분 반올림, 자정 직전은 23시 30분`() {
@@ -35,7 +35,7 @@ class ReservationCreateTest {
         val f = form()
         assertEquals("10:30", f.endTime)
         assertEquals(1, f.assigneeId)
-        assertEquals(0, CreateForm.initial("2026-10-19", "10:00", emptyList()).assigneeId)
+        assertEquals(0, ReservationForm.initial("2026-10-19", "10:00", emptyList()).assigneeId)
     }
 
     @Test fun `서비스 고르면 끝·가격 다시 계산, 가격 손댔으면 가격은 그대로`() {
@@ -72,7 +72,7 @@ class ReservationCreateTest {
         assertEquals("연락처 형식을 확인해주세요.", validateCreate(valid().copy(customerTel = "0212345678"), base, labels)?.message)
         assertEquals("서비스를 선택해주세요.", validateCreate(valid().toggleService("남성커트", catalog), base, labels)?.message)
         assertEquals("시작 시간은 종료 시간보다 앞서야 합니다.", validateCreate(valid().changeEndTime("09:00"), base, labels)?.message)
-        assertEquals(CreateField.Date, validateCreate(valid().copy(date = "2026-10-18"), base, labels)?.field) // 일요일 휴무
+        assertEquals(FormField.Date, validateCreate(valid().copy(date = "2026-10-18"), base, labels)?.field) // 일요일 휴무
         assertEquals("담당자 1 담당자 근무시간은 10:00~20:00입니다.", validateCreate(valid().copy(startTime = "09:00"), base, labels)?.message)
         assertNull(validateCreate(valid(), base, labels))
         // 기존 고객을 골랐으면 연락처 형식은 보지 않는다(웹과 같다)

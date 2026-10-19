@@ -15,14 +15,15 @@ class ReservationStatusChangeTest {
     )
     private val snap = LocalDbSnapshot(customers = listOf(Customer(id = 3, name = "김", tel = "010", points = 1000)), reservations = listOf(paid))
 
-    @Test fun `하단 버튼 - 미결제 진행은 취소·노쇼, 결제했으면 없음, 취소·노쇼는 예약전환, 확정대기는 없음`() {
+    @Test fun `하단 버튼 - 미결제 진행은 취소·노쇼·변경, 결제했으면 변경, 취소·노쇼는 예약전환, 확정대기는 없음`() {
         val unpaid = paid.copy(paymentEntries = null, paymentCompleted = null)
-        assertEquals(listOf(DetailAction.Cancel, DetailAction.Noshow), detailActions(unpaid))
-        assertEquals(emptyList<DetailAction>(), detailActions(paid))
+        assertEquals(listOf(DetailAction.Cancel, DetailAction.Noshow, DetailAction.Edit), detailActions(unpaid))
+        assertEquals(listOf(DetailAction.Edit), detailActions(paid))
+        assertEquals(listOf(DetailAction.Cancel, DetailAction.Noshow), detailActions(unpaid, customerDeleted = true))
         assertEquals(listOf(DetailAction.Restore), detailActions(paid.copy(status = ReservationStatus.NOSHOW)))
         assertEquals(listOf(DetailAction.Restore), detailActions(paid.copy(status = ReservationStatus.CANCELLED)))
         assertEquals(emptyList<DetailAction>(), detailActions(unpaid.copy(status = ReservationStatus.REQUESTED)))
-        assertEquals(listOf(DetailAction.Cancel, DetailAction.Noshow), detailActions(unpaid.copy(status = null))) // 옛 데이터 = 진행
+        assertEquals(listOf(DetailAction.Cancel, DetailAction.Noshow, DetailAction.Edit), detailActions(unpaid.copy(status = null))) // 옛 데이터 = 진행
     }
 
     @Test fun `취소 - 결제 비우고, 쓴 적립금 돌려주고 준 적립은 회수, 이력 남김`() {
