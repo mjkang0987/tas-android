@@ -32,4 +32,17 @@ class DetailRulesTest {
         assertTrue(hasCompletedPayment(r(completed = true)))
         assertFalse(hasCompletedPayment(r()))
     }
+
+    @Test fun `가격이 없으면 서비스 가격 합, 모르는 서비스는 0`() {
+        val catalog = listOf(ServiceItem("커트", 30, "커트", 20000), ServiceItem("다운펌+커트", 60, "펌", 50000), ServiceItem("크리닉", 30, "크리닉", 30000))
+        assertEquals(50000, servicePriceTotal("커트+크리닉", catalog))
+        assertEquals(80000, servicePriceTotal("다운펌+커트+크리닉", catalog)) // '+' 가 든 이름은 통째로
+        assertEquals(20000, servicePriceTotal("커트+없는것", catalog))
+    }
+
+    @Test fun `배지 색 - 모르는 종류는 웹 기본 회색, 연락처에 이미 하이픈이 있어도 같은 꼴`() {
+        assertEquals(BadgeColors("#F1F1F1", "#999999"), statusBadgeColors("없는종류"))
+        assertEquals("#6526D914", statusBadgeColors("paid").bg)
+        assertEquals("010-1234-5678", formatTel("010-1234-5678"))
+    }
 }

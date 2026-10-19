@@ -47,6 +47,7 @@ fun NewCustomerBadge(modifier: Modifier = Modifier) {
 enum class LabelTone(val text: Color, val bg: Color, val border: Color) {
     Warning(TasColors.WarningText, TasColors.WarningBgSoft, TasColors.WarningBorderSoft),
     Info(TasColors.Info, TasColors.InfoBg, TasColors.InfoBorder),
+    Brand(TasColors.White, Color(0xFF2DB400), Color(0xFF269900)), // --naver-color / --naver-color-dark
 }
 
 /**
@@ -107,12 +108,12 @@ fun ServiceChipList(
     }
 }
 
-/** "#RRGGBB" / "#RGB" / "#AARRGGBB" → Color. 망가진 값은 웹 기본 회색(#999). */
+/** CSS 색 "#RGB" / "#RRGGBB" / "#RRGGBBAA"(알파가 **뒤**) → Color. 망가진 값은 웹 기본 회색(#999). */
 fun hexColor(hex: String): Color {
     val raw = hex.removePrefix("#")
     val full = if (raw.length == 3) raw.map { "$it$it" }.joinToString("") else raw
     return when (full.length) {
-        8 -> full.toLongOrNull(16)?.let { Color(it) }
+        8 -> full.toLongOrNull(16)?.let { Color(((it and 0xFF) shl 24) or (it ushr 8)) }
         6 -> full.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
         else -> null
     } ?: Color(0xFF999999)

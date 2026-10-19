@@ -91,7 +91,8 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val detail = detailId?.let { id -> snapshot.reservations.firstOrNull { it.id == id } }
     if (detail != null) {
         val customer = customers[detail.customerId]
-        val assignee = detail.assigneeId?.let { id -> snapshot.assignees.firstOrNull { it.id == id } }
+        // 웹은 담당자 번호 0 을 미지정으로 본다
+        val assignee = detail.assigneeId?.takeIf { it != 0 }?.let { id -> snapshot.assignees.firstOrNull { it.id == id } }
         DetailSheet(title = customer?.name ?: "예약 상세", onDismiss = { detailId = null }) {
             ReservationDetailView(
                 reservation = detail,

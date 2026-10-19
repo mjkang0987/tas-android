@@ -14,7 +14,7 @@ fun paymentEntriesOf(reservation: Reservation): List<PaymentEntry> = when {
     else -> emptyList()
 }
 
-/** 배지 색(배경, 글자). 웹 값 그대로 — rgba 는 "#AARRGGBB" 로 옮겼다. 모르는 종류는 웹 기본 회색. */
+/** 배지 색(배경, 글자). 웹 값 그대로 — rgba 는 CSS "#RRGGBBAA" 로 옮겼다. 모르는 종류는 웹 기본 회색. */
 data class BadgeColors(val bg: String, val color: String)
 
 val RESERVATION_STATUS_BADGE_STYLES: Map<String, BadgeColors> = mapOf(
@@ -22,7 +22,7 @@ val RESERVATION_STATUS_BADGE_STYLES: Map<String, BadgeColors> = mapOf(
     "cancelled" to BadgeColors("#F1F1F1", "#999999"),
     "completed" to BadgeColors("#E6F4EA", "#34A853"),
     "noshow" to BadgeColors("#FCE8E6", "#EA4335"),
-    "paid" to BadgeColors("#146526D9", "#6526d9"), // rgba(101, 38, 217, 0.08)
+    "paid" to BadgeColors("#6526D914", "#6526d9"), // rgba(101, 38, 217, 0.08) — CSS #RRGGBBAA
     "unpaid" to BadgeColors("#FEF3C7", "#92400E"),
     "requested" to BadgeColors("#FEF7E0", "#a88417"),
 )
