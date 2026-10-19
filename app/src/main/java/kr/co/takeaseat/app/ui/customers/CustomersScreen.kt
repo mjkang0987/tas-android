@@ -87,6 +87,7 @@ import kr.co.takeaseat.app.domain.storeLabels
 import kr.co.takeaseat.app.domain.toDateKey
 import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
+import kr.co.takeaseat.app.ui.components.AddPill
 import kr.co.takeaseat.app.ui.components.ServiceChipList
 import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.TasTextField
@@ -101,7 +102,8 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
  * 웹 `/address`(고객 명단) 모바일 — 헤더 · 소개(CUSTOMER) · 검색(이름·초성·연락처·메모) · 고객 행(펼치면 메모 태그 + 예약 묶음 카드).
  * 예약 카드를 누르면 캘린더와 같은 예약 상세 시트.
  * 펼친 행의 메모 태그는 추가·삭제(웹 AddressCustomerTags — 한 번에 한 고객).
- * shortcut: 고객 추가·병합(선택 체크), 적립금 충전, 고객명 → 고객 상세는 다음 조각(10-2~).
+ * 헤더 오른쪽 '+ 고객' → 고객 추가 시트.
+ * shortcut: 병합(선택 체크), 적립금 충전, 고객명 → 고객 상세는 다음 조각(10-2~).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -110,6 +112,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var query by rememberSaveable { mutableStateOf("") }
     var openIds by rememberSaveable { mutableStateOf(listOf<Int>()) }
     var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var adding by rememberSaveable { mutableStateOf(false) }
     // 웹 address.tsx — 메모 태그는 한 번에 한 고객만 편집, 입력·고른 색은 화면에 하나
     var tagEditingId by rememberSaveable { mutableStateOf<Int?>(null) }
     var tagInput by rememberSaveable { mutableStateOf("") }
@@ -138,10 +141,13 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                 .heightIn(min = 48.dp)
                 .drawBehind { drawRect(TasColors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
                 .padding(horizontal = 10.dp),
-            contentAlignment = Alignment.CenterStart,
         ) {
-            Text("고객 명단", color = TasColors.DarkGray, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.semantics { heading() })
+            Row(Modifier.fillMaxWidth().align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
+                Text("고객 명단", color = TasColors.DarkGray, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).semantics { heading() })
+                // 캘린더의 '+ 예약' 자리 — 고객 화면에선 '+ 고객'(지시자 2026-10-20, iOS 와 같게. 웹 모바일은 메뉴 안에만 있다)
+                AddPill("고객", description = "고객 추가", onClick = { adding = true })
+            }
         }
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             item {
@@ -228,6 +234,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
             )
         }
     }
+    if (adding) CustomerAddSheet(store, onDismiss = { adding = false })
 }
 
 /** 웹 AddressCustomerSummary(모바일 3줄) — 이름·연락처 / 최근 서비스 / 적립금 + 상태별 건수. 행 전체를 누르면 펼친다. */
