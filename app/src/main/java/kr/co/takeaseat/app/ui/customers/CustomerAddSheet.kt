@@ -24,7 +24,6 @@ import kr.co.takeaseat.app.domain.validateCustomerAdd
 import kr.co.takeaseat.app.ui.components.ActionButton
 import kr.co.takeaseat.app.ui.components.ActionTone
 import kr.co.takeaseat.app.ui.components.DetailSheet
-import kr.co.takeaseat.app.ui.components.FieldError
 import kr.co.takeaseat.app.ui.components.TasTextField
 
 /**
@@ -37,14 +36,17 @@ fun CustomerAddSheet(store: GuestStore, onDismiss: () -> Unit) {
     var tel by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var errorSeq by rememberSaveable { mutableIntStateOf(0) } // 같은 오류로 다시 눌러도 다시 읽히게
+    var added by remember { mutableStateOf(false) } // 시트가 닫히기 전 두 번 눌러도(엔터 + 버튼) 한 명만 — 웹 isSaving
 
     fun submit() {
+        if (added) return
         val message = validateCustomerAdd(name, tel)
         if (message != null) {
             error = message
             errorSeq++
             return
         }
+        added = true
         store.update { addCustomer(it, name, tel) }
         onDismiss()
     }
@@ -66,6 +68,9 @@ fun CustomerAddSheet(store: GuestStore, onDismiss: () -> Unit) {
                 onValueChange = { name = it; error = null },
                 placeholder = "이름 입력",
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                // 오류는 그 칸에 붙인다 — 낭독기가 칸에서 '오류'를 읽게(웹은 칸 아래 한 줄)
+                error = error?.takeIf { name.isBlank() },
+                errorKey = errorSeq,
                 modifier = Modifier.focusRequester(focus),
             )
             TasTextField(
@@ -75,9 +80,9 @@ fun CustomerAddSheet(store: GuestStore, onDismiss: () -> Unit) {
                 placeholder = "01012345678",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { submit() }),
+                error = error?.takeIf { name.isNotBlank() },
+                errorKey = errorSeq,
             )
-            // 웹 StyledError — 칸 아래 한 줄(어느 칸 오류든 같은 자리)
-            error?.let { FieldError(it, scrollKey = errorSeq) }
         }
     }
 }
