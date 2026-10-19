@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
@@ -84,12 +85,13 @@ fun ServiceChipList(
     serviceColorMap: Map<String, String>,
     modifier: Modifier = Modifier,
     muted: Boolean = false,
+    gap: Dp = 6.dp, // 웹 StyledServiceList 6 — 모바일 타임라인 카드만 4
 ) {
     val names = parseServiceString(service, serviceColorMap.keys)
     FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp), // 모바일 gap 4
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(gap),
+        verticalArrangement = Arrangement.spacedBy(gap),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         names.forEach { name ->

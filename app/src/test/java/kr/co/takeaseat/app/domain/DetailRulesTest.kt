@@ -45,4 +45,13 @@ class DetailRulesTest {
         assertEquals("#6526D914", statusBadgeColors("paid").bg)
         assertEquals("010-1234-5678", formatTel("010-1234-5678"))
     }
+
+    @Test fun `네이버 예약금 줄 - 네이버 예약이고 예약금이 결제 줄 합과 다를 때만`() {
+        val base = Reservation(1, "2026-10-19", "10:00", "11:00", "커트", customerId = 1, naverBookingId = "N1", naverDeposit = 10000)
+        assertTrue(showsNaverDepositLine(base, emptyList()))
+        assertFalse(showsNaverDepositLine(base, listOf(PaymentEntry("네이버 예약금", 10000))))
+        assertTrue(showsNaverDepositLine(base, listOf(PaymentEntry("네이버 예약금", 5000))))
+        assertFalse(showsNaverDepositLine(base.copy(naverBookingId = ""), emptyList())) // 빈 번호는 네이버 예약 아님(웹)
+        assertFalse(showsNaverDepositLine(base.copy(naverDeposit = 0), emptyList()))
+    }
 }

@@ -120,7 +120,7 @@ fun ReservationCard(
                         )
                     }
                 }
-                ServiceChipList(reservation.service, serviceColorMap, muted = cancelled)
+                ServiceChipList(reservation.service, serviceColorMap, muted = cancelled, gap = 4.dp)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     if (isNewCustomer) NewCustomerBadge()

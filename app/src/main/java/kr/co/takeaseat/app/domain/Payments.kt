@@ -14,6 +14,13 @@ fun paymentEntriesOf(reservation: Reservation): List<PaymentEntry> = when {
     else -> emptyList()
 }
 
+/** 웹: 네이버 예약이고 예약금이 있는데, 결제 줄의 '네이버 예약금' 합이 그 금액과 다를 때만 예약금 줄을 따로 보인다. */
+fun showsNaverDepositLine(reservation: Reservation, entries: List<PaymentEntry>): Boolean {
+    val deposit = reservation.naverDeposit ?: 0
+    return !reservation.naverBookingId.isNullOrEmpty() && deposit > 0 &&
+        entries.filter { it.method == "네이버 예약금" }.sumOf { it.amount } != deposit
+}
+
 /** 배지 색(배경, 글자). 웹 값 그대로 — rgba 는 CSS "#RRGGBBAA" 로 옮겼다. 모르는 종류는 웹 기본 회색. */
 data class BadgeColors(val bg: String, val color: String)
 

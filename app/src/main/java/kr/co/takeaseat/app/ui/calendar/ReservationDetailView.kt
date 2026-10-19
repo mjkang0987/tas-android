@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,7 @@ import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.formatTel
 import kr.co.takeaseat.app.domain.hasCompletedPayment
 import kr.co.takeaseat.app.domain.paymentEntriesOf
+import kr.co.takeaseat.app.domain.showsNaverDepositLine
 import kr.co.takeaseat.app.ui.components.AssigneeLabel
 import kr.co.takeaseat.app.ui.components.LabelBadge
 import kr.co.takeaseat.app.ui.components.LabelTone
@@ -113,7 +115,6 @@ fun ReservationDetailView(
                             tag.text,
                             color = Color.White,
                             fontSize = TasSizes.XSmallFont,
-                            lineHeight = TasSizes.XSmallFont,
                             fontWeight = FontWeight.SemiBold,
                             // 웹 태그는 최소 22 에 글이 길면 줄을 바꿔 커진다 — 한 줄 상자(lineBox)를 쓰지 않는다.
                             modifier = Modifier
@@ -155,18 +156,17 @@ private fun PaymentValue(reservation: Reservation) {
                 }
             }
         }
-        val deposit = reservation.naverDeposit ?: 0
-        val depositRows = entries.filter { it.method == "네이버 예약금" }.sumOf { it.amount }
-        if (!reservation.naverBookingId.isNullOrEmpty() && deposit > 0 && depositRows != deposit) NaverDepositLine(deposit)
     }
+    // 웹은 결제 묶음(아래 2px) 다음 형제라 간격이 2 — 위 묶음의 6 간격에 넣지 않는다.
+    if (showsNaverDepositLine(reservation, entries)) NaverDepositLine(reservation.naverDeposit ?: 0, Modifier.padding(top = 2.dp))
 }
 
 /** 웹 StyledNaverDepositLine — 연두 상자 + N 로고 + "네이버 예약 확정 예약금 N원". */
 @Composable
-private fun NaverDepositLine(deposit: Int) {
+private fun NaverDepositLine(deposit: Int, modifier: Modifier = Modifier) {
     val shape = TasShapes.RadiusMd
     Row(
-        Modifier
+        modifier
             .background(Color(0xFFF0FAF4), shape)
             .border(1.dp, Color(0xFFD4EDDA), shape)
             .padding(horizontal = 8.dp, vertical = 4.dp), // 웹 패딩 3/7 + 바깥 테두리 1
@@ -208,6 +208,8 @@ private fun NaverBookingInfo(bookingId: String, bookingUrl: String?) {
         color = Color(0xFF0F5132),
         fontSize = TasSizes.SmallFont,
         lineHeight = 1.45.em,
+        // 웹 word-break: keep-all — 한글을 글자마다 끊지 않는다(안드로이드 13+, 그 아래는 기본 줄바꿈)
+        style = LocalTextStyle.current.copy(lineBreak = LineBreak.Paragraph.copy(wordBreak = LineBreak.WordBreak.Phrase)),
         modifier = Modifier
             .padding(top = 8.dp)
             // 따로 읽는다 — 행에 합치면 바로가기보다 먼저 읽혀 보이는 차례와 어긋난다.
