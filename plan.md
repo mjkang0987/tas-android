@@ -7,6 +7,22 @@
 
 ---
 
+## 🟡 진행 — 10-2단계: 고객 추가 (`claude/android-customer-add`, #10 위)
+
+### 요구 (지시자 2026-10-20)
+- "iOS 처럼 모바일 고객 페이지 진입 시 + 예약 > + 고객 으로 변경" — 고객 탭 헤더 오른쪽에 캘린더와 같은 보라 알약 '+ 고객'.
+  웹 모바일은 고객 추가가 메뉴(설정 탭 → /menu) 안에만 있어 고객 화면엔 없다(웹도 같은 버튼을 둘지는 따로).
+
+### 웹에서 가져오는 것 (`CustomerAddModal.tsx`)
+- 시트 '고객 추가': 고객명(이름 입력, 자동 초점) · 연락처(01012345678) · 오류 한 줄 · 취소 / 추가.
+- 검사: 이름 비면 '고객명을 입력해 주세요.', 연락처는 비워도 되고 넣으면 01[016789] + 7~8자리 아니면 '올바른 연락처를 입력해 주세요.'
+- 저장: 번호 = 지금 가장 큰 번호 + 1(삭제 고객 포함), 적립금 0, 이력 없음. 입력을 고치면 오류는 지운다.
+
+### 영향 파일
+- `domain/CustomerAdd.kt`(신규) — validateCustomerAdd·newCustomer·addCustomer + 테스트. 예약 추가(applyCreate)의 새 고객도 newCustomer 로.
+- `ui/components/AddPill.kt` — 캘린더 헤더의 '+ 예약' 알약을 공용으로 빼서 '+ 고객'에도 씀(새로 만드는 게 아니라 옮김).
+- `ui/customers/CustomerAddSheet.kt`(신규, DetailSheet 재사용) · `CustomersScreen.kt` 헤더.
+
 ## 🟡 진행 — 10-1단계: 고객 메모 태그 추가·삭제 (`claude/android-memo-tags`, #9 위)
 
 ### 요구 (지시자 2026-10-20 — "응 계속 진행")
