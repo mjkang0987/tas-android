@@ -145,3 +145,35 @@ fun servicePriceTotal(service: String, catalog: List<ServiceItem>): Int {
     val byName = catalog.associateBy { it.name }
     return parseServiceString(service, byName.keys).sumOf { byName[it]?.price ?: 0 }
 }
+
+/** 웹 buildCatalogMap — 이름 → 서비스. 옛 이름도 현재 서비스로 찾힌다. */
+fun buildCatalogMap(catalog: List<ServiceItem>): Map<String, ServiceItem> {
+    val map = LinkedHashMap(catalog.associateBy { it.name })
+    for ((legacy, current) in LEGACY_NAME_MAP) {
+        val item = map[current]
+        if (item != null && legacy !in map) map[legacy] = item
+    }
+    return map
+}
+
+fun sumDurationMinutes(names: List<String>, catalogMap: Map<String, ServiceItem>): Int = names.sumOf { catalogMap[it]?.durationMinutes ?: 0 }
+
+fun sumPrice(names: List<String>, catalogMap: Map<String, ServiceItem>): Int = names.sumOf { catalogMap[it]?.price ?: 0 }
+
+/** "HH:MM" + 분. 웹처럼 24시를 넘으면 0시부터 다시 돈다. */
+fun calcEndTime(startTime: String, durationMinutes: Int): String {
+    val total = toMinutes(startTime) + durationMinutes
+    return "%02d:%02d".format(total / 60 % 24, total % 60)
+}
+
+/** 90 → "1시간30분", 30 → "30분", 0 이하 → "". */
+fun formatDuration(minutes: Int): String {
+    if (minutes <= 0) return ""
+    val h = minutes / 60
+    val m = minutes % 60
+    return when {
+        h > 0 && m > 0 -> "${h}시간${m}분"
+        h > 0 -> "${h}시간"
+        else -> "${m}분"
+    }
+}
