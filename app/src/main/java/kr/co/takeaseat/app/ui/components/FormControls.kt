@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -46,6 +47,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -54,8 +56,6 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -120,6 +120,12 @@ fun FieldError(message: String, modifier: Modifier = Modifier, scrollKey: Any? =
 
 private val LineBreaks = Regex("[\\r\\n]")
 
+/** 한 줄 칸의 새 글자에서 줄바꿈을 뺀다. 줄바꿈 한 글자만 들어왔으면(엔터) 두 번째 값이 true. */
+internal fun stripLineBreaks(old: String, new: String): Pair<String, Boolean> {
+    if (!LineBreaks.containsMatchIn(new)) return new to false
+    return new.replace(LineBreaks, "") to (new.length == old.length + 1)
+}
+
 private val NoDefaultKeyboardAction = object : KeyboardActionScope {
     override fun defaultKeyboardAction(imeAction: ImeAction) = Unit
 }
@@ -151,9 +157,10 @@ fun TasTextField(
             value = value,
             onValueChange = { v ->
                 // 한 줄 칸인데 하드웨어 키보드 엔터·붙여넣기는 줄바꿈을 넣는다(IME 가 글자로 보냄) — 빼고, 엔터 한 번이면 칸의 키보드 동작(완료·다음·검색)으로
-                if (LineBreaks.containsMatchIn(v)) {
-                    onValueChange(v.replace(LineBreaks, ""))
-                    if (v.length == value.length + 1) {
+                val (text, enterPressed) = stripLineBreaks(value, v)
+                if (text != v) {
+                    onValueChange(text)
+                    if (enterPressed) {
                         val action = when (keyboardOptions.imeAction) {
                             ImeAction.Next -> keyboardActions.onNext
                             ImeAction.Search -> keyboardActions.onSearch
