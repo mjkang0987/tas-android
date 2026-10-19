@@ -65,24 +65,31 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 
 // 웹 `StyledForm` 의 label > strong + input/select(formControlStyle, 36 높이) · `FieldError` inline · `StyledActionButton` 이식.
 
-/** 웹 formControlStyle — 흰 바탕, 1px #e3e3e3, 6 둥글게, 아주 옅은 그림자. 초점이면 테두리 보라 + 바깥 3px 옅은 보라 링. */
-private fun Modifier.formControl(focused: Boolean): Modifier = this
-    .drawBehind {
-        if (focused) {
-            val ring = 3.dp.toPx()
-            drawRoundRect(
-                TasColors.FocusRing,
-                topLeft = Offset(-ring, -ring),
-                size = Size(size.width + ring * 2, size.height + ring * 2),
-                cornerRadius = CornerRadius(6.dp.toPx() + ring),
-            )
+/**
+ * 웹 formControlStyle — 흰 바탕, 1px #e3e3e3, 6 둥글게(36 높이), 아주 옅은 그림자. 초점이면 테두리 보라 + 바깥 3px 옅은 보라 링.
+ * [compact] = 결제 줄 칸(웹 paymentEntryFieldStyles — 30 높이, 4 둥글게).
+ */
+private fun Modifier.formControl(focused: Boolean, compact: Boolean = false): Modifier {
+    val shape = if (compact) TasShapes.RadiusSm else TasShapes.RadiusMd
+    val radius = if (compact) 4.dp else 6.dp
+    return this
+        .drawBehind {
+            if (focused) {
+                val ring = 3.dp.toPx()
+                drawRoundRect(
+                    TasColors.FocusRing,
+                    topLeft = Offset(-ring, -ring),
+                    size = Size(size.width + ring * 2, size.height + ring * 2),
+                    cornerRadius = CornerRadius(radius.toPx() + ring),
+                )
+            }
         }
-    }
-    .dropShadow(TasShapes.RadiusMd, Shadow(radius = 2.dp, color = TasColors.Scrim.copy(alpha = 0.04f), offset = DpOffset(0.dp, 1.dp)))
-    .clip(TasShapes.RadiusMd)
-    .background(TasColors.White)
-    .border(1.dp, if (focused) TasColors.Brand else TasColors.LightGray, TasShapes.RadiusMd)
-    .height(36.dp)
+        .dropShadow(shape, Shadow(radius = 2.dp, color = TasColors.Scrim.copy(alpha = 0.04f), offset = DpOffset(0.dp, 1.dp)))
+        .clip(shape)
+        .background(TasColors.White)
+        .border(1.dp, if (focused) TasColors.Brand else TasColors.LightGray, shape)
+        .height(if (compact) 30.dp else 36.dp)
+}
 
 @Composable
 private fun FieldLabel(text: String) {
@@ -118,7 +125,11 @@ fun TasTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     suffix: String? = null,
     onFocusChange: (Boolean) -> Unit = {},
+    showLabel: Boolean = true,
+    compact: Boolean = false,
+    enabled: Boolean = true,
 ) {
+    val fontSize = if (compact) TasSizes.SmallFont else TasSizes.MediumFont
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -126,9 +137,11 @@ fun TasTextField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
+            enabled = enabled,
             textStyle = TextStyle(
-                color = TasColors.Black,
-                fontSize = TasSizes.MediumFont,
+                // 웹 formControlStyle :disabled — 회색 바탕, 흐린 글자
+                color = if (!enabled) TasColors.DarkGray2 else if (compact) TasColors.DarkGray else TasColors.Black,
+                fontSize = fontSize,
                 textAlign = if (suffix != null) TextAlign.End else TextAlign.Start,
             ),
             cursorBrush = SolidColor(TasColors.Brand),
@@ -139,18 +152,25 @@ fun TasTextField(
                 // 라벨·'원'까지 장식 상자 안에 둔다 — 입력 칸 낭독 노드 안에 들어가야 칸이 제 이름으로 읽힌다(바깥에 두면 따로 읽혔다).
                 // 웹 <label> 처럼 라벨을 눌러도 입력 칸에 들어간다.
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(label, color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+                    if (showLabel) {
+                        Text(label, color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Box(
                             Modifier
                                 .weight(1f)
-                                .formControl(focused)
-                                .semantics { if (error != null) error(error) }
+                                .formControl(focused, compact)
+                                .then(if (enabled) Modifier else Modifier.background(TasColors.Gray2))
+                                .semantics {
+                                    // 라벨을 숨기면(결제 줄) 칸 이름은 여기서 준다 — 웹 aria-label
+                                    if (!showLabel) contentDescription = label
+                                    if (error != null) error(error)
+                                }
                                 .padding(horizontal = 10.dp),
                             contentAlignment = if (suffix != null) Alignment.CenterEnd else Alignment.CenterStart,
                         ) {
                             if (value.isEmpty() && placeholder.isNotEmpty()) {
-                                Text(placeholder, color = TasColors.Placeholder, fontSize = TasSizes.MediumFont, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(placeholder, color = TasColors.Placeholder, fontSize = fontSize, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                             inner()
                         }
@@ -177,18 +197,21 @@ fun TasSelect(
     error: String? = null,
     errorKey: Any? = null,
     centered: Boolean = false,
+    showLabel: Boolean = true,
+    compact: Boolean = false,
+    enabled: Boolean = true,
     menu: @Composable () -> Unit = {},
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel(label)
+        if (showLabel) FieldLabel(label)
         Box {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .formControl(focused)
-                    .clickable(interactionSource = interaction, indication = null, role = Role.DropdownList, onClick = onClick)
+                    .formControl(focused, compact)
+                    .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.DropdownList, onClick = onClick)
                     .semantics {
                         contentDescription = label
                         stateDescription = valueDescription
@@ -199,8 +222,8 @@ fun TasSelect(
             ) {
                 Text(
                     valueText,
-                    color = TasColors.Black,
-                    fontSize = TasSizes.MediumFont,
+                    color = if (compact) TasColors.DarkGray else TasColors.Black,
+                    fontSize = if (compact) TasSizes.SmallFont else TasSizes.MediumFont,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = if (centered) TextAlign.Center else TextAlign.Start,
@@ -224,15 +247,20 @@ fun TasSelect(
     modifier: Modifier = Modifier,
     error: String? = null,
     errorKey: Any? = null,
+    showLabel: Boolean = true,
+    compact: Boolean = false,
+    placeholder: String = "",
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     TasSelect(
         label = label,
-        valueText = options.getOrElse(selectedIndex) { "" },
+        valueText = options.getOrElse(selectedIndex) { placeholder },
         onClick = { open = true },
         modifier = modifier,
         error = error,
         errorKey = errorKey,
+        showLabel = showLabel,
+        compact = compact,
     ) {
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEachIndexed { index, option ->

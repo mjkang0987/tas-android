@@ -46,6 +46,13 @@ object TasColors {
     val BgSubtle90 = Color(248, 250, 252).copy(alpha = 0.9f)   // 변경 화면 고객 메모 상자 rgba(248,250,252,.9)
     val Danger = Color(0xC9, 0x3A, 0x30)                       // --danger-color #c93a30
     val DangerBorder = Color(0xFE, 0xCA, 0xCA)                 // --danger-border #fecaca
+    val DangerBg = Color(0xFE, 0xF2, 0xF2)                     // --danger-bg #fef2f2
+    val PointPillBg = Color(0xF5, 0xEF, 0xE3)                  // 결제 '보유 적립금' 알약 #f5efe3 / #8a5a00 (5.2)
+    val PointPillText = Color(0x8A, 0x5A, 0x00)
+    val DepositPillBg = Color(0xE8, 0xF5, 0xE9)                // 결제 '네이버 예약금' 알약 #e8f5e9 / #2e7d32 (4.6)
+    val DepositPillText = Color(0x2E, 0x7D, 0x32)
+    val ExpectedPillBg = Color(0xE3, 0xF2, 0xFD)               // 결제 '실결제' 알약 #e3f2fd / #1565c0 (5.0)
+    val ExpectedPillText = Color(0x15, 0x65, 0xC0)
     val Warning = Color(0xC5, 0x22, 0x1F)                      // --warning-color #C5221F (대비 5.8, 예전 #EA4335 3.9)
     val Caution = Color(0x80, 0x66, 0x00)                      // --caution-color #806600
     val Blue = Color.hsl(196f, 1f, 0.32f)                      // --blue-color (대비 5.0, 예전 45% 2.7)
