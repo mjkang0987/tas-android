@@ -54,6 +54,8 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -143,14 +145,25 @@ fun TasTextField(
     val fontSize = if (compact) TasSizes.SmallFont else TasSizes.MediumFont
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val focusManager = LocalFocusManager.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BasicTextField(
             value = value,
             onValueChange = { v ->
-                // 한 줄 칸인데 하드웨어 키보드 엔터·붙여넣기는 줄바꿈을 넣는다(IME 가 글자로 보냄) — 빼고, 엔터 한 번이면 키보드 완료 동작으로
+                // 한 줄 칸인데 하드웨어 키보드 엔터·붙여넣기는 줄바꿈을 넣는다(IME 가 글자로 보냄) — 빼고, 엔터 한 번이면 칸의 키보드 동작(완료·다음·검색)으로
                 if (LineBreaks.containsMatchIn(v)) {
                     onValueChange(v.replace(LineBreaks, ""))
-                    if (v.length == value.length + 1) keyboardActions.onDone?.invoke(NoDefaultKeyboardAction)
+                    if (v.length == value.length + 1) {
+                        val action = when (keyboardOptions.imeAction) {
+                            ImeAction.Next -> keyboardActions.onNext
+                            ImeAction.Search -> keyboardActions.onSearch
+                            ImeAction.Go -> keyboardActions.onGo
+                            ImeAction.Send -> keyboardActions.onSend
+                            else -> keyboardActions.onDone
+                        }
+                        if (action != null) action(NoDefaultKeyboardAction)
+                        else if (keyboardOptions.imeAction == ImeAction.Next) focusManager.moveFocus(FocusDirection.Next)
+                    }
                 } else onValueChange(v)
             },
             singleLine = true,
