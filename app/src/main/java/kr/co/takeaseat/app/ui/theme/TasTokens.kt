@@ -41,6 +41,13 @@ object TasColors {
     val ModalHeaderBorder = Color(148, 163, 184).copy(alpha = 0.18f) // --modal-header-border
     val BgSubtle92 = Color(248, 250, 252).copy(alpha = 0.92f)  // --bg-subtle-92
     val BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f)  // --bg-subtle-98
+    val Danger = Color(0xC9, 0x3A, 0x30)                       // --danger-color #c93a30
+    val Caution = Color(0x80, 0x66, 0x00)                      // --caution-color #806600
+    val Blue = Color.hsl(196f, 1f, 0.45f)                      // --blue-color
+    val Black10 = Color.hsl(0f, 0f, 0f, alpha = 0.03f)         // --black-color-10
+    val Placeholder = Color(0x75, 0x75, 0x75)                  // 브라우저 기본 placeholder 실측 #757575
+    val FocusRing = Color(101, 38, 217).copy(alpha = 0.12f)    // formControlStyle :focus 3px 링
+    val BrandShadow = Color(101, 38, 217).copy(alpha = 0.28f)  // 모바일 '+ 예약' 그림자
 }
 
 object TasSizes {

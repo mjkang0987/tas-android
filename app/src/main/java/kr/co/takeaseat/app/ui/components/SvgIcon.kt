@@ -33,3 +33,6 @@ fun svgLineIcon(
             fills.forEach { d -> addPath(pathData = PathParser().parsePathString(d).toNodes(), fill = SolidColor(Color.Black)) }
         }
         .build()
+
+/** 아래 셰브론(웹 CalendarHeading·select 화살표, viewBox 24). */
+val ChevronDownIcon: ImageVector = svgLineIcon(24f, listOf("M6 9.5L12 15.5L18 9.5"), strokeWidth = 2.2f, name = "chevron-down")
