@@ -6,8 +6,6 @@ import kotlinx.serialization.Serializable
 // 웹 `components/calendar/overlays/useReservationCreateForm.ts` 의 상태·바꾸기 규칙·검사·저장을 순수 함수로 옮긴 것.
 // 화면(ReservationCreateSheet)은 이걸 부르기만 한다 — 규칙은 여기서 단위 테스트한다.
 
-private val KOREAN_MOBILE_PHONE = Regex("^01[016789]\\d{7,8}$")
-
 /** 웹 roundToHalfHour — 15분 전은 내림, 45분부터 다음 정시. 23:45 이후는 23:30 (웹은 "24:00" 이 돼 시간 칸이 비었다). */
 fun roundedStartTime(now: LocalDateTime): String {
     val m = now.minute
@@ -121,9 +119,9 @@ fun applyCreate(form: ReservationForm, snapshot: LocalDbSnapshot): LocalDbSnapsh
         form.customerId
     } else {
         findExactCustomer(customers, form.customerQuery, form.customerTel)?.id ?: run {
-            val id = (customers.maxOfOrNull { it.id } ?: 0).coerceAtLeast(0) + 1
-            customers = customers + Customer(id = id, name = form.customerQuery.trim(), tel = normalizeTel(form.customerTel), points = 0, pointHistories = emptyList())
-            id
+            val customer = newCustomer(customers, form.customerQuery, form.customerTel)
+            customers = customers + customer
+            customer.id
         }
     }
     val reservation = Reservation(
