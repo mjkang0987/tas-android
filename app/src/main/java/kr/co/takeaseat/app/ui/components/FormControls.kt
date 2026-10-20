@@ -315,13 +315,13 @@ fun TasSelect(
 }
 
 /** 웹 StyledActionButton 의 $primary / $danger / $dangerOutline. */
-enum class ActionTone { Default, Primary, Danger, DangerOutline }
+/** [Blue] = 웹 --blue-color 채운 버튼(적립금 '충전'). */
+enum class ActionTone { Default, Primary, Danger, DangerOutline, Blue }
 
 /** 웹 StyledActionButton(모바일) — 30 높이, 7 둥글게, 좌우 10, 12. 채운 것(주·위험)은 흰 글자 600, 나머지 500. */
 @Composable
 fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, tone: ActionTone = ActionTone.Default, enabled: Boolean = true) {
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(7.dp)
-    val filled = tone == ActionTone.Primary || tone == ActionTone.Danger
     Box(
         modifier
             .heightIn(min = 30.dp)
@@ -331,6 +331,7 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
                 when (tone) {
                     ActionTone.Primary -> TasColors.Brand
                     ActionTone.Danger -> TasColors.Danger
+                    ActionTone.Blue -> TasColors.Blue
                     else -> TasColors.White
                 },
             )
