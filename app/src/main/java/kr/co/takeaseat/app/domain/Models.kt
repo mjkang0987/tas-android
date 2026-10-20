@@ -56,6 +56,9 @@ data class PointHistoryEntry(
     val description: String,
     val createdAt: String,
     val relatedReservationId: Int? = null,
+    /** 충전 때 받은 돈(보너스 붙은 적립 delta 와 다를 수 있다)·결제수단 — 매출로 잡힌다. 그 밖의 이력엔 없다(웹과 같다). */
+    val paidAmount: Int? = null,
+    val paymentMethod: String? = null,
 )
 
 @Serializable

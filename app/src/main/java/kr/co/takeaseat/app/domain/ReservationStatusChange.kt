@@ -1,7 +1,6 @@
 package kr.co.takeaseat.app.domain
 
 import java.time.Instant
-import kotlin.random.Random
 
 // 웹 `store/calendarStore.ts` cancelReservation·restoreReservation(게스트 경로) 이식 — 스냅샷을 받아 바뀐 스냅샷을 돌려준다.
 
@@ -62,7 +61,7 @@ fun restoreReservation(snapshot: LocalDbSnapshot, reservationId: Int, now: Insta
 private fun refundPoints(customer: Customer, delta: Int, reservationId: Int, now: Instant): Customer {
     val balance = (customer.points ?: 0) + delta
     val entry = PointHistoryEntry(
-        id = "${now.toEpochMilli()}-0-${Random.nextLong(36L * 36 * 36 * 36 * 36 * 36).toString(36).padStart(6, '0')}", // 웹: 시각-순번-36진수 6자리
+        id = pointHistoryId(now, 0),
         type = "payment_adjust",
         delta = delta,
         balance = balance,
