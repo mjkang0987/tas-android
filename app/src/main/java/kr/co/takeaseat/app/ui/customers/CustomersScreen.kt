@@ -329,7 +329,8 @@ private fun CustomerRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                // '적립금'과 금액 사이에서만 줄이 바뀐다(아주 큰 글자에서도 금액은 안 쪼개진다)
+                FlowRow(Modifier.padding(end = 8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                     Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium, softWrap = false)
                     Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, softWrap = false)
                 }
