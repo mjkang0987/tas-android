@@ -23,5 +23,8 @@ class CustomerPointsTest {
         assertEquals("2026-10-20T05:00:00Z", h.createdAt)
         assertEquals("적립금 직접 충전", rechargePoints(snap, 3, 5000, 5000, "현금", custom = true, now = now).customers.single().pointHistories!!.single().description)
         assertSame(snap, rechargePoints(snap, 3, 0, 0, "카드", custom = true, now = now))
+        // 잔액이 Int 를 넘는 충전은 받지 않는다(음수로 뒤집히지 않게)
+        val rich = snap.copy(customers = listOf(snap.customers.single().copy(points = Int.MAX_VALUE - 10)))
+        assertSame(rich, rechargePoints(rich, 3, 11, 11, "카드", custom = true, now = now))
     }
 }

@@ -42,6 +42,9 @@ fun rechargePoints(
     now: Instant = Instant.now(),
 ): LocalDbSnapshot {
     if (amount <= 0) return snapshot
+    // 잔액이 Int 범위를 넘으면(9자리 직접입력을 여러 번) 음수로 뒤집힌다 — 그런 충전은 받지 않는다
+    val current = snapshot.customers.firstOrNull { it.id == customerId }?.points ?: 0
+    if (current.toLong() + amount > Int.MAX_VALUE) return snapshot
     return snapshot.copy(customers = snapshot.customers.map { c ->
         if (c.id != customerId) return@map c
         val balance = (c.points ?: 0) + amount

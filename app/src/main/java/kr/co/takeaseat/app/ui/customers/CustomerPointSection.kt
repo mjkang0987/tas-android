@@ -17,7 +17,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,6 +28,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -64,7 +65,10 @@ internal fun CustomerPointSection(
     val histories = remember(customer.pointHistories) { customer.pointHistories.orEmpty().asReversed() }
     if (!settings.enableRecharge && histories.isEmpty()) return
     val options = remember(settings.rechargeRules) { rechargeOptions(settings) }
-    var selected by rememberSaveable { mutableIntStateOf(0) } // options.size = '직접입력'
+    // 고른 것은 이름으로 기억한다 — 번호로 두면 매장 규칙이 바뀌었을 때 다른 규칙·직접입력을 가리켰다. 없으면 첫 규칙.
+    val labels = remember(options) { options.map { it.label } + CUSTOM_LABEL }
+    var selectedLabel by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = labels.indexOf(selectedLabel).takeIf { it >= 0 } ?: 0
     var customAmount by rememberSaveable { mutableStateOf("") }
     var method by rememberSaveable { mutableStateOf("카드") }
     var showAll by rememberSaveable { mutableStateOf(false) }
@@ -87,15 +91,16 @@ internal fun CustomerPointSection(
     ) {
         if (settings.enableRecharge) {
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, itemVerticalAlignment = Alignment.CenterVertically) {
-                Text("적립금 충전", color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold)
+                Text("적립금 충전", color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics { heading() })
                 Text("현재 잔액 ${formatPrice(customer.points ?: 0)}", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont)
             }
             val isCustom = selected == options.size
             TasSelect(
                 label = "충전 금액 선택",
-                options = options.map { it.label } + "직접입력",
+                options = labels,
                 selectedIndex = selected,
-                onSelect = { selected = it },
+                onSelect = { selectedLabel = labels[it] },
                 showLabel = false,
                 compact = true,
             )
@@ -127,7 +132,7 @@ internal fun CustomerPointSection(
                     if (amount > 0) {
                         onCharge(amount, if (isCustom) amount else option?.paid ?: 0, method, isCustom)
                         customAmount = ""
-                        selected = 0
+                        selectedLabel = null
                     }
                 },
                 tone = ActionTone.Blue,
@@ -137,7 +142,7 @@ internal fun CustomerPointSection(
         if (histories.isNotEmpty()) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("적립금 이력 (${histories.size})", color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f))
+                    modifier = Modifier.weight(1f).semantics { heading() })
                 if (histories.size > 1) {
                     Text(
                         "더보기",
@@ -162,6 +167,8 @@ internal fun CustomerPointSection(
         }
     }
 }
+
+private const val CUSTOM_LABEL = "직접입력"
 
 /** 웹 StyledPointItem — 종류 · ±금액(파랑) / 설명 · 잔액 · 시각. 1px 옅은 회색 테두리, 8 둥글게. */
 @Composable
