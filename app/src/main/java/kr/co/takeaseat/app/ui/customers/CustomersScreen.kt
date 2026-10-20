@@ -145,7 +145,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
             Row(Modifier.fillMaxWidth().align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
                 Text("고객 명단", color = TasColors.DarkGray, fontSize = 18.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f).semantics { heading() })
-                // 캘린더의 '+ 예약' 자리 — 고객 화면에선 '+ 고객'(지시자 2026-10-20, iOS 와 같게. 웹 모바일은 메뉴 안에만 있다)
+                // 캘린더의 '+ 예약' 자리 — 고객 화면에선 '+ 고객'(지시자 2026-10-20 — 웹 모바일도 같게 넣음, tas v0.64.7 #299)
                 AddPill("고객", description = "고객 추가", onClick = { adding = true })
             }
         }
