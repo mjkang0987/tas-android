@@ -321,16 +321,17 @@ private fun CustomerRow(
                 Text("최근 서비스", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
                 if (stats.recentService != null) ServiceChipList(stats.recentService, serviceColorMap) else Text("-", fontSize = TasSizes.SmallFont, color = TasColors.Black)
             }
-            // 자리가 모자라면(좁은 폰·큰 글자) 상태 배지가 아랫줄로 내려간다(웹 flex-wrap)
+            // 자리가 모자라면(좁은 폰·큰 글자·큰 적립금) 상태 배지가 아랫줄로 내려간다(웹 flex-wrap, 배지는 오른쪽).
+            // 적립금 글자는 줄바꿈하지 않는다 — 남는 폭(weight)에 맞추면 '171,850 / 원'처럼 금액이 두 줄로 깨졌다.
             FlowRow(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                    Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
-                    Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+                Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium, softWrap = false)
+                    Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, softWrap = false)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     StatusBadge("booked", "예약(${stats.count(CustomerReservationGroup.Booked)})")
