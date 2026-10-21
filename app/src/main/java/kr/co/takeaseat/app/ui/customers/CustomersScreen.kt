@@ -18,6 +18,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import kr.co.takeaseat.app.domain.MEMO_TAG_COLORS
+import kr.co.takeaseat.app.ui.components.PageHero
+import kr.co.takeaseat.app.ui.components.ScreenHeader
+import androidx.compose.foundation.layout.PaddingValues
 import kr.co.takeaseat.app.domain.addMemoTag
 import kr.co.takeaseat.app.domain.rechargePoints
 import kr.co.takeaseat.app.domain.removeMemoTag
@@ -56,13 +59,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import kr.co.takeaseat.app.data.GuestStore
@@ -94,7 +95,6 @@ import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
 import kr.co.takeaseat.app.ui.components.hexColor
-import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -136,28 +136,13 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     }
 
     Column(modifier.fillMaxSize()) {
-        // 웹 Header(모바일) — 높이 48, 제목 18 굵게 #525252, 아래 1px
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .drawBehind { drawRect(TasColors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
-                .padding(horizontal = 10.dp),
-        ) {
-            Row(Modifier.fillMaxWidth().align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
-                Text("고객 명단", color = TasColors.DarkGray, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f).semantics { heading() })
-                // 캘린더의 '+ 예약' 자리 — 고객 화면에선 '+ 고객'(지시자 2026-10-20 — 웹 모바일도 같게 넣음, tas v0.64.7 #299)
-                AddPill("고객", description = "고객 추가", onClick = { adding = true })
-            }
+        ScreenHeader("고객 명단") {
+            // 캘린더의 '+ 예약' 자리 — 고객 화면에선 '+ 고객'(지시자 2026-10-20 — 웹 모바일도 같게 넣음, tas v0.64.7 #299)
+            AddPill("고객", description = "고객 추가", onClick = { adding = true })
         }
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             item {
-                // 웹 PageHero — 영문 eyebrow + 설명, 아래 18
-                Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("CUSTOMER", color = TasColors.Blue, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.Bold, letterSpacing = 0.18.em)
-                    Text("고객 정보, 예약 이력, 메모 태그를 관리합니다.", color = TasColors.DarkGray2, fontSize = TasSizes.LargeFont)
-                }
+                PageHero("CUSTOMER", "고객 정보, 예약 이력, 메모 태그를 관리합니다.", PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 18.dp))
             }
             stickyHeader {
                 // 웹 검색(위로 붙어 있다) — 32 높이 칸
