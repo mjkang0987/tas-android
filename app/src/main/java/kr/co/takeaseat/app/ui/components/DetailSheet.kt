@@ -82,6 +82,7 @@ fun DetailSheet(
     footer: (@Composable RowScope.() -> Unit)? = null,
     centered: Boolean = false,
     subtitle: String? = null,
+    headerActions: (@Composable RowScope.() -> Unit)? = null,
     scrim: Color = TasColors.Scrim,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -136,7 +137,7 @@ fun DetailSheet(
                         .border(1.dp, TasColors.ModalBorder, shape)
                         .semantics { paneTitle = title },
                 ) {
-                    SheetHeader(title, subtitle, onDismiss)
+                    SheetHeader(title, subtitle, onDismiss, headerActions)
                     Column(
                         Modifier
                             .weight(1f, fill = false)
@@ -165,7 +166,7 @@ fun DetailSheet(
 }
 
 @Composable
-private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit) {
+private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit, actions: (@Composable RowScope.() -> Unit)?) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -204,6 +205,8 @@ private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit)
                 )
             }
         }
+        // 웹 StyledHeaderActions — 닫기 왼쪽 버튼들(고객 상세 '수정'·'저장' 등), 간격 6
+        if (actions != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically, content = actions)
         // 웹 CloseIconButton(모바일 34) — 흰 바탕, 연회색 테두리, 6 둥글게, X 14
         Box(
             Modifier
