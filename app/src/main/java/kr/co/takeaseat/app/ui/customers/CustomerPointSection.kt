@@ -172,7 +172,7 @@ private const val CUSTOM_LABEL = "직접입력"
 
 /** 웹 StyledPointItem — 종류 · ±금액(파랑) / 설명 · 잔액 · 시각. 1px 옅은 회색 테두리, 8 둥글게. */
 @Composable
-private fun PointHistoryCard(entry: PointHistoryEntry, onClick: (() -> Unit)?) {
+internal fun PointHistoryCard(entry: PointHistoryEntry, onClick: (() -> Unit)?) {
     val shape = RoundedCornerShape(8.dp)
     Column(
         Modifier

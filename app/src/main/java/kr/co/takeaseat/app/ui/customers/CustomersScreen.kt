@@ -104,7 +104,7 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
  * 예약 카드를 누르면 캘린더와 같은 예약 상세 시트.
  * 펼친 행의 메모 태그는 추가·삭제(웹 AddressCustomerTags — 한 번에 한 고객).
  * 헤더 오른쪽 '+ 고객' → 고객 추가 시트. 펼친 행에 적립금 충전·이력(웹 AddressCustomerRecharge).
- * shortcut: 병합(선택 체크), 고객명 → 고객 상세는 다음 조각(10-4~).
+ * 고객 이름을 누르면 고객 상세 시트(웹 CustomerDetail). 병합(선택 체크)은 게스트라 없다(10-4 건너뜀).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -114,6 +114,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var openIds by rememberSaveable { mutableStateOf(listOf<Int>()) }
     var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
+    var customerDetailId by rememberSaveable { mutableStateOf<Int?>(null) }
     // 웹 address.tsx — 메모 태그는 한 번에 한 고객만 편집, 입력·고른 색은 화면에 하나
     var tagEditingId by rememberSaveable { mutableStateOf<Int?>(null) }
     var tagInput by rememberSaveable { mutableStateOf("") }
@@ -187,6 +188,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     stats = statsById[customer.id] ?: customerStats(emptyList(), today),
                     matchedTags = match.matchedTags,
                     open = open,
+                    onNameClick = { customerDetailId = customer.id },
                     onToggle = {
                         openIds = if (open) openIds - customer.id else openIds + customer.id
                         // 편집 중에 접으면 편집도 끝 — 다시 펼쳤을 때 편집 칸·키보드가 갑자기 뜨지 않게
@@ -233,6 +235,8 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
         }
     }
 
+    // 고객 상세가 예약 상세보다 먼저 — 회전 뒤 다시 그릴 때도 예약 상세가 위에 오게(창은 그린 순서대로 쌓인다)
+    customerDetailId?.let { id -> CustomerDetailSheet(store, id, onReservationClick = { detailId = it.id }, onDismiss = { customerDetailId = null }) }
     // 예약 카드 → 캘린더와 같은 상세 시트
     detailId?.let { id ->
         snapshot.reservations.firstOrNull { it.id == id }?.let { r ->
@@ -257,6 +261,7 @@ private fun CustomerRow(
     matchedTags: List<CustomerMemoTag>,
     open: Boolean,
     onToggle: () -> Unit,
+    onNameClick: () -> Unit,
     serviceColorMap: Map<String, String>,
     expanded: @Composable () -> Unit,
 ) {
@@ -281,8 +286,11 @@ private fun CustomerRow(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
               Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // 웹 StyledNameButton — 이름을 누르면 고객 상세(행의 나머지는 펼치기)
                 Text(customer.name, color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false).heightIn(min = 24.dp).wrapContentHeight(Alignment.CenterVertically)
+                        .clickable(role = Role.Button, onClickLabel = "고객 정보 보기", onClick = onNameClick))
                 // 웹 tel: 링크 — 누르면 전화 앱(번호만 채움)
                 if (customer.tel.isNotBlank()) {
                     Text(
@@ -422,26 +430,7 @@ private fun MemoTagSection(
                 tags.forEach { tag -> MemoChip(tag, onRemove = { onRemove(tag.text) }) }
             }
         }
-        // 웹 18 동그라미(고른 색은 2px 진회색 테두리) — 누르는 영역은 24
-        Row(Modifier.selectableGroup()) {
-            MEMO_TAG_COLORS.forEach { (hex, name) ->
-                val selected = color == hex
-                Box(
-                    Modifier
-                        .size(24.dp)
-                        .selectable(selected, role = Role.RadioButton) { onColor(hex) }
-                        .semantics { contentDescription = "태그 색 $name" },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        Modifier
-                            .size(18.dp)
-                            .background(hexColor(hex), CircleShape)
-                            .border(2.dp, if (selected) TasColors.DarkGray else Color.Transparent, CircleShape),
-                    )
-                }
-            }
-        }
+        MemoColorPalette(color, onColor)
         val focus = remember { FocusRequester() }
         // 웹 autoFocus — 편집을 열 때 한 번만. 목록을 스크롤해 이 줄이 다시 그려질 때·회전 뒤엔 다시 잡지 않는다(키보드가 갑자기 뜸).
         var autoFocused by rememberSaveable { mutableStateOf(false) }
@@ -461,6 +450,30 @@ private fun MemoTagSection(
             )
             MemoButton("추가", onAdd)
             MemoButton("완료", onFinish)
+        }
+    }
+}
+
+/** 메모 태그 색 8개(웹 ColorPickerButton) — [dot] 동그라미(고른 색은 2px 진회색 테두리), 누르는 영역은 24 이상. 고객 명단 18, 고객 상세 22. */
+@Composable
+internal fun MemoColorPalette(color: String, onColor: (String) -> Unit, dot: androidx.compose.ui.unit.Dp = 18.dp) {
+    Row(Modifier.selectableGroup()) {
+        MEMO_TAG_COLORS.forEach { (hex, name) ->
+            val selected = color == hex
+            Box(
+                Modifier
+                    .size(maxOf(24.dp, dot + 4.dp))
+                    .selectable(selected, role = Role.RadioButton) { onColor(hex) }
+                    .semantics { contentDescription = "태그 색 $name" },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(dot)
+                        .background(hexColor(hex), CircleShape)
+                        .border(2.dp, if (selected) TasColors.DarkGray else Color.Transparent, CircleShape),
+                )
+            }
         }
     }
 }
@@ -487,7 +500,7 @@ private fun MemoButton(text: String, onClick: () -> Unit, description: String = 
  * [onRemove] 가 있으면 편집 중 — 글자 뒤 ✕(누르는 영역 24, 웹처럼 흐리게 하지 않아 흰 글자 대비 유지).
  */
 @Composable
-private fun MemoChip(tag: CustomerMemoTag, small: Boolean = false, onRemove: (() -> Unit)? = null) {
+internal fun MemoChip(tag: CustomerMemoTag, small: Boolean = false, onRemove: (() -> Unit)? = null) {
     if (onRemove != null) {
         Row(Modifier.background(backgroundForWhiteText(hexColor(tag.color)), TasShapes.RadiusSm).padding(start = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             // 긴 태그도 ✕ 자리는 남긴다(글자가 줄을 다 차지하면 ✕ 가 0 폭이 되어 지울 수 없었다)
