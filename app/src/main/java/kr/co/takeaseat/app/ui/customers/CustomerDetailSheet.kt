@@ -53,6 +53,7 @@ import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.findTelDuplicate
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.formatTel
+import kr.co.takeaseat.app.domain.normalizeTel
 import kr.co.takeaseat.app.domain.noshowCount
 import kr.co.takeaseat.app.domain.removeTag
 import kr.co.takeaseat.app.domain.servicePriceTotal
@@ -97,6 +98,8 @@ fun CustomerDetailSheet(store: GuestStore, customerId: Int, onReservationClick: 
     var newTag by rememberSaveable(customerId) { mutableStateOf("") }
     var tagColor by rememberSaveable(customerId) { mutableStateOf(MEMO_TAG_COLORS[0].first) }
     var error by rememberSaveable(customerId) { mutableStateOf<String?>(null) }
+    // 오류를 붙일 칸 — 'name'·'tel' 은 그 칸에(낭독기가 칸에서 읽게), 'tag' 는 메모 칸 아래(웹 editError 자리)
+    var errorField by rememberSaveable(customerId) { mutableStateOf("tag") }
     var errorSeq by rememberSaveable(customerId) { mutableIntStateOf(0) }
     var dupWith by rememberSaveable(customerId) { mutableStateOf<Int?>(null) } // 같은 번호를 쓰는 다른 고객 번호
     var visibleCount by rememberSaveable(customerId) { mutableIntStateOf(PAGE_SIZE) }
@@ -104,7 +107,7 @@ fun CustomerDetailSheet(store: GuestStore, customerId: Int, onReservationClick: 
     fun startEdit() { form = CustomerEditForm.of(customer); newTag = ""; error = null; editing = true }
     fun commit() { store.update { applyCustomerEdit(it, customerId, form) }; dupWith = null; error = null; editing = false }
     fun save() {
-        validateCustomerEdit(form)?.let { error = it; errorSeq++; return }
+        validateCustomerEdit(form)?.let { error = it; errorField = if (form.name.isBlank()) "name" else "tel"; errorSeq++; return }
         // 같은 번호 — 가족 공유번호가 있어 막지 않고 확인만(웹은 '같은 분이에요'로 병합도 권하지만 게스트는 병합이 없다)
         val dup = findTelDuplicate(snapshot.customers, customerId, form.tel)
         if (dup != null) { error = null; dupWith = dup.id; return }
@@ -128,9 +131,20 @@ fun CustomerDetailSheet(store: GuestStore, customerId: Int, onReservationClick: 
             if (editing) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     TasTextField(label = "고객명", value = form.name, onValueChange = { form = form.copy(name = it); error = null },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        error = error?.takeIf { errorField == "name" }, errorKey = errorSeq)
                     TasTextField(label = "연락처", value = form.tel, onValueChange = { form = form.copy(tel = it); error = null },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done))
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
+                        error = error?.takeIf { errorField == "tel" }, errorKey = errorSeq)
+                    // 웹: 번호가 비어 있으면 네이버 예약 페이지로 가는 길(네이버 유입 고객은 번호가 네이버에만 있다)
+                    if (normalizeTel(form.tel).isEmpty()) {
+                        reservations.lastOrNull { !it.naverBookingUrl.isNullOrBlank() }?.naverBookingUrl?.let { url ->
+                            val context = LocalContext.current
+                            Text("네이버 예약에서 번호 확인", color = TasColors.Blue, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.heightIn(min = 24.dp).wrapContentHeight(Alignment.CenterVertically)
+                                    .clickable(role = Role.Button) { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } })
+                        }
+                    }
                     Text("적립금 ${formatPrice(customer.points ?: 0)}", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont)
                 }
             } else {
@@ -165,7 +179,7 @@ fun CustomerDetailSheet(store: GuestStore, customerId: Int, onReservationClick: 
                         showLabel = false, compact = true, modifier = Modifier.weight(1f))
                     ActionButton("추가", onClick = {
                         val (next, message) = form.addTag(newTag, tagColor)
-                        if (message != null) { error = message; errorSeq++ } else if (next != form) { form = next; newTag = "" }
+                        if (message != null) { error = message; errorField = "tag"; errorSeq++ } else if (next != form) { form = next; newTag = "" }
                     })
                 }
                 MemoColorPalette(tagColor, { tagColor = it }, dot = 22.dp)
@@ -178,7 +192,7 @@ fun CustomerDetailSheet(store: GuestStore, customerId: Int, onReservationClick: 
                     tags.forEach { tag -> MemoChip(tag, onRemove = if (editing) ({ form = form.removeTag(tag.text) }) else null) }
                 }
             }
-            error?.let { FieldError(it, scrollKey = errorSeq) }
+            error?.takeIf { errorField == "tag" }?.let { FieldError(it, scrollKey = errorSeq) }
         }
 
         // 적립금 이력 — 최근 1건 + 더보기(전체 창). 예약 이력은 누르면 그 예약.
@@ -195,7 +209,8 @@ fun CustomerDetailSheet(store: GuestStore, customerId: Int, onReservationClick: 
         if (showAllHistory) {
             DetailSheet(title = "적립금 이력 (${histories.size})", onDismiss = { showAllHistory = false }) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    histories.forEach { PointHistoryCard(it, historyClick(it.relatedReservationId)) }
+                    // 예약으로 가면 이 창은 닫는다 — 열어 두면 다시 그릴 때(회전) 이 창이 예약 상세 위로 올라왔다
+                    histories.forEach { h -> PointHistoryCard(h, historyClick(h.relatedReservationId)?.let { go -> { showAllHistory = false; go() } }) }
                 }
             }
         }
