@@ -221,7 +221,7 @@ private fun BusinessHoursCard(saved: StoreBusinessHours, onSave: (StoreBusinessH
 
 /** 웹 `<input type="time">`(수정 중에만) — 누르면 시스템 시간 고르기(24시간). */
 @Composable
-private fun TimeField(label: String, value: String, enabled: Boolean, modifier: Modifier, onPick: (String) -> Unit) {
+internal fun TimeField(label: String, value: String, enabled: Boolean, modifier: Modifier, showLabel: Boolean = true, onPick: (String) -> Unit) {
     var picking by rememberSaveable { mutableStateOf(false) }
     if (picking) {
         SystemDialogEffect(onDismissed = { picking = false }) { context ->
@@ -229,7 +229,7 @@ private fun TimeField(label: String, value: String, enabled: Boolean, modifier: 
             TimePickerDialog(context, { _, hh, mm -> onPick("%02d:%02d".format(java.util.Locale.ROOT, hh, mm)) }, h, m, true)
         }
     }
-    TasSelect(label = label, valueText = value, onClick = { picking = true }, enabled = enabled, modifier = modifier)
+    TasSelect(label = label, valueText = value, onClick = { picking = true }, enabled = enabled, modifier = modifier, showLabel = showLabel, compact = !showLabel)
 }
 
 @Composable

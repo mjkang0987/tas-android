@@ -47,11 +47,12 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 object SettingsPage {
     const val STORE = "store"
     const val SERVICE = "service"
+    const val ASSIGNEE = "assignee"
 }
 
 /**
  * 웹 `/menu`(모바일 설정) — 위 카드(매장명·게스트) · 항목 묶음 · 이용약관·개인정보처리방침.
- * 아직 없는 화면의 줄은 숨긴다(적립금·담당자 관리는 다음 단계, 계정·고객센터·사용 안내·로그아웃은 로그인/온보딩 때).
+ * 아직 없는 화면의 줄은 숨긴다(적립금 관리는 다음 단계, 계정·고객센터·사용 안내·로그아웃은 로그인/온보딩 때).
  * [page] 가 있으면 그 하위 화면 — 뒤로 가기·설정 탭 다시 누르기로 메뉴로 돌아온다(웹은 탭을 다시 눌러 /menu 로).
  */
 @Composable
@@ -62,15 +63,16 @@ fun SettingsScreen(store: GuestStore, page: String?, onPage: (String?) -> Unit, 
     when (page) {
         SettingsPage.STORE -> StoreManageScreen(store, modifier)
         SettingsPage.SERVICE -> ServiceManageScreen(store, modifier)
+        SettingsPage.ASSIGNEE -> AssigneeManageScreen(store, modifier)
         else -> Column(modifier.fillMaxSize()) {
             ScreenHeader("설정")
-            SettingsMenu(storeName = snapshot.storeName, serviceLabel = labels.service, onPage = onPage)
+            SettingsMenu(storeName = snapshot.storeName, serviceLabel = labels.service, assigneeLabel = labels.assignee, onPage = onPage)
         }
     }
 }
 
 @Composable
-private fun SettingsMenu(storeName: String?, serviceLabel: String, onPage: (String) -> Unit) {
+private fun SettingsMenu(storeName: String?, serviceLabel: String, assigneeLabel: String, onPage: (String) -> Unit) {
     val context = LocalContext.current
     fun openWeb(path: String) = runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$WEB_ORIGIN$path"))) }
     // 웹 StyledPage — 12 12 24, 사이 14
@@ -90,6 +92,8 @@ private fun SettingsMenu(storeName: String?, serviceLabel: String, onPage: (Stri
             MenuRow(StoreIcon, "매장 관리") { onPage(SettingsPage.STORE) }
             MenuDivider()
             MenuRow(ServiceIcon, "$serviceLabel 관리") { onPage(SettingsPage.SERVICE) }
+            MenuDivider()
+            MenuRow(AssigneeIcon, "$assigneeLabel 관리") { onPage(SettingsPage.ASSIGNEE) }
         }
         // 웹 StyledLegalLinks — 11 회색, 사이 6 16
         FlowRow(Modifier.padding(start = 6.dp, end = 6.dp, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -138,5 +142,16 @@ private val GroupShape = RoundedCornerShape(8.dp) // --radius-lg
 
 // 웹 AsideMenuIcon(viewBox 24, 선 1.8) · 줄 끝 꺾쇠(선 2)
 private val StoreIcon = svgLineIcon(24f, listOf("M5 10.5H19V19.5H5V10.5ZM6.5 10.5V7.5C6.5 5.6 8.1 4 10 4H14C15.9 4 17.5 5.6 17.5 7.5V10.5M9 14H15"), strokeWidth = 1.8f, name = "store")
+private val AssigneeIcon = svgLineIcon(
+    24f,
+    listOf(
+        "M7.5 4H16.5A2.5 2.5 0 0 1 19 6.5V17.5A2.5 2.5 0 0 1 16.5 20H7.5A2.5 2.5 0 0 1 5 17.5V6.5A2.5 2.5 0 0 1 7.5 4Z",
+        "M9.5 4V2.6H14.5V4",
+        "M14.2 10A2.2 2.2 0 1 1 9.8 10A2.2 2.2 0 1 1 14.2 10Z",
+        "M8.5 16.6C8.5 14.6 10 13.6 12 13.6C14 13.6 15.5 14.6 15.5 16.6",
+    ),
+    strokeWidth = 1.8f,
+    name = "assignee",
+)
 private val ServiceIcon = svgLineIcon(24f, listOf("M7 5.5H17M7 10.5H17M7 15.5H13M5 5.5H5.01M5 10.5H5.01M5 15.5H5.01"), strokeWidth = 1.8f, name = "service")
 private val ChevronRightIcon = svgLineIcon(24f, listOf("M9 6l6 6-6 6"), strokeWidth = 2f, name = "chevron-right")
