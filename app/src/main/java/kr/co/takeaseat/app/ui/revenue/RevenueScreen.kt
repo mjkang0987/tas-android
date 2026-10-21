@@ -88,6 +88,7 @@ import kr.co.takeaseat.app.domain.revenueSummary
 import kr.co.takeaseat.app.domain.servicePriceTotal
 import kr.co.takeaseat.app.domain.sortAssignees
 import kr.co.takeaseat.app.domain.storeLabels
+import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
 import kr.co.takeaseat.app.ui.calendar.arrowLeft
@@ -101,6 +102,7 @@ import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.components.svgLineIcon
 import kr.co.takeaseat.app.ui.customers.CustomerDetailSheet
+import kr.co.takeaseat.app.ui.rememberDetailStack
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -128,8 +130,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var view by rememberSaveable { mutableStateOf(RevenueView.All) }
     var showHint by rememberSaveable { mutableStateOf(false) }
     var openDates by rememberSaveable { mutableStateOf(listOf<String>()) }
-    var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
-    var customerDetailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val details = rememberDetailStack()
     var metric by rememberSaveable { mutableStateOf<RevenueMetric?>(null) }
 
     val zone = remember { ZoneId.systemDefault() }
@@ -151,11 +152,11 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
             assigneeName = id?.let { assigneeNames[it] } ?: "미지정",
             assigneeColor = hexColor(id?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
             displayPrice = r.price ?: servicePriceTotal(r.service, snapshot.services),
-            onClick = { detailId = r.id },
+            onClick = { details.openReservation(r.id) },
             customerName = customerNames[r.customerId] ?: "고객 미지정",
             isNewCustomer = isNewCustomerVisit(firstVisits[r.customerId], r.date),
             showDate = inMetric,
-            onCustomerClick = { customerDetailId = r.customerId },
+            onCustomerClick = { details.openCustomer(r.customerId) },
             dateFirst = inMetric,
         )
     }
@@ -196,7 +197,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     onToggle = { key -> openDates = if (key in openDates) openDates - key else openDates + key },
                 ) { day ->
                     day.reservations.forEach { reservationCard(it, false) }
-                    day.sales.forEach { sale -> SaleItem(sale, customerNames[sale.customerId]) { customerDetailId = sale.customerId } }
+                    day.sales.forEach { sale -> SaleItem(sale, customerNames[sale.customerId]) { details.openCustomer(sale.customerId) } }
                 }
             }
             item { Box(Modifier.height(16.dp)) }
@@ -206,22 +207,10 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     // 웹 RevenueMetricModal — 요약 카드를 누르면
     metric?.let { m ->
         val detail = remember(snapshot, range, assigneeId, mode, m, summary) { revenueMetricDetail(snapshot, range, assigneeId, mode, m, summary) }
-        RevenueMetricSheet(m, metricSubtitle(m, mode), detail, onCustomerClick = { customerDetailId = it }, onDismiss = { metric = null }) { reservationCard(it, true) }
+        RevenueMetricSheet(m, metricSubtitle(m, mode), detail, onCustomerClick = { details.openCustomer(it) }, onDismiss = { metric = null }) { reservationCard(it, true) }
     }
-    // 창은 그린 순서대로 쌓인다 — 지표 창 → 고객 상세 → 예약 상세 순(지표 창에서 연 상세, 고객 상세에서 연 예약이 위에)
-    customerDetailId?.let { id -> CustomerDetailSheet(store, id, onReservationClick = { detailId = it.id }, onDismiss = { customerDetailId = null }) }
-    detailId?.let { id ->
-        snapshot.reservations.firstOrNull { it.id == id }?.let { r: Reservation ->
-            ReservationDetailSheet(
-                store = store,
-                reservation = r,
-                isNewCustomer = isNewCustomerVisit(firstVisits[r.customerId], r.date),
-                serviceColorMap = serviceColorMap,
-                labels = labels,
-                onDismiss = { detailId = null },
-            )
-        }
-    }
+    // 지표 창 위에 상세 창들 — 연 순서대로 쌓인다(지표 창에서 연 예약에서 다시 고객을 열어도 위로)
+    DetailSheets(store, details)
 }
 
 /** 웹 RevenueFilters(모바일) — 위에 붙어 있다. 줄 사이 6(빠른 기간 ~ 기간은 줄바꿈 8), 아래 1px 선. */

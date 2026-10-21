@@ -22,6 +22,11 @@
 - `ui/DetailStack.kt`(신규 — 상세 창 쌓기·그리기), `calendar/CalendarScreen.kt`·`customers/CustomersScreen.kt`·`revenue/RevenueScreen.kt`(각자 상태 → 스택),
   `calendar/ReservationDetailSheet.kt`·`ReservationDetailView.kt`(고객명 링크) + 단위 테스트(쌓기 규칙).
 
+### 검증 (2026-10-21)
+- 단위 1(쌓기 — 새 창은 위, 열린 창을 다시 열면 그 위를 닫음). 전체 85 통과.
+- 에뮬레이터: 캘린더 예약 상세 고객명(파란 링크) → 고객 상세가 위 → 고객 상세의 다른 예약 → 그 위 → 뒤로 → 고객 상세에서 처음 예약 다시 누름 →
+  고객 창이 닫히고 처음 예약으로 → 뒤로 → 캘린더. 매출 지표 창 → 예약 → 고객명 → 고객 상세가 맨 위, 뒤로 두 번 → 지표 창.
+
 ## 🟡 진행 — 11-2단계: 매출 지표 상세 (`claude/android-revenue-metric`, #14 위)
 
 ### 요구 (지시자 2026-10-21 — "응 괜찮아 계속 진행해줘")
