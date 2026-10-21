@@ -64,6 +64,7 @@ class RevenueTest {
                     // 한국 시각 10-20 09:00 = UTC 10-20 00:00
                     PointHistoryEntry("h1", "recharge", 110000, 110000, "충전", "2026-10-20T00:00:00Z", paidAmount = 100000, paymentMethod = "카드"),
                     PointHistoryEntry("h2", "recharge", 5000, 115000, "예전 충전", "2026-10-20T00:00:00Z"),
+                    PointHistoryEntry("h3", "recharge", 3000, 118000, "결제수단 빈 충전", "2026-10-20T00:00:00Z", paidAmount = 3000, paymentMethod = ""),
                 )),
             ),
             reservations = listOf(
@@ -77,10 +78,12 @@ class RevenueTest {
         val s = revenueSummary(snap, RevenueRange(LocalDate.of(2026, 10, 1), today), null, RevenueFilterMode.Booked, seoul)
         assertEquals(listOf(LocalDate.of(2026, 10, 20), LocalDate.of(2026, 10, 19)), s.days.map { it.date })
         assertEquals(listOf(4, 3), s.days[0].reservations.map { it.id })
-        assertEquals(40000 + 100000, s.days[0].total)
+        assertEquals(40000 + 100000 + 3000, s.days[0].total)
         assertEquals(2, s.days[0].count)
-        assertEquals(listOf(165000, 3, 100000), listOf(s.total, s.count, s.salesTotal))
+        assertEquals(listOf(168000, 3, 103000), listOf(s.total, s.count, s.salesTotal))
+        // 결제수단이 빈 충전은 매출엔 들어가도 결제완료엔 안 든다(웹과 같다)
         assertEquals(25000 + 100000, s.paidTotal)
+        assertEquals(null, s.days[0].sales.last().method)
         assertEquals(1 to 1, s.newCustomerCount to s.returningCustomerCount)
 
         // 담당자를 고르면 충전은 빠진다

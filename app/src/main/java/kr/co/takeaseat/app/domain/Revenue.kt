@@ -94,7 +94,8 @@ fun storeSales(customers: List<Customer>, zone: ZoneId = ZoneId.systemDefault())
         val paid = h.paidAmount ?: 0
         if (h.type != "recharge" || paid <= 0) return@mapNotNull null
         val date = try { Instant.parse(h.createdAt).atZone(zone).toLocalDate() } catch (_: DateTimeParseException) { return@mapNotNull null }
-        StoreSale(date, paid, h.paymentMethod, c.id, "적립금 충전")
+        // 빈 결제수단은 없는 것으로(웹 `if (sale.method)` — 결제완료에 넣지 않는다)
+        StoreSale(date, paid, h.paymentMethod?.takeIf { it.isNotEmpty() }, c.id, "적립금 충전")
     }
 }
 
