@@ -220,17 +220,23 @@ private fun AssigneeCard(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(Modifier.size(10.dp).clip(CircleShape).background(color))
             if (editing) {
-                TasTextField(label = "${assigneeLabel}명", value = assignee.name, onValueChange = { v -> onChange { it.copy(name = v) } },
-                    placeholder = "${assigneeLabel}명", showLabel = false, compact = true, modifier = Modifier.weight(1f))
-                TasSelect(label = "${assignee.name} 상태", options = ASSIGNEE_STATUSES, selectedIndex = ASSIGNEE_STATUSES.indexOf(status), showLabel = false, compact = true,
-                    modifier = Modifier.width(72.dp), onSelect = { i ->
-                        val next = ASSIGNEE_STATUSES[i]
-                        // 웹: 퇴직은 바로 바꾸지 않고 확인창부터
-                        if (next == status) Unit else if (next == "퇴직") onResign() else onChange { it.copy(status = next) }
-                    })
+                // 웹 모바일: 이름 칸은 왼쪽 폭을 다 쓰고 상태 고르기는 다음 줄로(버튼이 많은 퇴직자 카드에서 이름 칸이 찌그러졌다)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.size(10.dp).clip(CircleShape).background(color))
+                        TasTextField(label = "${assigneeLabel}명", value = assignee.name, onValueChange = { v -> onChange { it.copy(name = v) } },
+                            placeholder = "${assigneeLabel}명", showLabel = false, compact = true, modifier = Modifier.weight(1f))
+                    }
+                    TasSelect(label = "${assignee.name} 상태", options = ASSIGNEE_STATUSES, selectedIndex = ASSIGNEE_STATUSES.indexOf(status), showLabel = false, compact = true,
+                        modifier = Modifier.padding(start = 16.dp).width(80.dp), onSelect = { i ->
+                            val next = ASSIGNEE_STATUSES[i]
+                            // 웹: 퇴직은 바로 바꾸지 않고 확인창부터
+                            if (next == status) Unit else if (next == "퇴직") onResign() else onChange { it.copy(status = next) }
+                        })
+                }
             } else {
+                Box(Modifier.size(10.dp).clip(CircleShape).background(color))
                 // 이름 + 상태 배지가 남는 폭을 차지하고 버튼은 오른쪽 끝에(이름이 길면 말줄임)
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(assignee.name, color = TasColors.DarkGray, fontSize = TasSizes.LargeFont, fontWeight = FontWeight.Bold, maxLines = 1,
