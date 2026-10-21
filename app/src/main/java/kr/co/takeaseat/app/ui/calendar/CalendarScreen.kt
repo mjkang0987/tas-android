@@ -22,7 +22,6 @@ import kr.co.takeaseat.app.domain.firstVisitDates
 import kr.co.takeaseat.app.domain.isNewCustomerVisit
 import kr.co.takeaseat.app.domain.placeReservations
 import kr.co.takeaseat.app.domain.storeClosedKind
-import kr.co.takeaseat.app.domain.storeLabels
 import kr.co.takeaseat.app.domain.timelineRange
 import kr.co.takeaseat.app.domain.timelineScaleFor
 import kr.co.takeaseat.app.domain.toDateKey
@@ -71,7 +70,6 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     // 열린 상세 창(예약 → 고객 → …) — 회전해도 유지
     val details = rememberDetailStack()
     var creating by rememberSaveable { mutableStateOf(false) }
-    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
 
     Column(modifier.fillMaxSize()) {
         CalendarHeader(date = date, onDateChange = { dateKey = it.toDateKey() }, onCreate = { creating = true })
