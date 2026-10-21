@@ -81,15 +81,11 @@ import kr.co.takeaseat.app.domain.buildAssigneeColorMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.customerListOrder
 import kr.co.takeaseat.app.domain.customerStats
-import kr.co.takeaseat.app.domain.firstVisitDates
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.formatTel
 import kr.co.takeaseat.app.domain.groupedCustomerReservations
-import kr.co.takeaseat.app.domain.isNewCustomerVisit
 import kr.co.takeaseat.app.domain.searchCustomers
-import kr.co.takeaseat.app.domain.storeLabels
 import kr.co.takeaseat.app.domain.toDateKey
-import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
 import kr.co.takeaseat.app.ui.components.AddPill
 import kr.co.takeaseat.app.ui.components.ServiceChipList
@@ -132,7 +128,6 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val assigneeNames = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.name } }
     val serviceColorMap = remember(snapshot.services, snapshot.categoryBaseColors) { buildServiceColorMap(snapshot.services, snapshot.categoryBaseColors) }
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
-    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     // 편집 중인 고객이 검색에서 빠지면(지운 태그로 검색 중 등) 편집도 끝 — 검색을 지웠을 때 편집 칸이 남아 있지 않게
     LaunchedEffect(matches) {
         if (tagEditingId != null && matches.none { it.customer.id == tagEditingId }) { tagEditingId = null; tagInput = "" }
