@@ -30,6 +30,7 @@ import kr.co.takeaseat.app.data.seedDebugData
 import kr.co.takeaseat.app.ui.calendar.CalendarScreen
 import kr.co.takeaseat.app.ui.customers.CustomersScreen
 import kr.co.takeaseat.app.ui.revenue.RevenueScreen
+import kr.co.takeaseat.app.ui.settings.SettingsScreen
 import kr.co.takeaseat.app.ui.nav.MobileTabBar
 import kr.co.takeaseat.app.ui.nav.TasTab
 import kr.co.takeaseat.app.ui.theme.TasColors
@@ -52,6 +53,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun TasApp(store: GuestStore) {
     var tab by rememberSaveable { mutableStateOf(TasTab.Calendar) }
+    // 설정 탭 안의 하위 화면(서비스 관리 등) — 설정 탭을 누르면 늘 메뉴부터(웹 탭이 /menu 로 간다)
+    var settingsPage by rememberSaveable { mutableStateOf<String?>(null) }
     Column(
         Modifier
             .fillMaxSize()
@@ -66,17 +69,12 @@ private fun TasApp(store: GuestStore) {
                 TasTab.Calendar -> CalendarScreen(store)
                 TasTab.Customers -> CustomersScreen(store)
                 TasTab.Revenue -> RevenueScreen(store)
-                else -> PlaceholderScreen(tab.label)
+                TasTab.Settings -> SettingsScreen(store, settingsPage, onPage = { settingsPage = it })
             }
         }
-        MobileTabBar(selected = tab, onSelect = { tab = it })
-    }
-}
-
-// shortcut: 탭 화면이 아직 없어 이름만 띄운다. 각 탭 화면을 옮길 때 이 자리를 그 화면으로 바꾼다.
-@Composable
-private fun PlaceholderScreen(title: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = title, color = TasColors.DarkGray2)
+        MobileTabBar(selected = tab, onSelect = {
+            if (it == TasTab.Settings) settingsPage = null
+            tab = it
+        })
     }
 }
