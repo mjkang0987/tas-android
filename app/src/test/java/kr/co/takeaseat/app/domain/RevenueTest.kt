@@ -94,4 +94,50 @@ class RevenueTest {
         assertEquals(listOf(LocalDate.of(2026, 10, 20), LocalDate.of(2026, 10, 19)), completed.days.map { it.date })
         assertEquals(listOf(0, 1), completed.days.map { it.count })
     }
+
+    @Test fun `지표 상세 - 기간 안 예약은 날짜·시작 순, 신규·재방문은 고객별 기간 안 첫 예약, 이전 방문은 그 전 가장 최근`() {
+        val snap = LocalDbSnapshot(
+            services = catalog,
+            customers = listOf(Customer(1, "김", "010"), Customer(2, "이", "011"), Customer(3, "박", "012")),
+            reservations = listOf(
+                r(1, "2026-09-01", customerId = 1),
+                r(2, "2026-09-15", customerId = 1),
+                r(3, "2026-10-05", customerId = 1, start = "15:00"),
+                r(4, "2026-10-05", customerId = 2, start = "09:00", entries = listOf(PaymentEntry("카드", 20000))),
+                r(5, "2026-10-07", customerId = 2),
+                r(6, "2026-10-08", ReservationStatus.CANCELLED, customerId = 3),
+                r(7, "2026-10-09", customerId = 1, entries = listOf(PaymentEntry("적립금", 20000))), // 웹은 금액만 본다 → 적립금만 낸 것도 결제완료
+            ),
+        )
+        val range = RevenueRange(LocalDate.of(2026, 10, 1), today)
+        val summary = revenueSummary(snap, range, null, RevenueFilterMode.Booked, seoul)
+        fun detail(m: RevenueMetric) = revenueMetricDetail(snap, range, null, RevenueFilterMode.Booked, m, summary)
+
+        assertEquals(listOf(4, 3, 5, 7), detail(RevenueMetric.Count).reservations.map { it.id })
+        assertEquals("4건", detail(RevenueMetric.Count).summary)
+        assertEquals("4건 · ${formatPrice(summary.total)}", detail(RevenueMetric.Sales).summary)
+        val new = detail(RevenueMetric.New)
+        assertEquals(listOf(2) to "1명", new.customers.map { it.customer.id } to new.summary)
+        val returning = detail(RevenueMetric.Returning).customers.single()
+        assertEquals(MetricCustomer(snap.customers[0], "2026-10-05", "2026-09-15"), returning)
+        assertEquals(listOf(4, 7), detail(RevenueMetric.Paid).reservations.map { it.id })
+        assertEquals("선택 기간 안에서 첫 예약완료가 발생한 고객 목록", metricSubtitle(RevenueMetric.New, RevenueFilterMode.Completed))
+        assertNull(metricSubtitle(RevenueMetric.Sales, RevenueFilterMode.Booked))
+    }
+
+    @Test fun `방문 간격 - 일·주·달(30일)·년`() {
+        assertEquals("6일전", formatVisitGap("2026-10-07", "2026-10-01"))
+        assertEquals("3주전", formatVisitGap("2026-10-22", "2026-10-01"))
+        // 28~29일 — 웹은 0달전으로 보였다(30으로 나눠 버림) → 1달전
+        assertEquals("1달전", formatVisitGap("2026-10-29", "2026-10-01"))
+        assertEquals("1달전", formatVisitGap("2026-11-15", "2026-10-01"))
+        assertEquals("1년전", formatVisitGap("2027-10-01", "2026-10-01"))
+    }
+
+    @Test fun `결제완료 대상 - 받은 돈 줄, 줄 없으면 결제완료 표시, 취소·노쇼·신청 제외`() {
+        assertEquals(true, isPaidTarget(r(1, "d", entries = listOf(PaymentEntry("할인", 1000))), null)) // 웹: 금액만 본다
+        assertEquals(false, isPaidTarget(r(1, "d", entries = emptyList()), null))
+        assertEquals(true, isPaidTarget(r(1, "d").copy(paymentCompleted = true), null))
+        assertEquals(false, isPaidTarget(r(1, "d", ReservationStatus.NOSHOW).copy(paymentCompleted = true), null))
+    }
 }
