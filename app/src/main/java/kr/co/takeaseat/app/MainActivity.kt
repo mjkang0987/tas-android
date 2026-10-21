@@ -29,6 +29,7 @@ import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.data.seedDebugData
 import kr.co.takeaseat.app.ui.calendar.CalendarScreen
 import kr.co.takeaseat.app.ui.customers.CustomersScreen
+import kr.co.takeaseat.app.ui.revenue.RevenueScreen
 import kr.co.takeaseat.app.ui.nav.MobileTabBar
 import kr.co.takeaseat.app.ui.nav.TasTab
 import kr.co.takeaseat.app.ui.theme.TasColors
@@ -64,6 +65,7 @@ private fun TasApp(store: GuestStore) {
             when (tab) {
                 TasTab.Calendar -> CalendarScreen(store)
                 TasTab.Customers -> CustomersScreen(store)
+                TasTab.Revenue -> RevenueScreen(store)
                 else -> PlaceholderScreen(tab.label)
             }
         }

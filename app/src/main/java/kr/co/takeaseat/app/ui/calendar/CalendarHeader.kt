@@ -20,9 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,8 +39,10 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import kr.co.takeaseat.app.ui.components.AddPill
+import kr.co.takeaseat.app.ui.components.ButtonLine
 import kr.co.takeaseat.app.ui.components.ChevronDownIcon
 import kr.co.takeaseat.app.ui.components.SystemDialogEffect
+import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.components.svgLineIcon
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
@@ -65,7 +67,7 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate:
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         PillButton(onClick = { onDateChange(LocalDate.now()) }, contentPadding = PaddingValues(horizontal = 12.dp)) {
-            Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1)
+            Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1, modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont))
         }
         PillButton(onClick = { onDateChange(date.minusDays(1)) }, description = "이전날짜") {
             Icon(arrowLeft, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
@@ -130,5 +132,5 @@ private fun PillButton(
 }
 
 // 웹 DirectionIcon(viewBox 32) 경로 그대로.
-private val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
-private val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
+internal val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
+internal val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
