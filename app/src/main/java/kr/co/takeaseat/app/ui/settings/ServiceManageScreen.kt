@@ -259,7 +259,7 @@ private fun ServiceRow(item: ServiceItem, serviceColorMap: Map<String, String>, 
 
 /** 웹 StyledEditBtn — 30 높이, 6 둥글게, 11 글자, 1px 옅은 회색. */
 @Composable
-private fun SmallButton(text: String, onClick: () -> Unit) {
+internal fun SmallButton(text: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(6.dp)
     Box(
         Modifier.heightIn(min = 30.dp).clip(shape).border(1.dp, TasColors.LightGray, shape).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 12.dp),

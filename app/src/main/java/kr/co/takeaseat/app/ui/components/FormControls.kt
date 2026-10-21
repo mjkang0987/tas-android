@@ -249,6 +249,8 @@ fun TasSelect(
                 Modifier
                     .fillMaxWidth()
                     .formControl(focused, compact)
+                    // 웹 formControlStyle :disabled — 옅은 회색 바탕 · 회색 글자(TasTextField 와 같게)
+                    .then(if (enabled) Modifier else Modifier.background(TasColors.Gray2))
                     .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.DropdownList, onClick = onClick)
                     .semantics {
                         contentDescription = label
@@ -260,7 +262,7 @@ fun TasSelect(
             ) {
                 Text(
                     valueText,
-                    color = if (compact) TasColors.DarkGray else TasColors.Black,
+                    color = if (!enabled) TasColors.DarkGray2 else if (compact) TasColors.DarkGray else TasColors.Black,
                     fontSize = if (compact) TasSizes.SmallFont else TasSizes.MediumFont,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

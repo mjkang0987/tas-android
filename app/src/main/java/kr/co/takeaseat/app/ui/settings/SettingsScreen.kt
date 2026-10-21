@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,12 +45,13 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /** 설정 탭 안의 화면 — 메뉴(null) 또는 하위 화면. 글자로 둬 회전해도 남는다. */
 object SettingsPage {
+    const val STORE = "store"
     const val SERVICE = "service"
 }
 
 /**
  * 웹 `/menu`(모바일 설정) — 위 카드(매장명·게스트) · 항목 묶음 · 이용약관·개인정보처리방침.
- * 아직 없는 화면의 줄은 숨긴다(매장·적립금·담당자 관리는 다음 단계, 계정·고객센터·사용 안내·로그아웃은 로그인/온보딩 때).
+ * 아직 없는 화면의 줄은 숨긴다(적립금·담당자 관리는 다음 단계, 계정·고객센터·사용 안내·로그아웃은 로그인/온보딩 때).
  * [page] 가 있으면 그 하위 화면 — 뒤로 가기·설정 탭 다시 누르기로 메뉴로 돌아온다(웹은 탭을 다시 눌러 /menu 로).
  */
 @Composable
@@ -58,6 +60,7 @@ fun SettingsScreen(store: GuestStore, page: String?, onPage: (String?) -> Unit, 
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     if (page != null) BackHandler { onPage(null) }
     when (page) {
+        SettingsPage.STORE -> StoreManageScreen(store, modifier)
         SettingsPage.SERVICE -> ServiceManageScreen(store, modifier)
         else -> Column(modifier.fillMaxSize()) {
             ScreenHeader("설정")
@@ -84,6 +87,8 @@ private fun SettingsMenu(storeName: String?, serviceLabel: String, onPage: (Stri
             Text("게스트", color = TasColors.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
         MenuGroup {
+            MenuRow(StoreIcon, "매장 관리") { onPage(SettingsPage.STORE) }
+            MenuDivider()
             MenuRow(ServiceIcon, "$serviceLabel 관리") { onPage(SettingsPage.SERVICE) }
         }
         // 웹 StyledLegalLinks — 11 회색, 사이 6 16
@@ -92,6 +97,12 @@ private fun SettingsMenu(storeName: String?, serviceLabel: String, onPage: (Stri
             LegalLink("개인정보처리방침") { openWeb("/privacy") }
         }
     }
+}
+
+/** 웹 rowBase border-top — 줄 사이 1px 옅은 회색(첫 줄 위는 없음). */
+@Composable
+private fun MenuDivider() {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(TasColors.LightGray))
 }
 
 /** 웹 StyledGroup — 1px 옅은 회색 테두리, 8 둥글게, 줄 사이 1px. */
@@ -126,5 +137,6 @@ private const val WEB_ORIGIN = "https://takeaseat.co.kr"
 private val GroupShape = RoundedCornerShape(8.dp) // --radius-lg
 
 // 웹 AsideMenuIcon(viewBox 24, 선 1.8) · 줄 끝 꺾쇠(선 2)
+private val StoreIcon = svgLineIcon(24f, listOf("M5 10.5H19V19.5H5V10.5ZM6.5 10.5V7.5C6.5 5.6 8.1 4 10 4H14C15.9 4 17.5 5.6 17.5 7.5V10.5M9 14H15"), strokeWidth = 1.8f, name = "store")
 private val ServiceIcon = svgLineIcon(24f, listOf("M7 5.5H17M7 10.5H17M7 15.5H13M5 5.5H5.01M5 10.5H5.01M5 15.5H5.01"), strokeWidth = 1.8f, name = "service")
 private val ChevronRightIcon = svgLineIcon(24f, listOf("M9 6l6 6-6 6"), strokeWidth = 2f, name = "chevron-right")

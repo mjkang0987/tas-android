@@ -17,23 +17,8 @@ private val CATEGORY_LABELS = mapOf(
     "etc" to StoreLabels("담당자", "서비스"),
 )
 
-// 웹 SHOP_INDUSTRIES 의 value → category (표시 이름·이모지는 아직 쓰는 화면이 없어 옮기지 않았다)
-private val INDUSTRY_CATEGORY = mapOf(
-    "hair" to "beauty", "nail" to "beauty", "waxing" to "beauty", "lash" to "beauty", "skin" to "beauty",
-    "makeup" to "beauty", "tattoo" to "beauty",
-    "restaurant" to "food", "cafe" to "food", "bar" to "food",
-    "vet" to "medical",
-    "gym" to "fitness", "yoga" to "fitness", "golf" to "fitness", "dance" to "fitness",
-    "academy" to "class", "craft" to "class", "tutoring" to "class",
-    "petgroom" to "pet",
-    "carwash" to "repair", "repair" to "repair",
-    "rentalspace" to "space", "practice" to "space",
-    "counseling" to "counsel",
-    "etc" to "etc",
-)
-
 /** shopType 은 콤마로 이은 여러 업종일 수 있다 — 첫 번째로 아는 업종의 표시어. 모르면 기타. */
 fun storeLabels(shopType: String?): StoreLabels {
-    val category = shopType?.split(',')?.map { it.trim() }?.firstNotNullOfOrNull { INDUSTRY_CATEGORY[it] } ?: "etc"
-    return CATEGORY_LABELS.getValue(category)
+    // 업종 목록은 StoreManage.kt SHOP_INDUSTRIES 하나 — 매장 관리 화면과 같은 출처
+    return CATEGORY_LABELS.getValue(primaryIndustry(shopType)?.category ?: "etc")
 }
