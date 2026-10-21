@@ -7,6 +7,25 @@
 
 ---
 
+## 🟡 진행 — 11-2단계: 매출 지표 상세 (`claude/android-revenue-metric`, #14 위)
+
+### 요구 (지시자 2026-10-21 — "응 괜찮아 계속 진행해줘")
+- 요약 카드 5개를 누르면 웹 `RevenueMetricModal`(모바일 바텀시트).
+
+### 웹에서 가져오는 것 (기준 tas v0.64.9)
+- 총 매출·예약 건수·결제완료: 기간 안 집계 대상 예약 목록(날짜·시작·종료 세 줄 카드, 고객명·신규). 결제완료는 받은 돈이 있는 예약만.
+- 신규·재방문: 고객 카드(신규 배지·이름·재방문은 'n일전/주전/달전/년전' / 방문일 / 연락처·적립금·최근 방문일·이전 방문) + 설명 한 줄(집계 기준별).
+- 아래 줄: 요약('n건 · 금액' / 'n명') + 닫기. 예약 → 예약 상세, 고객 → 고객 상세(창 위로).
+- 계산은 웹 RevenueSection 의 metricReservations·newCustomerEntries·returningCustomerEntries·prevVisitByCustomer·isPaidReservationTarget.
+
+### 웹과 다르게 둘 것
+- 날짜를 누르면 여는 일별 상세(`RevenueDailyDetailModal`)는 웹도 여는 곳이 없다(`onDayClick` 을 받지만 부르지 않음) → 넣지 않는다.
+- 엑셀 내보내기는 다음.
+
+### 영향 파일
+- `domain/Revenue.kt`(지표 상세 + 테스트), `ui/revenue/RevenueScreen.kt`(카드 누르기), `ui/revenue/RevenueMetricSheet.kt`(신규 — 웹 RevenueMetricModal).
+- `ui/calendar/ReservationInfoCard.kt` — 날짜를 맨 위에 두는 compact 변형.
+
 ## 🟡 진행 — 11-1단계: 매출 탭 — 필터·요약·일별 목록 (`claude/android-revenue`, #13 위)
 
 ### 요구 (지시자 2026-10-21 — "안드로이드 계속 진행해줘")
