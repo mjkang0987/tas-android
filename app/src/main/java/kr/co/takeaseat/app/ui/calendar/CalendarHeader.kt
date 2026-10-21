@@ -132,5 +132,5 @@ private fun PillButton(
 }
 
 // 웹 DirectionIcon(viewBox 32) 경로 그대로.
-private val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
-private val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
+internal val arrowLeft: ImageVector = svgLineIcon(32f, listOf("M18.5 10.5L13 16L18.5 21.5"), strokeWidth = 2.2f)
+internal val arrowRight: ImageVector = svgLineIcon(32f, listOf("M13.5 10.5L19 16L13.5 21.5"), strokeWidth = 2.2f)
