@@ -1,5 +1,7 @@
 package kr.co.takeaseat.app.ui.customers
 
+import kr.co.takeaseat.app.ui.DetailSheets
+import kr.co.takeaseat.app.ui.rememberDetailStack
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -79,15 +81,11 @@ import kr.co.takeaseat.app.domain.buildAssigneeColorMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.customerListOrder
 import kr.co.takeaseat.app.domain.customerStats
-import kr.co.takeaseat.app.domain.firstVisitDates
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.formatTel
 import kr.co.takeaseat.app.domain.groupedCustomerReservations
-import kr.co.takeaseat.app.domain.isNewCustomerVisit
 import kr.co.takeaseat.app.domain.searchCustomers
-import kr.co.takeaseat.app.domain.storeLabels
 import kr.co.takeaseat.app.domain.toDateKey
-import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
 import kr.co.takeaseat.app.ui.components.AddPill
 import kr.co.takeaseat.app.ui.components.ServiceChipList
@@ -113,9 +111,9 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val snapshot by store.snapshot.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var openIds by rememberSaveable { mutableStateOf(listOf<Int>()) }
-    var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
-    var customerDetailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    // 열린 상세 창(고객 → 예약 → …) — 연 순서대로 쌓는다
+    val details = rememberDetailStack()
     // 웹 address.tsx — 메모 태그는 한 번에 한 고객만 편집, 입력·고른 색은 화면에 하나
     var tagEditingId by rememberSaveable { mutableStateOf<Int?>(null) }
     var tagInput by rememberSaveable { mutableStateOf("") }
@@ -130,7 +128,6 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val assigneeNames = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.name } }
     val serviceColorMap = remember(snapshot.services, snapshot.categoryBaseColors) { buildServiceColorMap(snapshot.services, snapshot.categoryBaseColors) }
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
-    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     // 편집 중인 고객이 검색에서 빠지면(지운 태그로 검색 중 등) 편집도 끝 — 검색을 지웠을 때 편집 칸이 남아 있지 않게
     LaunchedEffect(matches) {
         if (tagEditingId != null && matches.none { it.customer.id == tagEditingId }) { tagEditingId = null; tagInput = "" }
@@ -174,7 +171,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     stats = statsById[customer.id] ?: customerStats(emptyList(), today),
                     matchedTags = match.matchedTags,
                     open = open,
-                    onNameClick = { customerDetailId = customer.id },
+                    onNameClick = { details.openCustomer(customer.id) },
                     onToggle = {
                         openIds = if (open) openIds - customer.id else openIds + customer.id
                         // 편집 중에 접으면 편집도 끝 — 다시 펼쳤을 때 편집 칸·키보드가 갑자기 뜨지 않게
@@ -211,31 +208,17 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                                 onCharge = { amount, paid, method, custom ->
                                     store.update { rechargePoints(it, customer.id, amount, paid, method, custom) }
                                 },
-                                onReservationClick = { detailId = it.id },
+                                onReservationClick = { details.openReservation(it.id) },
                             )
                         },
-                    ) { detailId = it.id }
+                    ) { details.openReservation(it.id) }
                 }
             }
             item { Box(Modifier.height(16.dp)) }
         }
     }
 
-    // 고객 상세가 예약 상세보다 먼저 — 회전 뒤 다시 그릴 때도 예약 상세가 위에 오게(창은 그린 순서대로 쌓인다)
-    customerDetailId?.let { id -> CustomerDetailSheet(store, id, onReservationClick = { detailId = it.id }, onDismiss = { customerDetailId = null }) }
-    // 예약 카드 → 캘린더와 같은 상세 시트
-    detailId?.let { id ->
-        snapshot.reservations.firstOrNull { it.id == id }?.let { r ->
-            ReservationDetailSheet(
-                store = store,
-                reservation = r,
-                isNewCustomer = isNewCustomerVisit(firstVisitDates(snapshot.reservations)[r.customerId], r.date),
-                serviceColorMap = serviceColorMap,
-                labels = labels,
-                onDismiss = { detailId = null },
-            )
-        }
-    }
+    DetailSheets(store, details)
     if (adding) CustomerAddSheet(store, onDismiss = { adding = false })
 }
 

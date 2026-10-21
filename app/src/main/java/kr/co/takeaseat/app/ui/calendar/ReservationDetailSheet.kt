@@ -63,6 +63,7 @@ internal fun ReservationDetailSheet(
     isNewCustomer: Boolean,
     serviceColorMap: Map<String, String>,
     labels: StoreLabels,
+    onCustomerClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val snapshot by store.snapshot.collectAsState()
@@ -200,6 +201,7 @@ internal fun ReservationDetailSheet(
                 labels = labels,
                 historyCount = history.size,
                 onOpenHistory = { historyOpen = true },
+                onCustomerClick = onCustomerClick,
             )
             DetailMode.Cancelling -> ReservationConfirmSummary("이 예약을 취소하시겠습니까?", TasColors.Danger, reservation, customerName, labels)
             DetailMode.Noshow -> ReservationConfirmSummary("이 예약을 노쇼 처리하시겠습니까?", TasColors.Warning, reservation, customerName, labels)

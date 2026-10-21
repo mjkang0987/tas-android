@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kr.co.takeaseat.app.data.GuestStore
-import kr.co.takeaseat.app.domain.storeLabels
+import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
 import kr.co.takeaseat.app.domain.buildAssigneeColorMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.firstVisitDates
@@ -25,8 +25,9 @@ import kr.co.takeaseat.app.domain.storeClosedKind
 import kr.co.takeaseat.app.domain.timelineRange
 import kr.co.takeaseat.app.domain.timelineScaleFor
 import kr.co.takeaseat.app.domain.toDateKey
-import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
+import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.components.hexColor
+import kr.co.takeaseat.app.ui.rememberDetailStack
 
 /** 캘린더 탭 — 지금은 일 뷰만(웹 `/day/yyyy/mm/dd`). */
 @Composable
@@ -66,10 +67,9 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     }
 
     val scrollState = rememberScrollState()
-    // 열린 예약 상세 — 회전해도 유지
-    var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    // 열린 상세 창(예약 → 고객 → …) — 회전해도 유지
+    val details = rememberDetailStack()
     var creating by rememberSaveable { mutableStateOf(false) }
-    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
 
     Column(modifier.fillMaxSize()) {
         CalendarHeader(date = date, onDateChange = { dateKey = it.toDateKey() }, onCreate = { creating = true })
@@ -81,23 +81,12 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
             isToday = date == today,
             closedKind = storeClosedKind(snapshot.storeSettings, dateKey),
             scrollState = scrollState,
-            onReservationClick = { detailId = it },
+            onReservationClick = { details.openReservation(it) },
             modifier = Modifier.weight(1f),
         )
     }
 
-    detailId?.let { id ->
-        snapshot.reservations.firstOrNull { it.id == id }?.let { detail ->
-            ReservationDetailSheet(
-                store = store,
-                reservation = detail,
-                isNewCustomer = isNewCustomerVisit(firstVisit[detail.customerId], detail.date),
-                serviceColorMap = serviceColorMap,
-                labels = labels,
-                onDismiss = { detailId = null },
-            )
-        }
-    }
+    DetailSheets(store, details)
 
     if (creating) ReservationCreateSheet(store, onDismiss = { creating = false })
 }

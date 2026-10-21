@@ -84,6 +84,7 @@ fun ReservationDetailView(
     labels: StoreLabels,
     historyCount: Int = 0,
     onOpenHistory: () -> Unit = {},
+    onCustomerClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -99,10 +100,16 @@ fun ReservationDetailView(
         DetailRow("가격") { DetailText(formatPrice(displayPrice)) }
         DetailRow("결제") { PaymentValue(reservation) }
         DetailRow("고객명") {
-            // shortcut: 웹은 누르면 고객 정보가 열리는 파란 링크 — 고객 화면이 생기면 같은 모양·동작으로 바꾼다.
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            // 웹 StyledCustomerButton — 파란 링크(#1967D2, 13), 누르면 고객 상세. 누르는 자리 높이 24 이상.
+            Row(
+                Modifier
+                    .heightIn(min = 24.dp)
+                    .then(if (customer != null && onCustomerClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "고객 정보 보기", onClick = onCustomerClick) else Modifier),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 if (isNewCustomer) NewCustomerBadge()
-                DetailText(customer?.name ?: "-")
+                DetailText(customer?.name ?: "-", color = if (customer != null && onCustomerClick != null) TasColors.Link else Color.Black)
             }
         }
         DetailRow("연락처") {
