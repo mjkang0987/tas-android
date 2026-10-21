@@ -160,7 +160,7 @@ private fun HistoryButton(count: Int, onClick: () -> Unit) {
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("변경 이력 ($count)", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).lineBox(14.sp, TasSizes.SmallFont))
+            Text("변경 이력 ($count)", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).lineBox(14.sp, TasSizes.SmallFont))
             Text("\u203A", color = TasColors.Gray, fontSize = TasSizes.LargeFont, modifier = Modifier.clearAndSetSemantics {})
         }
     }

@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,23 +23,22 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.co.takeaseat.app.domain.Reservation
 import kr.co.takeaseat.app.domain.ReservationStatus
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.hasCompletedPayment
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.text.style.TextDecoration
-import kr.co.takeaseat.app.ui.components.NewCustomerBadge
 import kr.co.takeaseat.app.ui.components.AssigneeLabel
+import kr.co.takeaseat.app.ui.components.NewCustomerBadge
 import kr.co.takeaseat.app.ui.components.ServiceChipList
 import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.theme.TasColors
@@ -119,7 +121,8 @@ internal fun ReservationInfoCard(
                         fontSize = TasSizes.SmallFont,
                         fontWeight = FontWeight.Bold,
                         textDecoration = if (inactive) TextDecoration.LineThrough else null,
-                        modifier = if (onCustomerClick != null) Modifier.clickable(onClick = onCustomerClick) else Modifier,
+                        // 누르는 자리 높이 24 이상(WCAG 2.5.8) — 바깥 카드(예약 상세)와 붙어 있어 작으면 잘못 누른다
+                        modifier = if (onCustomerClick != null) Modifier.heightIn(min = 24.dp).wrapContentHeight(Alignment.CenterVertically).clickable(onClick = onCustomerClick) else Modifier,
                     )
                     ServiceChipList(reservation.service, serviceColorMap, muted = inactive)
                 }

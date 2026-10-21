@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.REVENUE_MAX_RANGE_DAYS
 import kr.co.takeaseat.app.domain.Reservation
@@ -90,6 +91,7 @@ import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
 import kr.co.takeaseat.app.ui.calendar.arrowLeft
 import kr.co.takeaseat.app.ui.calendar.arrowRight
+import kr.co.takeaseat.app.ui.components.ChevronDownIcon
 import kr.co.takeaseat.app.ui.components.PageHero
 import kr.co.takeaseat.app.ui.components.ScreenHeader
 import kr.co.takeaseat.app.ui.components.SystemDialogEffect
@@ -364,7 +366,7 @@ private fun DateField(label: String, date: LocalDate, bounds: LocalDate, onPick:
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("%d. %02d. %02d.".format(date.year, date.monthValue, date.dayOfMonth), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont,
+        Text("${date.year}. ${"%02d".format(Locale.ROOT, date.monthValue)}. ${"%02d".format(Locale.ROOT, date.dayOfMonth)}.", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont,
             maxLines = 1, modifier = Modifier.weight(1f).clearAndSetSemantics {})
         Icon(CalendarIcon, contentDescription = null, tint = TasColors.DarkGray, modifier = Modifier.size(14.dp))
     }
@@ -484,19 +486,8 @@ private fun DayHeader(day: RevenueDay, open: Boolean, onClick: () -> Unit) {
         Box(Modifier.weight(1f))
         Text("${day.count}건", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont)
         Text(formatPrice(day.total), color = TasColors.Black, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Medium, maxLines = 1)
-        // 웹 StyledExpandIcon — 8×8 꺾쇠(2px), 펼치면 위로
-        Box(
-            Modifier
-                .size(14.dp)
-                .rotate(if (open) 180f else 0f)
-                .drawBehind {
-                    val s = 5.dp.toPx()
-                    val c = Offset(size.width / 2, size.height / 2 - s / 3)
-                    val w = 2.dp.toPx()
-                    drawLine(TasColors.DarkGray2, Offset(c.x - s, c.y - s / 2), Offset(c.x, c.y + s / 2), strokeWidth = w)
-                    drawLine(TasColors.DarkGray2, Offset(c.x, c.y + s / 2), Offset(c.x + s, c.y - s / 2), strokeWidth = w)
-                },
-        )
+        // 웹 StyledExpandIcon — 꺾쇠, 펼치면 위로
+        Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(14.dp).rotate(if (open) 180f else 0f))
     }
 }
 
