@@ -203,11 +203,12 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
         }
     }
 
+    // 웹 RevenueMetricModal — 요약 카드를 누르면
     metric?.let { m ->
         val detail = remember(snapshot, range, assigneeId, mode, m, summary) { revenueMetricDetail(snapshot, range, assigneeId, mode, m, summary) }
         RevenueMetricSheet(m, metricSubtitle(m, mode), detail, onCustomerClick = { customerDetailId = it }, onDismiss = { metric = null }) { reservationCard(it, true) }
     }
-    // 지표 창 → 고객 상세 → 예약 상세 순으로 그린다(창은 그린 순서대로 쌓인다). 고객 상세가 예약 상세보다 먼저 — 창은 그린 순서대로 쌓인다(고객 상세에서 연 예약이 위에)
+    // 창은 그린 순서대로 쌓인다 — 지표 창 → 고객 상세 → 예약 상세 순(지표 창에서 연 상세, 고객 상세에서 연 예약이 위에)
     customerDetailId?.let { id -> CustomerDetailSheet(store, id, onReservationClick = { detailId = it.id }, onDismiss = { customerDetailId = null }) }
     detailId?.let { id ->
         snapshot.reservations.firstOrNull { it.id == id }?.let { r: Reservation ->
