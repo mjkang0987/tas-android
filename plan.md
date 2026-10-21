@@ -7,6 +7,21 @@
 
 ---
 
+## 🟡 진행 — 12단계: 예약 상세 고객명 → 고객 상세 + 상세 창 쌓기 (`claude/android-detail-stack`, #15 위)
+
+### 요구 (지시자 2026-10-21 — "응 추천 순서대로 진행해줘", 1순위)
+- 예약 상세의 고객명을 웹처럼 파란 링크로 — 누르면 고객 상세(웹 `ReservationViewSection` StyledCustomerButton, #1967D2, 13).
+
+### 문제와 방법
+- 지금은 화면마다 '고객 상세 → 예약 상세' 순서로 고정해 그린다(창은 그린 순서대로 위에 뜬다). 예약 상세에서 고객을 열면 그 아래에 깔린다.
+  웹은 고객 상세가 늘 위(z 130 > 120)지만, 안드로이드는 고객 상세에서 다시 예약을 여는 길도 있어 고정 순서로는 둘 다 못 맞춘다.
+- → 화면마다 `DetailStack`(연 순서대로 쌓는 목록, 회전에도 남게 글자 "r12"·"c3")과 `DetailSheets`(목록 순서대로 그리기)를 둔다.
+  이미 열린 창을 다시 열면 그 위 창들을 닫아 그 창으로 돌아간다(같은 창 두 장 방지).
+
+### 영향 파일
+- `ui/DetailStack.kt`(신규 — 상세 창 쌓기·그리기), `calendar/CalendarScreen.kt`·`customers/CustomersScreen.kt`·`revenue/RevenueScreen.kt`(각자 상태 → 스택),
+  `calendar/ReservationDetailSheet.kt`·`ReservationDetailView.kt`(고객명 링크) + 단위 테스트(쌓기 규칙).
+
 ## 🟡 진행 — 11-2단계: 매출 지표 상세 (`claude/android-revenue-metric`, #14 위)
 
 ### 요구 (지시자 2026-10-21 — "응 괜찮아 계속 진행해줘")
