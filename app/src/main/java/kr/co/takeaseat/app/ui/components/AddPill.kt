@@ -43,7 +43,7 @@ fun AddPill(text: String, description: String, onClick: () -> Unit, modifier: Mo
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Icon(plusIcon, contentDescription = null, tint = TasColors.White, modifier = Modifier.size(15.dp))
-        Text(text, color = TasColors.White, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clearAndSetSemantics {})
+        Text(text, color = TasColors.White, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.clearAndSetSemantics {}.lineBox(ButtonLine, TasSizes.SmallFont))
     }
 }
 

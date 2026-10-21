@@ -1,5 +1,7 @@
 package kr.co.takeaseat.app.ui.calendar
 
+import kr.co.takeaseat.app.ui.components.ButtonLine
+import kr.co.takeaseat.app.ui.components.lineBox
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,7 +67,7 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate:
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         PillButton(onClick = { onDateChange(LocalDate.now()) }, contentPadding = PaddingValues(horizontal = 12.dp)) {
-            Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1)
+            Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1, modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont))
         }
         PillButton(onClick = { onDateChange(date.minusDays(1)) }, description = "이전날짜") {
             Icon(arrowLeft, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))

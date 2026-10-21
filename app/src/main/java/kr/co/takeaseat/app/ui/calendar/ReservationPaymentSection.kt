@@ -1,5 +1,8 @@
 package kr.co.takeaseat.app.ui.calendar
 
+import kotlin.math.roundToInt
+import androidx.compose.ui.unit.sp
+import kr.co.takeaseat.app.ui.components.lineBox
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -195,5 +198,5 @@ private fun Pill(text: String, bg: Color, fg: Color, fontSize: androidx.compose.
             .background(bg, RoundedCornerShape(percent = 50))
             .padding(horizontal = if (minHeight >= 28) 10.dp else 8.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(text, color = fg, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1) }
+    ) { Text(text, color = fg, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.lineBox((fontSize.value * 1.2f).roundToInt().sp, fontSize)) }
 }

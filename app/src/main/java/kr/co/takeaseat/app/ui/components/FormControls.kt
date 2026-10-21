@@ -314,6 +314,9 @@ fun TasSelect(
     }
 }
 
+/** 버튼 글자 한 줄 높이 — 웹 12 × 1.2 ≈ 14. 짝수 px(2배 화면 28)로 둬야 버튼 안에서 반 픽셀 밀리지 않는다. */
+internal val ButtonLine = 14.sp
+
 /** 웹 StyledActionButton 의 $primary / $danger / $dangerOutline. */
 /** [Blue] = 웹 --blue-color 채운 버튼(적립금 '충전'). */
 enum class ActionTone { Default, Primary, Danger, DangerOutline, Blue }
@@ -356,6 +359,8 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
             fontSize = TasSizes.SmallFont,
             fontWeight = if (tone == ActionTone.Default) FontWeight.Medium else FontWeight.SemiBold,
             maxLines = 1,
+            // 글자 상자 가운데가 아니라 글자 몸통 가운데로 — 한글이 1dp 아래로 처졌다(배지와 같은 방식, 웹 line-height normal 1.2)
+            modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont),
         )
     }
 }

@@ -95,6 +95,7 @@ import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
 import kr.co.takeaseat.app.ui.components.hexColor
+import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -477,7 +478,7 @@ private fun MemoButton(text: String, onClick: () -> Unit, description: String = 
             .semantics { contentDescription = description }
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(text, color = TasColors.DarkGray, fontSize = TasSizes.TinyFont, modifier = Modifier.clearAndSetSemantics {}) }
+    ) { Text(text, color = TasColors.DarkGray, fontSize = TasSizes.TinyFont, modifier = Modifier.clearAndSetSemantics {}.lineBox(12.sp, TasSizes.TinyFont)) }
 }
 
 /**
