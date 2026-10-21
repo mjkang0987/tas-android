@@ -61,6 +61,7 @@ private fun cardState(r: Reservation): Pair<String, String> = when {
  * 왼쪽 시작·종료·날짜, 가운데 서비스 칩 + 담당자, 오른쪽 상태 배지 위 가격. 취소·노쇼는 회색 빗금.
  * [displayPrice] 는 상세와 같은 값(가격이 없으면 서비스 가격 합) — 웹 카드는 0원으로 보여 상세와 달랐다.
  * 매출 일별 목록 변형: [customerName](신규 배지 · 굵은 이름, 누르면 [onCustomerClick]) 을 서비스 앞에, 날짜는 숨긴다([showDate]).
+ * 매출 지표 창 변형([dateFirst]): 기간 전체를 한 목록으로 보여 날짜를 시작·종료 위에 둔다(웹 compactDate).
  */
 @Composable
 internal fun ReservationInfoCard(
@@ -74,6 +75,7 @@ internal fun ReservationInfoCard(
     isNewCustomer: Boolean = false,
     showDate: Boolean = true,
     onCustomerClick: (() -> Unit)? = null,
+    dateFirst: Boolean = false,
 ) {
     val inactive = reservation.status == ReservationStatus.CANCELLED || reservation.status == ReservationStatus.NOSHOW
     val (stateType, stateLabel) = cardState(reservation)
@@ -106,9 +108,10 @@ internal fun ReservationInfoCard(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Column {
+            if (showDate && dateFirst) Text(reservation.date, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont)
             Text(reservation.startTime, color = CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, lineHeight = (12 * 1.25).sp)
             Text(reservation.endTime, color = CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, lineHeight = (12 * 1.25).sp)
-            if (showDate) Text(reservation.date, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont)
+            if (showDate && !dateFirst) Text(reservation.date, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             if (customerName != null) {

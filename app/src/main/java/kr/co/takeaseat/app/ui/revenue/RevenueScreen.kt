@@ -1,7 +1,5 @@
 package kr.co.takeaseat.app.ui.revenue
 
-import kr.co.takeaseat.app.ui.components.ButtonLine
-import kr.co.takeaseat.app.ui.components.lineBox
 import android.app.DatePickerDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -13,10 +11,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +66,7 @@ import kr.co.takeaseat.app.domain.REVENUE_MAX_RANGE_DAYS
 import kr.co.takeaseat.app.domain.Reservation
 import kr.co.takeaseat.app.domain.RevenueDay
 import kr.co.takeaseat.app.domain.RevenueFilterMode
+import kr.co.takeaseat.app.domain.RevenueMetric
 import kr.co.takeaseat.app.domain.RevenueQuickRange
 import kr.co.takeaseat.app.domain.RevenueRange
 import kr.co.takeaseat.app.domain.RevenueSummary
@@ -80,9 +79,11 @@ import kr.co.takeaseat.app.domain.defaultRevenueRange
 import kr.co.takeaseat.app.domain.firstVisitDates
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.isNewCustomerVisit
+import kr.co.takeaseat.app.domain.metricSubtitle
 import kr.co.takeaseat.app.domain.moveRevenueRange
 import kr.co.takeaseat.app.domain.quickRangeOf
 import kr.co.takeaseat.app.domain.quickRevenueRange
+import kr.co.takeaseat.app.domain.revenueMetricDetail
 import kr.co.takeaseat.app.domain.revenueSummary
 import kr.co.takeaseat.app.domain.servicePriceTotal
 import kr.co.takeaseat.app.domain.sortAssignees
@@ -91,11 +92,13 @@ import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
 import kr.co.takeaseat.app.ui.calendar.arrowLeft
 import kr.co.takeaseat.app.ui.calendar.arrowRight
+import kr.co.takeaseat.app.ui.components.ButtonLine
 import kr.co.takeaseat.app.ui.components.ChevronDownIcon
 import kr.co.takeaseat.app.ui.components.PageHero
 import kr.co.takeaseat.app.ui.components.ScreenHeader
 import kr.co.takeaseat.app.ui.components.SystemDialogEffect
 import kr.co.takeaseat.app.ui.components.hexColor
+import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.components.svgLineIcon
 import kr.co.takeaseat.app.ui.customers.CustomerDetailSheet
 import kr.co.takeaseat.app.ui.theme.TasColors
@@ -127,6 +130,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var openDates by rememberSaveable { mutableStateOf(listOf<String>()) }
     var detailId by rememberSaveable { mutableStateOf<Int?>(null) }
     var customerDetailId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var metric by rememberSaveable { mutableStateOf<RevenueMetric?>(null) }
 
     val zone = remember { ZoneId.systemDefault() }
     val summary = remember(snapshot, range, assigneeId, mode) { revenueSummary(snapshot, range, assigneeId, mode, zone) }
@@ -137,6 +141,24 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val customerNames = remember(snapshot.customers) { snapshot.customers.associate { it.id to it.name } }
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     val firstVisits = remember(snapshot.reservations) { firstVisitDates(snapshot.reservations) }
+
+    // 웹 RevenueReservationList — 일별 목록(날짜 줄 아래라 날짜 숨김)과 지표 창(날짜가 위)이 같은 카드를 쓴다
+    val reservationCard: @Composable (Reservation, Boolean) -> Unit = { r, inMetric ->
+        val id = r.assigneeId?.takeIf { it != 0 }
+        ReservationInfoCard(
+            reservation = r,
+            serviceColorMap = serviceColorMap,
+            assigneeName = id?.let { assigneeNames[it] } ?: "미지정",
+            assigneeColor = hexColor(id?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
+            displayPrice = r.price ?: servicePriceTotal(r.service, snapshot.services),
+            onClick = { detailId = r.id },
+            customerName = customerNames[r.customerId] ?: "고객 미지정",
+            isNewCustomer = isNewCustomerVisit(firstVisits[r.customerId], r.date),
+            showDate = inMetric,
+            onCustomerClick = { customerDetailId = r.customerId },
+            dateFirst = inMetric,
+        )
+    }
 
     Column(modifier.fillMaxSize()) {
         ScreenHeader("매출")
@@ -165,7 +187,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
                 )
             }
             if (view == RevenueView.All) {
-                item { KpiGrid(summary) }
+                item { KpiGrid(summary) { metric = it } }
             }
             item {
                 DailyCard(
@@ -173,21 +195,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     openDates = openDates,
                     onToggle = { key -> openDates = if (key in openDates) openDates - key else openDates + key },
                 ) { day ->
-                    day.reservations.forEach { r ->
-                        val id = r.assigneeId?.takeIf { it != 0 }
-                        ReservationInfoCard(
-                            reservation = r,
-                            serviceColorMap = serviceColorMap,
-                            assigneeName = id?.let { assigneeNames[it] } ?: "미지정",
-                            assigneeColor = hexColor(id?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
-                            displayPrice = r.price ?: servicePriceTotal(r.service, snapshot.services),
-                            onClick = { detailId = r.id },
-                            customerName = customerNames[r.customerId] ?: "고객 미지정",
-                            isNewCustomer = isNewCustomerVisit(firstVisits[r.customerId], r.date),
-                            showDate = false, // 날짜 줄 아래라 카드엔 또 적지 않는다(웹과 같다)
-                            onCustomerClick = { customerDetailId = r.customerId },
-                        )
-                    }
+                    day.reservations.forEach { reservationCard(it, false) }
                     day.sales.forEach { sale -> SaleItem(sale, customerNames[sale.customerId]) { customerDetailId = sale.customerId } }
                 }
             }
@@ -195,7 +203,12 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
         }
     }
 
-    // 고객 상세가 예약 상세보다 먼저 — 창은 그린 순서대로 쌓인다(고객 상세에서 연 예약이 위에)
+    // 웹 RevenueMetricModal — 요약 카드를 누르면
+    metric?.let { m ->
+        val detail = remember(snapshot, range, assigneeId, mode, m, summary) { revenueMetricDetail(snapshot, range, assigneeId, mode, m, summary) }
+        RevenueMetricSheet(m, metricSubtitle(m, mode), detail, onCustomerClick = { customerDetailId = it }, onDismiss = { metric = null }) { reservationCard(it, true) }
+    }
+    // 창은 그린 순서대로 쌓인다 — 지표 창 → 고객 상세 → 예약 상세 순(지표 창에서 연 상세, 고객 상세에서 연 예약이 위에)
     customerDetailId?.let { id -> CustomerDetailSheet(store, id, onReservationClick = { detailId = it.id }, onDismiss = { customerDetailId = null }) }
     detailId?.let { id ->
         snapshot.reservations.firstOrNull { it.id == id }?.let { r: Reservation ->
@@ -374,27 +387,30 @@ private fun DateField(label: String, date: LocalDate, bounds: LocalDate, onPick:
 
 /** 웹 RevenueKpiGrid(모바일 2열) — 테두리 1 옅은 회색, 10 둥글게, 흰 → #f9fbff, 그림자 0 8 20 5%. */
 @Composable
-private fun KpiGrid(summary: RevenueSummary) {
+private fun KpiGrid(summary: RevenueSummary, onClick: (RevenueMetric) -> Unit) {
     val cards = listOf(
-        Triple("총 매출", formatPrice(summary.total), summary.salesTotal.takeIf { it > 0 }?.let { "회원권·충전 ${formatPrice(it)} 포함" }),
-        Triple("예약 건수", "${summary.count}건", null),
-        Triple("신규 고객 수", "${summary.newCustomerCount}명", null),
-        Triple("재방문 고객 수", "${summary.returningCustomerCount}명", null),
-        Triple("결제완료", formatPrice(summary.paidTotal), null),
+        KpiItem(RevenueMetric.Sales, "총 매출", formatPrice(summary.total), summary.salesTotal.takeIf { it > 0 }?.let { "회원권·충전 ${formatPrice(it)} 포함" }),
+        KpiItem(RevenueMetric.Count, "예약 건수", "${summary.count}건"),
+        KpiItem(RevenueMetric.New, "신규 고객 수", "${summary.newCustomerCount}명"),
+        KpiItem(RevenueMetric.Returning, "재방문 고객 수", "${summary.returningCustomerCount}명"),
+        KpiItem(RevenueMetric.Paid, "결제완료", formatPrice(summary.paidTotal)),
     )
     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         cards.chunked(2).forEach { row ->
             // 웹 grid — 한 줄의 카드는 같은 높이(설명 붙은 '총 매출' 옆 카드도 늘어난다)
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                row.forEach { (label, value, sub) -> KpiCard(label, value, sub) }
+                row.forEach { KpiCard(it) { onClick(it.metric) } }
                 if (row.size == 1) Box(Modifier.weight(1f))
             }
         }
     }
 }
 
+private data class KpiItem(val metric: RevenueMetric, val label: String, val value: String, val sub: String? = null)
+
 @Composable
-private fun RowScope.KpiCard(label: String, value: String, sub: String?) {
+private fun RowScope.KpiCard(item: KpiItem, onClick: () -> Unit) {
+    val (_, label, value, sub) = item
     val shape = RoundedCornerShape(10.dp)
     Column(
         Modifier
@@ -403,8 +419,8 @@ private fun RowScope.KpiCard(label: String, value: String, sub: String?) {
             .card(shape, CardShadowKpi)
             .background(Brush.verticalGradient(listOf(TasColors.White, KpiGradientEnd)))
             .border(1.dp, TasColors.LightGray, shape)
-            // 낭독은 '총 매출, 18,000원' 한 덩어리로
-            .semantics(mergeDescendants = true) {}
+            // 낭독은 '총 매출, 18,000원' 한 덩어리로 — 누르면 지표 상세
+            .clickable(role = Role.Button, onClickLabel = "상세 보기", onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {

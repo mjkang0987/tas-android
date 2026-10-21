@@ -158,3 +158,73 @@ fun revenueSummary(
         returningCustomerCount = customerIds.size - newCount,
     )
 }
+
+/** 웹 RevenueMetricKey — 요약 카드 순서. */
+enum class RevenueMetric(val title: String) { Sales("총 매출 상세"), Count("예약 건수 상세"), New("신규 고객 상세"), Returning("재방문 고객 상세"), Paid("결제완료 상세") }
+
+/** 신규·재방문 창의 고객 한 줄 — 기간 안 첫 방문일(재방문은 그 전 방문일도). */
+data class MetricCustomer(val customer: Customer, val visitDate: String, val prevVisitDate: String?)
+
+data class RevenueMetricDetail(val summary: String, val reservations: List<Reservation>, val customers: List<MetricCustomer>)
+
+/** 웹 isPaidReservationTarget — 취소·노쇼·신청 빼고, 받은 돈 줄이 있거나(줄 없는 옛 데이터는 결제완료 표시) 한 예약. */
+fun isPaidTarget(r: Reservation, assigneeId: Int?): Boolean {
+    if (assigneeId != null && r.assigneeId != assigneeId) return false
+    if (r.status == ReservationStatus.CANCELLED || r.status == ReservationStatus.NOSHOW || r.status == ReservationStatus.REQUESTED) return false
+    return if (!r.paymentEntries.isNullOrEmpty()) r.paymentEntries.any { it.amount > 0 } else r.paymentCompleted == true
+}
+
+/** 웹 신규·재방문 설명 — 집계 기준에 따라. */
+fun metricSubtitle(metric: RevenueMetric, mode: RevenueFilterMode): String? = when (metric) {
+    RevenueMetric.New -> if (mode == RevenueFilterMode.Completed) "선택 기간 안에서 첫 예약완료가 발생한 고객 목록" else "선택 기간 안에서 첫 예약이 발생한 고객 목록"
+    RevenueMetric.Returning -> if (mode == RevenueFilterMode.Completed) "선택 기간 내 예약완료가 있고, 그 이전 예약완료 이력이 있는 고객 목록" else "선택 기간 내 예약이 있고, 그 이전 예약 이력이 있는 고객 목록"
+    else -> null
+}
+
+/**
+ * 웹 RevenueSection metricLayer — 기간 안 집계 대상 예약(날짜·시작 순). 신규 = 고객별 기간 안 첫 예약이 전체 첫 방문인 것,
+ * 재방문 = 그 전에 방문이 있는 것(이전 방문 = 그 예약 전 가장 최근 방문일). 요약 금액은 요약 카드와 같은 값([summary]).
+ */
+fun revenueMetricDetail(
+    snapshot: LocalDbSnapshot,
+    range: RevenueRange,
+    assigneeId: Int?,
+    mode: RevenueFilterMode,
+    metric: RevenueMetric,
+    summary: RevenueSummary,
+): RevenueMetricDetail {
+    val targets = snapshot.reservations.filter { isRevenueTarget(it, assigneeId, mode) }
+    val fromKey = range.from.toDateKey()
+    val toKey = range.to.toDateKey()
+    val inRange = targets.filter { it.date in fromKey..toKey }.sortedWith(compareBy({ it.date }, { it.startTime }))
+    val visitDates = targets.groupBy { it.customerId }.mapValues { (_, list) -> list.map { it.date }.distinct() }
+    val firstVisit = visitDates.mapValues { (_, dates) -> dates.min() }
+    val firstInRange = inRange.distinctBy { it.customerId }
+    val customers = snapshot.customers.associateBy { it.id }
+    fun entries(list: List<Reservation>, withPrev: Boolean) = list.mapNotNull { r ->
+        val c = customers[r.customerId] ?: return@mapNotNull null
+        MetricCustomer(c, r.date, if (withPrev) visitDates[r.customerId].orEmpty().filter { it < r.date }.maxOrNull() else null)
+    }
+    return when (metric) {
+        RevenueMetric.Sales -> RevenueMetricDetail("${inRange.size}건 · ${formatPrice(summary.total)}", inRange, emptyList())
+        RevenueMetric.Count -> RevenueMetricDetail("${inRange.size}건", inRange, emptyList())
+        RevenueMetric.New -> firstInRange.filter { firstVisit[it.customerId] == it.date }
+            .let { RevenueMetricDetail("${it.size}명", it, entries(it, withPrev = false)) }
+        RevenueMetric.Returning -> firstInRange.filter { firstVisit[it.customerId]?.let { first -> first < it.date } == true }
+            .let { RevenueMetricDetail("${it.size}명", it, entries(it, withPrev = true)) }
+        RevenueMetric.Paid -> inRange.filter { isPaidTarget(it, assigneeId) }
+            .let { RevenueMetricDetail("${it.size}건 · ${formatPrice(summary.paidTotal)}", it, emptyList()) }
+    }
+}
+
+/** 웹 formatVisitGap — 7일 안은 n일전, 4주 안은 n주전, 1년 안은 n달전(30일, 최소 1), 그 위는 n년전. */
+fun formatVisitGap(visitDate: String, prevVisitDate: String): String {
+    val days = ChronoUnit.DAYS.between(LocalDate.parse(prevVisitDate), LocalDate.parse(visitDate))
+    return when {
+        days < 7 -> "${days}일전"
+        days < 28 -> "${days / 7}주전"
+        // 웹은 28~29일을 30으로 나눠 '0달전'이라 했다 — 최소 1달
+        days < 365 -> "${maxOf(days / 30, 1)}달전"
+        else -> "${days / 365}년전"
+    }
+}
