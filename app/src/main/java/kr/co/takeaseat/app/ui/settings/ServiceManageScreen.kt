@@ -1,6 +1,5 @@
 package kr.co.takeaseat.app.ui.settings
 
-import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +40,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -77,11 +75,13 @@ import kr.co.takeaseat.app.ui.components.ActionTone
 import kr.co.takeaseat.app.ui.components.ChevronDownIcon
 import kr.co.takeaseat.app.ui.components.DetailSheet
 import kr.co.takeaseat.app.ui.components.FieldError
+import kr.co.takeaseat.app.ui.components.LocalToast
 import kr.co.takeaseat.app.ui.components.PageHero
 import kr.co.takeaseat.app.ui.components.ScreenHeader
 import kr.co.takeaseat.app.ui.components.ServiceChipList
 import kr.co.takeaseat.app.ui.components.TasSelect
 import kr.co.takeaseat.app.ui.components.TasTextField
+import kr.co.takeaseat.app.ui.components.ToastType
 import kr.co.takeaseat.app.ui.customers.MemoColorPalette
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -92,7 +92,7 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
  */
 @Composable
 fun ServiceManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+    val toastState = LocalToast.current
     val snapshot by store.snapshot.collectAsState()
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     val grouped = remember(snapshot.services) { groupedCatalog(snapshot.services) }
@@ -103,7 +103,7 @@ fun ServiceManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var manageError by rememberSaveable { mutableStateOf<String?>(null) }
     var editingName by rememberSaveable { mutableStateOf<String?>(null) }
     var adding by rememberSaveable { mutableStateOf(false) }
-    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    fun toast(message: String, type: ToastType = ToastType.Success) = toastState.show(message, type)
 
     Column(modifier.fillMaxSize()) {
         ScreenHeader("${labels.service} 관리")
@@ -179,7 +179,7 @@ fun ServiceManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
                 onDelete = {
                     store.update { deleteService(it, item.name) }
                     editingName = null
-                    toast("\"${item.name}\" ${labels.service}가 삭제되었습니다.")
+                    toast("\"${item.name}\" ${labels.service}가 삭제되었습니다.", ToastType.Info) // 웹 info
                 },
             )
         }
