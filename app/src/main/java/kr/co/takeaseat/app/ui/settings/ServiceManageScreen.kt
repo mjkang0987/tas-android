@@ -141,6 +141,8 @@ fun ServiceManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
                                 }
                             },
                             onCancel = { editingCategory = null; categoryName = ""; manageError = null },
+                            // 오류는 고치는 줄 바로 아래 — 목록 맨 아래에 두면 서비스가 많을 때 화면 밖이라 안 보이고 안 읽혔다
+                            error = manageError,
                         )
                     }
                 }
@@ -151,8 +153,7 @@ fun ServiceManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
                 }
             }
             item {
-                Column(Modifier.padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    manageError?.let { FieldError(it) }
+                Column(Modifier.padding(horizontal = 10.dp)) {
                     AddServiceButton("+ ${labels.service} 추가") { adding = true }
                 }
             }
@@ -224,9 +225,9 @@ private fun CategoryHeader(category: String, open: Boolean, editing: Boolean, on
 
 /** 웹 StyledCategoryEditRow — 이름 칸 · 대표색 · 저장 · 취소. */
 @Composable
-private fun CategoryEditRow(name: String, onName: (String) -> Unit, color: String, onColor: (String) -> Unit, onSave: () -> Unit, onCancel: () -> Unit) {
+private fun CategoryEditRow(name: String, onName: (String) -> Unit, color: String, onColor: (String) -> Unit, onSave: () -> Unit, onCancel: () -> Unit, error: String?) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        TasTextField(label = "카테고리명", value = name, onValueChange = onName, placeholder = "카테고리명", showLabel = false, compact = true)
+        TasTextField(label = "카테고리명", value = name, onValueChange = onName, placeholder = "카테고리명", showLabel = false, compact = true, error = error)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
             MemoColorPalette(color, onColor)
             ActionButton("저장", onClick = onSave, tone = ActionTone.Primary)
