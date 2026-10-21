@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import kr.co.takeaseat.app.domain.MEMO_TAG_COLORS
 import kr.co.takeaseat.app.domain.addMemoTag
+import kr.co.takeaseat.app.domain.rechargePoints
 import kr.co.takeaseat.app.domain.removeMemoTag
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -102,8 +103,8 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
  * 웹 `/address`(고객 명단) 모바일 — 헤더 · 소개(CUSTOMER) · 검색(이름·초성·연락처·메모) · 고객 행(펼치면 메모 태그 + 예약 묶음 카드).
  * 예약 카드를 누르면 캘린더와 같은 예약 상세 시트.
  * 펼친 행의 메모 태그는 추가·삭제(웹 AddressCustomerTags — 한 번에 한 고객).
- * 헤더 오른쪽 '+ 고객' → 고객 추가 시트.
- * shortcut: 병합(선택 체크), 적립금 충전, 고객명 → 고객 상세는 다음 조각(10-2~).
+ * 헤더 오른쪽 '+ 고객' → 고객 추가 시트. 펼친 행에 적립금 충전·이력(웹 AddressCustomerRecharge).
+ * shortcut: 병합(선택 체크), 고객명 → 고객 상세는 다음 조각(10-4~).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -214,6 +215,17 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
                                 onFinish = { tagEditingId = null; tagInput = "" },
                             )
                         },
+                        pointSection = {
+                            CustomerPointSection(
+                                customer = customer,
+                                settings = snapshot.storeSettings.pointSettings,
+                                reservations = reservations,
+                                onCharge = { amount, paid, method, custom ->
+                                    store.update { rechargePoints(it, customer.id, amount, paid, method, custom) }
+                                },
+                                onReservationClick = { detailId = it.id },
+                            )
+                        },
                     ) { detailId = it.id }
                 }
             }
@@ -309,16 +321,18 @@ private fun CustomerRow(
                 Text("최근 서비스", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
                 if (stats.recentService != null) ServiceChipList(stats.recentService, serviceColorMap) else Text("-", fontSize = TasSizes.SmallFont, color = TasColors.Black)
             }
-            // 자리가 모자라면(좁은 폰·큰 글자) 상태 배지가 아랫줄로 내려간다(웹 flex-wrap)
+            // 자리가 모자라면(좁은 폰·큰 글자·큰 적립금) 상태 배지가 아랫줄로 내려간다(웹 flex-wrap, 배지는 오른쪽).
+            // 적립금 글자는 줄바꿈하지 않는다 — 남는 폭(weight)에 맞추면 '171,850 / 원'처럼 금액이 두 줄로 깨졌다.
             FlowRow(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                    Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium)
-                    Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+                // '적립금'과 금액 사이에서만 줄이 바뀐다(아주 큰 글자에서도 금액은 안 쪼개진다)
+                FlowRow(Modifier.padding(end = 8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    Text("적립금 ", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Medium, softWrap = false)
+                    Text(formatPrice(customer.points ?: 0), color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold, softWrap = false)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     StatusBadge("booked", "예약(${stats.count(CustomerReservationGroup.Booked)})")
@@ -342,10 +356,12 @@ private fun CustomerExpanded(
     assigneeNames: Map<Int, String>,
     catalog: List<ServiceItem>,
     memoSection: @Composable () -> Unit,
+    pointSection: @Composable () -> Unit,
     onReservationClick: (Reservation) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         memoSection()
+        pointSection()
         val groups = groupedCustomerReservations(reservations, today)
         if (groups.isEmpty()) {
             Text("등록된 데이터가 없습니다", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),

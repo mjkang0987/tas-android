@@ -119,7 +119,7 @@ fun applyPayment(snapshot: LocalDbSnapshot, reservationId: Int, form: PaymentFor
         val histories = buildList {
             fun record(type: String, delta: Int, description: String) {
                 balance += delta
-                add(PointHistoryEntry("${now.toEpochMilli()}-$size-${randomSuffix()}", type, delta, balance, description, now.toString(), reservationId))
+                add(PointHistoryEntry(pointHistoryId(now, size), type, delta, balance, description, now.toString(), reservationId))
             }
             if (usageDiff != 0) record("payment_use", -usageDiff, "예약 결제 적립금 사용")
             if (earnDiff != 0) record(if (earnDiff > 0) "payment_earn" else "payment_adjust", earnDiff, if (earnDiff > 0) "예약 결제 적립" else "예약 결제 적립 조정")
@@ -132,9 +132,6 @@ fun applyPayment(snapshot: LocalDbSnapshot, reservationId: Int, form: PaymentFor
         customers = customers,
     )
 }
-
-// 웹 appendPointHistories 의 id 꼬리(36진수 6자리)
-private fun randomSuffix() = Random.nextLong(36L * 36 * 36 * 36 * 36 * 36).toString(36).padStart(6, '0')
 
 /** 웹 예약완료 — 결제한 예약만(아니면 그대로). 이력 한 줄. */
 fun completeReservation(snapshot: LocalDbSnapshot, reservationId: Int, now: Instant = Instant.now()): LocalDbSnapshot {
