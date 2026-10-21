@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -95,6 +98,13 @@ fun DetailSheet(
 
         var shown by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) { shown = true }
+        // 알림은 맨 위 창에 — 이 창이 열려 있는 동안 여기 그린다(앱 화면의 알림은 이 창 아래로 깔린다)
+        val toast = LocalToast.current
+        val toastWindow = remember { Any() }
+        DisposableEffect(toast) {
+            toast.windows += toastWindow
+            onDispose { toast.windows -= toastWindow }
+        }
         val scrimAlpha by animateFloatAsState(if (shown) 1f else 0f, tween(180), label = "scrim")
 
         BoxWithConstraints(
@@ -161,6 +171,7 @@ fun DetailSheet(
                     if (!wide) Box(Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)))
                 }
             }
+            ToastHost(toast, topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(), window = toastWindow)
         }
     }
 }

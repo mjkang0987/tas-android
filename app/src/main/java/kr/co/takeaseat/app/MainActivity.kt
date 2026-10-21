@@ -1,5 +1,12 @@
 package kr.co.takeaseat.app
 
+import kr.co.takeaseat.app.ui.components.ToastState
+import kr.co.takeaseat.app.ui.components.ToastHost
+import kr.co.takeaseat.app.ui.components.LocalToast
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -53,26 +60,31 @@ private fun TasApp(store: GuestStore) {
     var tab by rememberSaveable { mutableStateOf(TasTab.Calendar) }
     // 설정 탭 안의 하위 화면(서비스 관리 등) — 설정 탭을 누르면 늘 메뉴부터(웹 탭이 /menu 로 간다)
     var settingsPage by rememberSaveable { mutableStateOf<String?>(null) }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(TasColors.White)
-            .statusBarsPadding()
-            // 키보드가 뜨면 화면을 키보드 위까지로 줄인다(웹 모바일처럼 탭바는 키보드 위에) — 아래쪽 입력칸(고객 메모 태그 등)이 가리지 않게.
-            // 내비게이션 바 몫은 탭바가 이미 띄우므로 뺀다. 시트는 따로 창이라 각자 키보드를 피한다.
-            .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars)),
-    ) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            when (tab) {
-                TasTab.Calendar -> CalendarScreen(store)
-                TasTab.Customers -> CustomersScreen(store)
-                TasTab.Revenue -> RevenueScreen(store)
-                TasTab.Settings -> SettingsScreen(store, settingsPage, onPage = { settingsPage = it })
+    // 웹 ToastContainer — 어느 화면에서든 LocalToast.current.show(…)
+    val toast = remember { ToastState() }
+    CompositionLocalProvider(LocalToast provides toast) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(TasColors.White)
+                .statusBarsPadding()
+                // 키보드가 뜨면 화면을 키보드 위까지로 줄인다(웹 모바일처럼 탭바는 키보드 위에) — 아래쪽 입력칸(고객 메모 태그 등)이 가리지 않게.
+                // 내비게이션 바 몫은 탭바가 이미 띄우므로 뺀다. 시트는 따로 창이라 각자 키보드를 피한다.
+                .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars)),
+        ) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (tab) {
+                    TasTab.Calendar -> CalendarScreen(store)
+                    TasTab.Customers -> CustomersScreen(store)
+                    TasTab.Revenue -> RevenueScreen(store)
+                    TasTab.Settings -> SettingsScreen(store, settingsPage, onPage = { settingsPage = it })
+                }
             }
+            MobileTabBar(selected = tab, onSelect = {
+                if (it == TasTab.Settings) settingsPage = null
+                tab = it
+            })
         }
-        MobileTabBar(selected = tab, onSelect = {
-            if (it == TasTab.Settings) settingsPage = null
-            tab = it
-        })
+        ToastHost(toast, topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
     }
 }
