@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -116,7 +117,7 @@ private fun ToastRow(toast: ToastItem, maxWidth: androidx.compose.ui.unit.Dp, on
         Text(toast.message, color = Color.White, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f, fill = false))
         // 웹 ✕(16, 70% 흰색) — 누르는 자리 32
         Box(
-            Modifier.size(32.dp).clickable(onClickLabel = "알림 닫기", onClick = onDismiss).semantics { contentDescription = "닫기" },
+            Modifier.size(32.dp).clickable(role = Role.Button, onClickLabel = "알림 닫기", onClick = onDismiss).semantics { contentDescription = "닫기" },
             contentAlignment = Alignment.Center,
         ) { Text("×", color = Color.White.copy(alpha = 0.7f), fontSize = TasSizes.LargeFont) }
     }
