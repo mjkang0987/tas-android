@@ -66,12 +66,14 @@ fun ReservationCard(
     serviceColorMap: Map<String, String>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    nameOnly: Boolean = false,
 ) {
     val openDetail = onClick // 아래 semantics 블록의 onClick(...) 과 이름이 겹치지 않게
     val status = reservation.status
     val cancelled = status == ReservationStatus.CANCELLED || status == ReservationStatus.NOSHOW
     val noshow = status == ReservationStatus.NOSHOW
-    val detail = cardDetailForHeight(height.value)
+    // 좁은 칸(3일·주)은 카드가 높아도 넣을 가로 폭이 없다 — 이름만, 신규 배지도 뺀다(웹 forcedDetail 'name').
+    val detail = if (nameOnly) CardDetail.Name else cardDetailForHeight(height.value)
     val textColor = if (cancelled) TasColors.DarkGray2 else Color.Black
     val decoration = if (cancelled) TextDecoration.LineThrough else TextDecoration.None
     val borderColor = if (cancelled) TasColors.Gray else color
@@ -123,7 +125,7 @@ fun ReservationCard(
                 ServiceChipList(reservation.service, serviceColorMap, muted = cancelled, gap = 4.dp)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    if (isNewCustomer) NewCustomerBadge()
+                    if (isNewCustomer && !nameOnly) NewCustomerBadge()
                     Text(
                         text = buildAnnotatedString {
                             // compact 까지만 시작시간 — name 단계는 이름 한 줄도 빠듯하다(웹 계약)
