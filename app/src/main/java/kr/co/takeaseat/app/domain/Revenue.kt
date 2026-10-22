@@ -70,6 +70,10 @@ fun reservationRevenue(r: Reservation, catalog: List<ServiceItem>): Int {
     return maxOf(price - deducted, 0)
 }
 
+/** 웹 getDailyRevenue(…, 'booked').total — 캘린더 목록 머리줄 합계(취소·노쇼·신청 뺀 예약의 매출). */
+fun bookedRevenueTotal(reservations: List<Reservation>, catalog: List<ServiceItem>): Int =
+    reservations.filter { isRevenueTarget(it, null, RevenueFilterMode.Booked) }.sumOf { reservationRevenue(it, catalog) }
+
 fun isRevenueTarget(r: Reservation, assigneeId: Int?, mode: RevenueFilterMode): Boolean {
     if (assigneeId != null && r.assigneeId != assigneeId) return false
     return when (mode) {

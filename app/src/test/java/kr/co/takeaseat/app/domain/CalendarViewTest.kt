@@ -33,4 +33,26 @@ class CalendarViewTest {
         assertEquals("2026 / 9 - 10", calendarHeading(LocalDate.of(2026, 10, 1), CalendarView.Week))
         assertEquals("2025 / 12 - 2026 / 1", calendarHeading(LocalDate.of(2026, 1, 1), CalendarView.Week))
     }
+
+    @Test fun `월 격자 - 1일이 든 주 일요일부터 말일이 든 주 토요일까지`() {
+        val oct = monthGrid(thu)
+        assertEquals(LocalDate.of(2026, 9, 27), oct.first())
+        assertEquals(LocalDate.of(2026, 10, 31), oct.last())
+        assertEquals(35, oct.size)
+        // 2026-02 는 일요일에 시작해 토요일에 끝난다 — 앞뒤 달 칸이 없다
+        assertEquals(28, monthGrid(LocalDate.of(2026, 2, 10)).size)
+        // 6주짜리 달: 2026-08 은 토요일 시작
+        assertEquals(42, monthGrid(LocalDate.of(2026, 8, 1)).size)
+    }
+
+    @Test fun `월 이동·제목·목록 날짜`() {
+        assertEquals(LocalDate.of(2026, 11, 1), moveDate(thu, CalendarView.Month, forward = true))
+        assertEquals(LocalDate.of(2026, 9, 1), moveDate(LocalDate.of(2026, 10, 31), CalendarView.Month, forward = false))
+        assertEquals(LocalDate.of(2027, 1, 1), moveDate(LocalDate.of(2026, 12, 31), CalendarView.Month, forward = true))
+        assertEquals("2026 / 10", calendarHeading(thu, CalendarView.Month))
+        // 같은 달이면 고른 날 그대로, 다른 달로 가면 그 달 1일(웹 filterWithinTarget)
+        assertEquals(thu, listDateWithin(thu, LocalDate.of(2026, 10, 1)))
+        assertEquals(LocalDate.of(2026, 11, 1), listDateWithin(thu, LocalDate.of(2026, 11, 1)))
+        assertEquals(LocalDate.of(2027, 10, 1), listDateWithin(thu, LocalDate.of(2027, 10, 22)))
+    }
 }
