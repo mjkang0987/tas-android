@@ -7,6 +7,27 @@
 
 ---
 
+## 🟡 진행 — 14-2단계: 캘린더 월 보기 (`claude/android-calendar-month`, #22 위)
+
+### 요구 (지시자 2026-10-22 — "안드로이드 계속 진행해줘")
+- 웹 모바일 월 보기: `Days`(요일 줄) + `MonthWrap`·`Month`·`Num`·`ReservationList`(칸) + `ReservationListSection`(아래 목록).
+
+### 구현
+- `domain/CalendarView.kt` — `Month`(‹ › 는 달 단위, 다음·이전 달 1일), `monthGrid`(1일이 든 주 일요일 ~ 말일이 든 주 토요일), `listDateWithin`(웹 filterWithinTarget).
+- `domain/Revenue.kt` `bookedRevenueTotal` — 목록 머리줄 합계(웹 getDailyRevenue 'booked').
+- `ui/calendar/MonthView.kt` — 요일 줄(정기휴무 틴트) · 날짜 격자(좌우 12·간격 3·칸 최소 40, 날짜 원 30: 오늘 옅게·고른 날 꽉 차게, 앞뒤 달 "9/27")
+  · 칸 내용: 1건이면 이름 줄(담당자 색, 취소·노쇼 빗금+취소선), 2건 이상이면 건수 · 아래 목록(회색 머리줄 "10월 22일 · N건 · 합계 · ＋", 예약 카드).
+- 월 탭 → 오늘 + 목록 오늘. 달을 옮기면 목록은 같은 달이면 그대로, 아니면 그 달 1일(웹과 같음 — '오늘'·날짜 선택도).
+- 목록 ＋ 는 그날 10:00 으로 예약 추가(`ReservationCreateSheet` 에 `initialDate`·`initialStart`).
+
+### 웹과 다르게 한 것
+- 날짜 원 읽기에 "오늘"·휴무를 덧붙인다(웹은 오늘은 색만, 휴무는 칸 안 숨은 글자).
+
+### 검증
+- 단위 테스트(격자 5·4·6주, 달 이동, 목록 날짜, 합계) · 에뮬레이터에서 웹 375px 와 비교 · TalkBack 라벨.
+
+---
+
 ## 🟡 진행 — 14-1단계: 캘린더 보기 탭 + 3일·주 보기 (`claude/android-calendar-views`, #21 위)
 
 ### 요구 (지시자 2026-10-22 — "안드로이드 계속 진행해줘", 추천 순서 3번 "캘린더 다른 보기")
