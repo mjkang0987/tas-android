@@ -333,7 +333,7 @@ private fun AdjustCard(customer: Customer, amount: String, onAmount: (String) ->
             TasTextField(label = "${customer.name} 적립금 금액", value = amount, onValueChange = onAmount, placeholder = "금액 입력", showLabel = false,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
             ActionButton("적립", onClick = { onApply(true) }, modifier = Modifier.width(72.dp))
-            ActionButton("차감", onClick = { onApply(false) }, tone = ActionTone.DangerOutline, modifier = Modifier.width(72.dp))
+            ActionButton("차감", onClick = { onApply(false) }, tone = ActionTone.DangerSoft, modifier = Modifier.width(72.dp))
         }
     }
 }
@@ -434,7 +434,7 @@ private fun RechargeCard(policy: PointSettings, editing: Boolean, onAdd: () -> U
                 }
                 // 웹 모바일: 삭제는 한 줄을 다 쓴다
                 ActionButton("삭제", onClick = { onChange(policy.copy(rechargeRules = removeRechargeRule(policy.rechargeRules, index))) },
-                    tone = ActionTone.DangerOutline, enabled = editing, modifier = Modifier.fillMaxWidth())
+                    tone = ActionTone.DangerSoft, enabled = editing, modifier = Modifier.fillMaxWidth())
                 Text("추가 적립 ${rechargeBonusPercent(rule)}", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont)
             }
         }
