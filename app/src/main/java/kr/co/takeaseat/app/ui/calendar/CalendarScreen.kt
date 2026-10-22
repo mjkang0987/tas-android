@@ -35,7 +35,7 @@ import kr.co.takeaseat.app.ui.rememberDetailStack
 
 /** 캘린더 탭 — 일·3일·주·월·년 보기(웹 `/day|three|week/yyyy/mm/dd`, `/month/yyyy/mm`, `/year/yyyy`). */
 @Composable
-fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
+fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier, openReservationId: Int? = null, onReservationOpened: () -> Unit = {}) {
     val snapshot by store.snapshot.collectAsState()
     var dateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
     var view by rememberSaveable { mutableStateOf(CalendarView.Day) }
@@ -89,6 +89,13 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
 
     // 열린 상세 창(예약 → 고객 → …) — 회전해도 유지
     val details = rememberDetailStack()
+    // 예약 알림을 눌러 들어왔으면 그 예약 상세(지워진 예약이면 상세 창이 알아서 닫힌다)
+    LaunchedEffect(openReservationId) {
+        if (openReservationId != null) {
+            details.openReservation(openReservationId)
+            onReservationOpened()
+        }
+    }
     // 예약 추가 창 — null 이면 닫힘, "" 이면 헤더 ＋예약(오늘·지금), 날짜면 월 목록 ＋(그날 10:00).
     var creating by rememberSaveable { mutableStateOf<String?>(null) }
 
