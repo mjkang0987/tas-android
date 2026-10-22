@@ -125,6 +125,11 @@ data class StoreSettings(
     /** 정기 휴무 요일. 0=월 … 6=일 */
     val closedWeekdays: List<Int> = emptyList(),
     val pointSettings: PointSettings = PointSettings(),
+    /**
+     * 지각 알림 기준(분) — 예약 시작 뒤 이만큼 지나도 완료·노쇼 처리가 안 되면 알린다. 0 = 끔, null = 기본 15분.
+     * 앱에만 있는 매장 설정(지시자 2026-10-22 "매장에서 설정"). 웹·서버에는 아직 없다 — 서버 푸시 단계에서 같은 이름으로 넣는다.
+     */
+    val lateAlertMinutes: Int? = null,
 )
 
 /**
