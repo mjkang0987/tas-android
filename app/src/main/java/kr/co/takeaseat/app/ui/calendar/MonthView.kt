@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -18,6 +19,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.hideFromAccessibility
+import kr.co.takeaseat.app.domain.WEEKDAYS
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,8 +71,7 @@ import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
-private val SUNDAY_FIRST = listOf("일", "월", "화", "수", "목", "금", "토")
-private val BrandBorder = Color(101, 38, 217).copy(alpha = 0.2f) // 웹 --brand-color-border (오늘 원)
+private val MIN_LIST_HEIGHT = 160.dp // 격자 밑에 목록이 이만큼도 안 남으면 화면 전체를 한 스크롤로
 private val GridPadding = PaddingValues(horizontal = 12.dp) // 웹 MonthWrap 모바일 padding 0 12
 private val CellGap = 3.dp // 웹 gap 3px
 
@@ -85,13 +97,71 @@ fun MonthView(
     onCreate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val selectedReservations = remember(reservationsByDate, selected) {
+        reservationsByDate[selected.toDateKey()].orEmpty().sortedBy { it.startTime }
+    }
+    val density = LocalDensity.current
+    // 웹은 격자 높이를 고정하고 남는 자리를 목록이 제 안에서 스크롤한다. 가로 화면처럼 낮으면 격자가 잘리고
+    // 목록이 0 이 되므로, 그때만 격자·목록을 한 스크롤로 잇는다.
+    BoxWithConstraints(modifier) {
+        var gridHeight by remember { mutableStateOf(0.dp) }
+        val compact = gridHeight > maxHeight - MIN_LIST_HEIGHT
+        Column(Modifier.fillMaxSize().then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)) {
+            MonthGrid(
+                date = date,
+                today = today,
+                selected = selected,
+                snapshot = snapshot,
+                reservationsByDate = reservationsByDate,
+                customerNames = customerNames,
+                firstVisit = firstVisit,
+                assigneeColors = assigneeColors,
+                onSelect = onSelect,
+                onReservationClick = onReservationClick,
+                modifier = Modifier.onSizeChanged { gridHeight = with(density) { it.height.toDp() } },
+            )
+            DayReservationList(
+                day = selected,
+                reservations = selectedReservations,
+                lazy = !compact,
+                snapshot = snapshot,
+                customerNames = customerNames,
+                firstVisit = firstVisit,
+                assigneeColors = assigneeColors,
+                serviceColorMap = serviceColorMap,
+                onReservationClick = onReservationClick,
+                onCustomerClick = onCustomerClick,
+                onCreate = { onCreate(selected) },
+                modifier = if (compact) Modifier else Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+/** 웹 Days(월) + MonthWrap — 요일 줄과 날짜 격자. */
+@Composable
+private fun MonthGrid(
+    date: LocalDate,
+    today: LocalDate,
+    selected: LocalDate,
+    snapshot: LocalDbSnapshot,
+    reservationsByDate: Map<String, List<Reservation>>,
+    customerNames: Map<Int, String>,
+    firstVisit: Map<Int, String>,
+    assigneeColors: Map<Int, String>,
+    onSelect: (LocalDate) -> Unit,
+    onReservationClick: (Int) -> Unit,
+    modifier: Modifier,
+) {
     val closedWeekdays = snapshot.storeSettings.closedWeekdays
     Column(modifier) {
         // 웹 Days(월) — 요일 줄도 격자와 같은 여백·간격이라야 양끝 칸이 어긋나지 않는다.
         Row(Modifier.fillMaxWidth().padding(GridPadding), horizontalArrangement = Arrangement.spacedBy(CellGap)) {
-            SUNDAY_FIRST.forEachIndexed { index, label ->
-                // closedWeekdays 는 월요일=0, 이 줄은 일요일부터
-                val closed = (index + 6) % 7 in closedWeekdays
+            for (index in 0..6) {
+                // 이 줄은 일요일부터, WEEKDAYS·closedWeekdays 는 월요일=0
+                val weekday = (index + 6) % 7
+                val label = WEEKDAYS[weekday]
+                val closed = weekday in closedWeekdays
                 Text(
                     label,
                     color = TasColors.Black,
@@ -128,19 +198,6 @@ fun MonthView(
                 }
             }
         }
-        DayReservationList(
-            day = selected,
-            reservations = reservationsByDate[selected.toDateKey()].orEmpty().sortedBy { it.startTime },
-            snapshot = snapshot,
-            customerNames = customerNames,
-            firstVisit = firstVisit,
-            assigneeColors = assigneeColors,
-            serviceColorMap = serviceColorMap,
-            onReservationClick = onReservationClick,
-            onCustomerClick = onCustomerClick,
-            onCreate = { onCreate(selected) },
-            modifier = Modifier.weight(1f),
-        )
     }
 }
 
@@ -182,7 +239,7 @@ private fun DayCell(
                 .background(
                     when {
                         isSelected -> TasColors.Brand
-                        isToday -> BrandBorder
+                        isToday -> TasColors.BrandBorder
                         else -> Color.Transparent
                     },
                 )
@@ -218,12 +275,9 @@ private fun DayCell(
                 fontSize = TasSizes.TinyFont,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
+                    // 바로 위 날짜 원과 같은 동작·같은 이름 — 낭독기에선 한 번만 읽히게 숨긴다(누르는 자리는 그대로).
+                    .semantics { hideFromAccessibility() }
                     .clickable(role = Role.Button, onClick = onSelect)
-                    .clearAndSetSemantics {
-                        contentDescription = label
-                        role = Role.Button
-                        onClick { onSelect(); true }
-                    }
                     .padding(horizontal = 6.dp),
             )
             else -> {
@@ -286,6 +340,7 @@ private fun MonthNameTag(reservation: Reservation, name: String, color: Color, d
 private fun DayReservationList(
     day: LocalDate,
     reservations: List<Reservation>,
+    lazy: Boolean,
     snapshot: LocalDbSnapshot,
     customerNames: Map<Int, String>,
     firstVisit: Map<Int, String>,
@@ -297,7 +352,8 @@ private fun DayReservationList(
     modifier: Modifier,
 ) {
     val title = "${day.monthValue}월 ${day.dayOfMonth}일"
-    val assigneeNames = snapshot.assignees.associate { it.id to it.name }
+    val assigneeNames = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.name } }
+    val total = remember(reservations, snapshot.services) { bookedRevenueTotal(reservations, snapshot.services) }
     Column(
         modifier
             .fillMaxWidth()
@@ -310,7 +366,7 @@ private fun DayReservationList(
         ) {
             Text(title, color = TasColors.Black, fontSize = TasSizes.TinyFont, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(
-                "${reservations.size}건 · ${formatPrice(bookedRevenueTotal(reservations, snapshot.services))}",
+                "${reservations.size}건 · ${formatPrice(total)}",
                 color = TasColors.DarkGray2,
                 fontSize = TasSizes.SmallFont,
                 textAlign = TextAlign.End,
@@ -341,25 +397,33 @@ private fun DayReservationList(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
             )
         } else {
-            LazyColumn(
-                contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                items(reservations, key = { it.id }) { r ->
-                    val id = r.assigneeId?.takeIf { it != 0 }
-                    val name = customerNames[r.customerId]
-                    ReservationInfoCard(
-                        reservation = r,
-                        serviceColorMap = serviceColorMap,
-                        assigneeName = id?.let { assigneeNames[it] } ?: "미지정",
-                        assigneeColor = hexColor(id?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
-                        displayPrice = r.price ?: servicePriceTotal(r.service, snapshot.services),
-                        onClick = { onReservationClick(r.id) },
-                        customerName = name ?: "-",
-                        isNewCustomer = isNewCustomerVisit(firstVisit[r.customerId], r.date),
-                        showDate = false,
-                        onCustomerClick = name?.let { { onCustomerClick(r.customerId) } },
-                    )
+            val card: @Composable (Reservation) -> Unit = { r ->
+                val id = r.assigneeId?.takeIf { it != 0 }
+                val name = customerNames[r.customerId]
+                ReservationInfoCard(
+                    reservation = r,
+                    serviceColorMap = serviceColorMap,
+                    assigneeName = id?.let { assigneeNames[it] } ?: "미지정",
+                    assigneeColor = hexColor(id?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
+                    displayPrice = r.price ?: servicePriceTotal(r.service, snapshot.services),
+                    onClick = { onReservationClick(r.id) },
+                    customerName = name ?: "-",
+                    isNewCustomer = isNewCustomerVisit(firstVisit[r.customerId], r.date),
+                    showDate = false,
+                    onCustomerClick = name?.let { { onCustomerClick(r.customerId) } },
+                )
+            }
+            val padding = PaddingValues(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 18.dp)
+            if (lazy) {
+                // 날짜를 바꾸면 맨 위부터 — 앞 날짜에서 내린 자리가 남으면 이른 예약을 놓친다.
+                key(day) {
+                    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        items(reservations, key = { it.id }) { card(it) }
+                    }
+                }
+            } else {
+                Column(Modifier.padding(padding), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    reservations.forEach { card(it) }
                 }
             }
         }
