@@ -32,7 +32,7 @@ import kr.co.takeaseat.app.domain.LocalDbSnapshot
 import kr.co.takeaseat.app.domain.Reservation
 import kr.co.takeaseat.app.domain.bookedRevenueTotal
 import kr.co.takeaseat.app.domain.formatPrice
-import kr.co.takeaseat.app.domain.monthReservations
+import kr.co.takeaseat.app.domain.reservationsByMonth
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
@@ -59,7 +59,7 @@ fun YearView(
     onCustomerClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val byMonth = remember(snapshot.reservations, year) { (1..12).map { monthReservations(snapshot.reservations, year, it) } }
+    val byMonth = remember(snapshot.reservations, year) { reservationsByMonth(snapshot.reservations, year) }
     val revenue = remember(byMonth, snapshot.services) { byMonth.map { bookedRevenueTotal(it, snapshot.services) } }
     CalendarGridWithList(
         modifier = modifier,

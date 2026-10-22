@@ -179,7 +179,8 @@ private fun GroupTitle(date: String, count: Int, first: Boolean) {
                 .heightIn(min = 30.dp)
                 .border(1.dp, GroupTitleBorder, TasShapes.Chip)
                 .padding(horizontal = 12.dp)
-                .semantics { heading() },
+                // 제목은 안쪽 글자 노드 — 합쳐야 머리글 이동에서 날짜가 읽힌다
+                .semantics(mergeDescendants = true) { heading() },
             contentAlignment = Alignment.CenterStart,
         ) {
             Text("$date ($count)", color = GroupTitleInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold)

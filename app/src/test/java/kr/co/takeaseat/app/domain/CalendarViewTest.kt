@@ -62,8 +62,10 @@ class CalendarViewTest {
         assertEquals("2026", calendarHeading(thu, CalendarView.Year))
         fun r(id: Int, date: String, start: String) = Reservation(id, date, start, "23:00", "커트", 1, null, null, null)
         val list = listOf(r(1, "2026-10-20", "13:00"), r(2, "2026-10-19", "15:00"), r(3, "2026-10-19", "10:00"), r(4, "2025-10-19", "10:00"), r(5, "2026-01-05", "10:00"))
-        assertEquals(listOf(3, 2, 1), monthReservations(list, 2026, 10).map { it.id })
-        assertEquals(listOf(5), monthReservations(list, 2026, 1).map { it.id })
-        assertEquals(emptyList<Int>(), monthReservations(list, 2026, 11).map { it.id })
+        val months = reservationsByMonth(list, 2026)
+        assertEquals(12, months.size)
+        assertEquals(listOf(3, 2, 1), months[9].map { it.id })
+        assertEquals(listOf(5), months[0].map { it.id })
+        assertEquals(emptyList<Int>(), months[10].map { it.id })
     }
 }

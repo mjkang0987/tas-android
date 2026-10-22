@@ -13,7 +13,7 @@
 - 웹 모바일 연 보기 `Year.tsx` + 달 목록(`ReservationListSection` 의 month 필터).
 
 ### 구현
-- `domain/CalendarView.kt` — `Year`(‹ › 해 단위, 제목 "2026"), `monthReservations`(그 해 그 달, 날짜·시작 순).
+- `domain/CalendarView.kt` — `Year`(‹ › 해 단위, 제목 "2026"), `reservationsByMonth`(그 해 열두 달을 한 번에, 달마다 날짜·시작 순).
 - `ui/calendar/YearView.kt` — 4 × 3 달 칸(옅은 회색·둥글기 5·간격 5): 달 숫자(이번 달 옅게·고른 달 꽉 차게) · 건수/매출 · '자세히'(그 달 월 보기).
   숫자·건수는 아래 목록만 바꾸고, 화면 전환은 '자세히'만(웹 규칙).
 - 월 보기와 같이 쓰도록 뺐다: `DateCircle`(웹 Num), `CalendarGridWithList`(낮은 화면이면 한 스크롤), `ReservationListSection`(새 파일 —

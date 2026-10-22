@@ -67,8 +67,11 @@ fun calendarHeading(date: LocalDate, view: CalendarView): String {
     }
 }
 
-/** 웹 연 보기 달 목록 — 그 해 그 달의 예약, 날짜·시작 순. */
-fun monthReservations(reservations: List<Reservation>, year: Int, month: Int): List<Reservation> {
-    val prefix = "$year-${month.toString().padStart(2, '0')}-"
-    return reservations.filter { it.date.startsWith(prefix) }.sortedWith(compareBy({ it.date }, { it.startTime }))
+/** 웹 연 보기 달 목록 — 그 해 열두 달(0=1월)의 예약을 한 번에 나눈다. 달마다 날짜·시작 순. */
+fun reservationsByMonth(reservations: List<Reservation>, year: Int): List<List<Reservation>> {
+    val prefix = "$year-"
+    val byMonth = reservations.filter { it.date.startsWith(prefix) }
+        .sortedWith(compareBy({ it.date }, { it.startTime }))
+        .groupBy { it.date.substring(5, 7).toIntOrNull() }
+    return (1..12).map { byMonth[it].orEmpty() }
 }
