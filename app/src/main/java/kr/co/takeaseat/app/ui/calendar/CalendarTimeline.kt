@@ -93,7 +93,7 @@ data class TimelineColumn(
     val isToday: Boolean,
     val faded: Boolean,
 ) {
-    val lanes: Int get() = maxLanes(items.map { it.placed })
+    val lanes: Int = maxLanes(items.map { it.placed })
 }
 
 /**
@@ -147,14 +147,15 @@ fun CalendarTimeline(
         val narrow = maxWidth <= NARROW_MAX
         val sideways = view == CalendarView.Week && narrow
         // 칸 폭: 가로로 미는 주는 64 × 겹침 수, 넓은 화면의 주는 겹침 수 비율, 3일은 같은 몫.
-        @Composable fun RowScope.columnWidth(column: TimelineColumn) = when {
+        fun RowScope.columnWidth(column: TimelineColumn) = when {
             sideways -> Modifier.width(WEEK_COL * column.lanes)
             view == CalendarView.Week -> Modifier.weight(column.lanes.toFloat())
             else -> Modifier.weight(1f)
         }
         // 주 보기는 열 때 한 번 오늘 칸을 가운데로(웹 Week scrollIntoView inline:center). 주를 넘겨도 다시 끌지 않는다.
+        // 넓은 화면에서 열고 좁게 돌렸을 때도 가로 스크롤이 생기는 순간 한 번 더 맞춘다.
         val viewport = maxWidth - TasSizes.TimelineCol
-        LaunchedEffect(Unit) {
+        LaunchedEffect(sideways) {
             val i = columns.indexOfFirst { it.isToday }
             if (!sideways || i < 0) return@LaunchedEffect
             val center = WEEK_COL * columns.take(i).sumOf { it.lanes } + WEEK_COL * columns[i].lanes / 2
@@ -195,6 +196,8 @@ fun CalendarTimeline(
                                 blockOffset = blockOffset,
                                 nowTop = nowTop,
                                 nameOnly = multi && narrow,
+                                // 3일·주는 머리줄이 "…일 보기, 정기휴무" 로 읽는다 — 칸에서 날짜 없이 또 읽지 않게.
+                                announceClosed = !multi,
                                 divider = multi && i != 6,
                                 serviceColorMap = serviceColorMap,
                                 onReservationClick = onReservationClick,
@@ -250,6 +253,7 @@ private fun DayColumn(
     blockOffset: Dp,
     nowTop: Dp,
     nameOnly: Boolean,
+    announceClosed: Boolean,
     divider: Boolean,
     serviceColorMap: Map<String, String>,
     onReservationClick: (Int) -> Unit,
@@ -260,7 +264,7 @@ private fun DayColumn(
     BoxWithConstraints(
         modifier
             .then(closedKind?.let { Modifier.background(if (it == StoreClosedKind.Date) TasColors.ClosedDateBg else TasColors.ClosedWeekdayBg) } ?: Modifier)
-            .semantics { if (closedKind != null) contentDescription = closedKind.label }
+            .semantics { if (closedKind != null && announceClosed) contentDescription = closedKind.label }
             .drawBehind {
                 // 정시선은 본문이 그린다(웹과 같이 카드 아래에 깔리게). 카드와 같은 오프셋.
                 var y = blockOffset.toPx()
