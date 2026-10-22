@@ -52,16 +52,14 @@ fun splitAssigneesByStatus(assignees: List<Assignee>): Triple<List<Assignee>, Li
     )
 }
 
-private val WEEKDAY_LABELS = listOf("월", "화", "수", "목", "금", "토", "일")
-
 /** 웹 summarizeSchedule — 이웃한 같은 근무끼리 묶는다. 예: (월~금, 10:00~20:00), (토, 10:00~18:00), (일, 휴무). */
 fun summarizeSchedule(schedule: List<DaySchedule>): List<Pair<String, String>> {
     fun key(i: Int) = schedule.getOrNull(i)?.takeIf { it.enabled }?.let { "${it.start}~${it.end}" } ?: "휴무"
     val segments = mutableListOf<Pair<String, String>>()
     var start = 0
-    for (i in WEEKDAY_LABELS.indices) {
-        if (i < WEEKDAY_LABELS.lastIndex && key(i) == key(i + 1)) continue
-        segments += (if (start == i) WEEKDAY_LABELS[i] else "${WEEKDAY_LABELS[start]}~${WEEKDAY_LABELS[i]}") to key(start)
+    for (i in WEEKDAYS.indices) {
+        if (i < WEEKDAYS.lastIndex && key(i) == key(i + 1)) continue
+        segments += (if (start == i) WEEKDAYS[i] else "${WEEKDAYS[start]}~${WEEKDAYS[i]}") to key(start)
         start = i + 1
     }
     return segments

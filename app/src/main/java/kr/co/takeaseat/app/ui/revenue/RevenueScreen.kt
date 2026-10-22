@@ -88,6 +88,7 @@ import kr.co.takeaseat.app.domain.revenueSummary
 import kr.co.takeaseat.app.domain.servicePriceTotal
 import kr.co.takeaseat.app.domain.sortAssignees
 import kr.co.takeaseat.app.domain.storeLabels
+import kr.co.takeaseat.app.domain.WEEKDAYS
 import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.calendar.ReservationDetailSheet
 import kr.co.takeaseat.app.ui.calendar.ReservationInfoCard
@@ -469,8 +470,6 @@ private fun DailyCard(
         }
     }
 }
-
-private val WEEKDAYS = listOf("월", "화", "수", "목", "금", "토", "일")
 
 /** 웹 StyledDayHeader — 날짜(10월 20일 / 2026년 (화), 폭 96) · n건 · 합계 · 펼침 표시. */
 @Composable
