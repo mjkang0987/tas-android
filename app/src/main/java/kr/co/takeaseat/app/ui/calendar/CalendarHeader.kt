@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -103,10 +104,11 @@ fun CalendarHeader(
                 Text(
                     calendarHeading(date, view),
                     color = Color.Black,
-                    fontSize = TasSizes.LargeFont,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    modifier = Modifier.clearAndSetSemantics {},
+                    // 해가 걸친 주("2025 / 12 - 2026 / 1")는 16sp 로 안 들어간다 — 잘리지 않게 그때만 줄인다(웹은 두 줄로 접힌다).
+                    autoSize = TextAutoSize.StepBased(minFontSize = TasSizes.SmallFont, maxFontSize = TasSizes.LargeFont),
+                    modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics {},
                 )
                 Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
             }
