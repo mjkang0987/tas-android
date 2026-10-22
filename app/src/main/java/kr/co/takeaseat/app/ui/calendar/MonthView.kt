@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -250,7 +251,8 @@ private fun DayCell(
                     selected = isSelected
                     onClick { onSelect(); true }
                 }
-                .padding(horizontal = if (adjacent) 8.dp else 0.dp),
+                // 웹은 0 8px 이지만 360dp 칸(안쪽 약 41)엔 "12/31"(약 31) + 16 이 안 들어가 4 로 줄인다.
+                .padding(horizontal = if (adjacent) 4.dp else 0.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -263,7 +265,8 @@ private fun DayCell(
                 fontSize = TasSizes.SmallFont,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
-                softWrap = false,
+                // 더 좁은 화면에서도 잘리지 않게 그때만 줄인다
+                autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = TasSizes.SmallFont),
             )
         }
         when {
