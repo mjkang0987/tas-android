@@ -19,9 +19,12 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.zIndex
 import java.time.LocalDate
 import kr.co.takeaseat.app.domain.CalendarView
+import kr.co.takeaseat.app.domain.WEEKDAYS
+import kr.co.takeaseat.app.domain.maxLanes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,11 +71,11 @@ private val COLUMNS_BLOCK_OFFSET = 25.dp // 웹 blockOffsetOf(3일·주) — 날
 private val AXIS_MARGIN = 90.dp // 웹 StyledTimes 위+아래 여백 합
 private val WEEK_HEADING = 24.dp // 웹 TIMELINE_WEEK_HEADING
 private val WEEK_COL = 64.dp // 웹 모바일 --week-col
+private val NARROW_MAX = 640.dp // 웹 모바일 분기 (max-width: 640px)
 private val CARD_INSET_LEFT = 3.dp
 private val LANE_GAP = 3.dp
 private val NOW_SCROLL_MARGIN = 72.dp // 웹 StyledBar scroll-margin-top
 private val HeadingShadow = Color(15, 23, 42).copy(alpha = 0.06f) // 웹 0 2px 4px rgba(15,23,42,.06)
-private val WEEKDAY_KO = listOf("월", "화", "수", "목", "금", "토", "일")
 
 /** 한 칸에 그릴 것 — 화면 쪽에서 고객·색을 풀어 둔다. */
 data class TimelineCardItem(
@@ -90,13 +93,14 @@ data class TimelineColumn(
     val isToday: Boolean,
     val faded: Boolean,
 ) {
-    val lanes: Int get() = items.maxOfOrNull { it.placed.lane.count } ?: 1
+    val lanes: Int get() = maxLanes(items.map { it.placed })
 }
 
 /**
  * 웹 캘린더 본문: 왼쪽 시간축(44) + 날짜 칸들. 축과 칸이 한 세로 스크롤로 같이 움직인다.
  * 일 = 한 칸. 3일·주 = 칸마다 "10.22 목" 머리줄(위에 고정) — 3일은 폭을 셋으로 나누고,
  * 주는 칸을 64 × 겹침 수로 못박아 넘치면 가로로 민다(시간축은 고정). 좁은 칸의 카드는 이름만.
+ * 640dp 를 넘는 폭(가로 화면·태블릿)은 웹 데스크톱처럼 주도 겹침 수 비율로 폭을 나누고 카드를 다 보인다.
  * 축 높이 = 90 + (끝-시작+1)시간 — 웹은 끝 시각 라벨까지 그린다. 3일·주는 그 90 안에 머리줄(24)이 든다.
  * 뷰를 바꿀 때 스크롤을 새로 잡도록 호출부가 `key(view)` 로 감싼다(웹도 뷰마다 새 노드).
  */
@@ -112,7 +116,6 @@ fun CalendarTimeline(
     modifier: Modifier = Modifier,
 ) {
     val multi = view != CalendarView.Day
-    val sideways = view == CalendarView.Week
     val blockOffset = if (multi) COLUMNS_BLOCK_OFFSET else DAY_BLOCK_OFFSET
     val hourHeight = scale.hourHeight.dp
     val labelCount = hours.last - hours.first + 2 // 웹 `end - start + 1` (IntRange.last = end - 1)
@@ -141,6 +144,14 @@ fun CalendarTimeline(
     }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
+        val narrow = maxWidth <= NARROW_MAX
+        val sideways = view == CalendarView.Week && narrow
+        // 칸 폭: 가로로 미는 주는 64 × 겹침 수, 넓은 화면의 주는 겹침 수 비율, 3일은 같은 몫.
+        @Composable fun RowScope.columnWidth(column: TimelineColumn) = when {
+            sideways -> Modifier.width(WEEK_COL * column.lanes)
+            view == CalendarView.Week -> Modifier.weight(column.lanes.toFloat())
+            else -> Modifier.weight(1f)
+        }
         // 주 보기는 열 때 한 번 오늘 칸을 가운데로(웹 Week scrollIntoView inline:center). 주를 넘겨도 다시 끌지 않는다.
         val viewport = maxWidth - TasSizes.TimelineCol
         LaunchedEffect(Unit) {
@@ -166,7 +177,7 @@ fun CalendarTimeline(
                                 column = column,
                                 divider = i != 6,
                                 onOpen = { onDateClick(column.date) },
-                                modifier = if (sideways) Modifier.width(WEEK_COL * column.lanes) else Modifier.weight(1f),
+                                modifier = columnWidth(column),
                             )
                         }
                     }
@@ -183,11 +194,11 @@ fun CalendarTimeline(
                                 scale = scale,
                                 blockOffset = blockOffset,
                                 nowTop = nowTop,
-                                nameOnly = multi,
+                                nameOnly = multi && narrow,
                                 divider = multi && i != 6,
                                 serviceColorMap = serviceColorMap,
                                 onReservationClick = onReservationClick,
-                                modifier = (if (sideways) Modifier.width(WEEK_COL * column.lanes) else Modifier.weight(1f)).fillMaxHeight(),
+                                modifier = columnWidth(column).fillMaxHeight(),
                             )
                         }
                     }
@@ -202,7 +213,7 @@ fun CalendarTimeline(
 private fun DayHeading(column: TimelineColumn, divider: Boolean, onOpen: () -> Unit, modifier: Modifier) {
     val d = column.date
     Text(
-        "${d.monthValue}.${d.dayOfMonth} ${WEEKDAY_KO[d.dayOfWeek.value - 1]}",
+        "${d.monthValue}.${d.dayOfMonth} ${WEEKDAYS[d.dayOfWeek.value - 1]}",
         color = when {
             column.isToday -> TasColors.Brand
             // 웹은 --gray-color(대비 1.4:1)라 글자로 못 읽는다 — 보조 글자색(4.8:1)으로.
@@ -219,8 +230,9 @@ private fun DayHeading(column: TimelineColumn, divider: Boolean, onOpen: () -> U
             .then(if (divider) Modifier.rightLine() else Modifier)
             .clickable(role = Role.Button, onClick = onOpen)
             .clearAndSetSemantics {
-                // 웹 aria-label "10월 22일 보기". 오늘은 색으로만 보여 소리로 따로 알린다.
-                contentDescription = "${d.monthValue}월 ${d.dayOfMonth}일 보기" + if (column.isToday) ", 오늘" else ""
+                // 웹 aria-label "10월 22일 보기". 오늘·휴무는 색으로만 보여 소리로 따로 알린다.
+                contentDescription = listOfNotNull("${d.monthValue}월 ${d.dayOfMonth}일 보기", "오늘".takeIf { column.isToday }, column.closedKind?.label)
+                    .joinToString(", ")
                 role = Role.Button
                 onClick { onOpen(); true }
             }

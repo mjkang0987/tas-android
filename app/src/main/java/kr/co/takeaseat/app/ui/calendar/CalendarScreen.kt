@@ -58,12 +58,13 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val scale = remember(snapshot.services) { timelineScaleFor(snapshot.services) }
 
     // 취소·노쇼도 그대로 그린다(웹과 같이 빗금으로 구분).
-    val columns = remember(snapshot.reservations, snapshot.storeSettings, dateKey, view, today, customers, firstVisit, assigneeColors) {
+    val reservationsByDate = remember(snapshot.reservations) { snapshot.reservations.groupBy { it.date } }
+    val columns = remember(reservationsByDate, snapshot.storeSettings, dateKey, view, today, customers, firstVisit, assigneeColors) {
         viewDates(date, view).map { day ->
             val key = day.toDateKey()
             TimelineColumn(
                 date = day,
-                items = placeReservations(snapshot.reservations.filter { it.date == key }).map { placed ->
+                items = placeReservations(reservationsByDate[key].orEmpty()).map { placed ->
                     val r = placed.reservation
                     TimelineCardItem(
                         placed = placed,
