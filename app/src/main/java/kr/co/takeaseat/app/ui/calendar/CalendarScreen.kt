@@ -2,11 +2,11 @@ package kr.co.takeaseat.app.ui.calendar
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kr.co.takeaseat.app.data.GuestStore
+import kr.co.takeaseat.app.domain.CalendarView
 import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
 import kr.co.takeaseat.app.domain.buildAssigneeColorMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
@@ -25,15 +26,18 @@ import kr.co.takeaseat.app.domain.storeClosedKind
 import kr.co.takeaseat.app.domain.timelineRange
 import kr.co.takeaseat.app.domain.timelineScaleFor
 import kr.co.takeaseat.app.domain.toDateKey
+import kr.co.takeaseat.app.domain.viewDates
+import kr.co.takeaseat.app.domain.weekStart
 import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.rememberDetailStack
 
-/** 캘린더 탭 — 지금은 일 뷰만(웹 `/day/yyyy/mm/dd`). */
+/** 캘린더 탭 — 일·3일·주 보기(웹 `/day|three|week/yyyy/mm/dd`). */
 @Composable
 fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val snapshot by store.snapshot.collectAsState()
     var dateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
+    var view by rememberSaveable { mutableStateOf(CalendarView.Day) }
     val date = LocalDate.parse(dateKey)
 
     // 자정을 넘기면 '오늘'이 바뀐다 — 1분마다 확인
@@ -54,36 +58,54 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val scale = remember(snapshot.services) { timelineScaleFor(snapshot.services) }
 
     // 취소·노쇼도 그대로 그린다(웹과 같이 빗금으로 구분).
-    val items = remember(snapshot.reservations, dateKey, customers, firstVisit, assigneeColors) {
-        placeReservations(snapshot.reservations.filter { it.date == dateKey }).map { placed ->
-            val r = placed.reservation
-            TimelineCardItem(
-                placed = placed,
-                color = hexColor(r.assigneeId?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
-                customerName = customers[r.customerId]?.name,
-                isNewCustomer = isNewCustomerVisit(firstVisit[r.customerId], r.date),
+    val columns = remember(snapshot.reservations, snapshot.storeSettings, dateKey, view, today, customers, firstVisit, assigneeColors) {
+        viewDates(date, view).map { day ->
+            val key = day.toDateKey()
+            TimelineColumn(
+                date = day,
+                items = placeReservations(snapshot.reservations.filter { it.date == key }).map { placed ->
+                    val r = placed.reservation
+                    TimelineCardItem(
+                        placed = placed,
+                        color = hexColor(r.assigneeId?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
+                        customerName = customers[r.customerId]?.name,
+                        isNewCustomer = isNewCustomerVisit(firstVisit[r.customerId], r.date),
+                    )
+                },
+                closedKind = storeClosedKind(snapshot.storeSettings, key),
+                isToday = day == today,
+                faded = day.monthValue != date.monthValue,
             )
         }
     }
 
-    val scrollState = rememberScrollState()
     // 열린 상세 창(예약 → 고객 → …) — 회전해도 유지
     val details = rememberDetailStack()
     var creating by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize()) {
-        CalendarHeader(date = date, onDateChange = { dateKey = it.toDateKey() }, onCreate = { creating = true })
-        DayTimeline(
-            hours = timelineRange(snapshot.storeSettings.businessHours),
-            scale = scale,
-            items = items,
-            serviceColorMap = serviceColorMap,
-            isToday = date == today,
-            closedKind = storeClosedKind(snapshot.storeSettings, dateKey),
-            scrollState = scrollState,
-            onReservationClick = { details.openReservation(it) },
-            modifier = Modifier.weight(1f),
-        )
+        CalendarHeader(view = view, date = date, onDateChange = { dateKey = it.toDateKey() }, onCreate = { creating = true })
+        // 웹 MobileViewTabs — 일·3일은 오늘로, 주는 오늘이 든 주(그 주 일요일)로.
+        CalendarViewTabs(selected = view, onSelect = {
+            view = it
+            dateKey = (if (it == CalendarView.Week) weekStart(LocalDate.now()) else LocalDate.now()).toDateKey()
+        })
+        // 뷰마다 스크롤을 새로 잡는다(웹도 뷰 종류마다 새 노드 — 주에서 민 가로 위치가 남지 않게).
+        key(view) {
+            CalendarTimeline(
+                view = view,
+                hours = timelineRange(snapshot.storeSettings.businessHours),
+                scale = scale,
+                columns = columns,
+                serviceColorMap = serviceColorMap,
+                onReservationClick = { details.openReservation(it) },
+                onDateClick = {
+                    dateKey = it.toDateKey()
+                    view = CalendarView.Day
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 
     DetailSheets(store, details)

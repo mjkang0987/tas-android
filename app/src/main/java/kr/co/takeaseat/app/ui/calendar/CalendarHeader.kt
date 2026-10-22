@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +39,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.time.LocalDate
+import kr.co.takeaseat.app.domain.CalendarView
+import kr.co.takeaseat.app.domain.calendarHeading
+import kr.co.takeaseat.app.domain.moveDate
 import kr.co.takeaseat.app.ui.components.AddPill
 import kr.co.takeaseat.app.ui.components.ButtonLine
 import kr.co.takeaseat.app.ui.components.ChevronDownIcon
@@ -49,11 +55,17 @@ import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
- * 웹 헤더 1줄(`CalendarDirection` + `CalendarHeading`) — 일 뷰 기준.
+ * 웹 헤더 1줄(`CalendarDirection` + `CalendarHeading`).
  * 날짜를 누르면 시스템 날짜 선택이 뜬다(웹도 네이티브 `<input type="date">`). 오른쪽 끝은 모바일 '+ 예약'.
  */
 @Composable
-fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate: () -> Unit, modifier: Modifier = Modifier) {
+fun CalendarHeader(
+    view: CalendarView,
+    date: LocalDate,
+    onDateChange: (LocalDate) -> Unit,
+    onCreate: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var picking by rememberSaveable { mutableStateOf(false) }
     if (picking) {
         SystemDialogEffect(onDismissed = { picking = false }) {
@@ -69,10 +81,10 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate:
         PillButton(onClick = { onDateChange(LocalDate.now()) }, contentPadding = PaddingValues(horizontal = 12.dp)) {
             Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1, modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont))
         }
-        PillButton(onClick = { onDateChange(date.minusDays(1)) }, description = "이전날짜") {
+        PillButton(onClick = { onDateChange(moveDate(date, view, forward = false)) }, description = "이전${view.a11y}") {
             Icon(arrowLeft, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
         }
-        PillButton(onClick = { onDateChange(date.plusDays(1)) }, description = "다음날짜") {
+        PillButton(onClick = { onDateChange(moveDate(date, view, forward = true)) }, description = "다음${view.a11y}") {
             Icon(arrowRight, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
         }
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -89,7 +101,7 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate:
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    "${date.year} / ${date.monthValue} / ${date.dayOfMonth}",
+                    calendarHeading(date, view),
                     color = Color.Black,
                     fontSize = TasSizes.LargeFont,
                     fontWeight = FontWeight.Bold,
@@ -100,6 +112,50 @@ fun CalendarHeader(date: LocalDate, onDateChange: (LocalDate) -> Unit, onCreate:
             }
         }
         AddPill("예약", description = "예약 추가", onClick = onCreate)
+    }
+}
+
+/**
+ * 웹 `MobileViewTabs` — 회색 캡슐 트랙 안의 보기 탭. 고른 탭은 흰 캡슐 + 브랜드색 + 그림자 sm.
+ * 탭 높이 24dp(웹 padding 6 — WCAG 2.5.8 최소).
+ */
+@Composable
+fun CalendarViewTabs(selected: CalendarView, onSelect: (CalendarView) -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp, end = 10.dp, top = 2.dp, bottom = 4.dp)
+            .clip(TasShapes.Chip)
+            .background(TasColors.Gray2)
+            .padding(3.dp)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        CalendarView.entries.forEach { view ->
+            val active = view == selected
+            Box(
+                Modifier
+                    .weight(1f)
+                    .then(
+                        if (active) Modifier.dropShadow(TasShapes.Chip, Shadow(radius = TasSizes.ShadowSmBlur, color = TasColors.ShadowSm, offset = DpOffset(0.dp, TasSizes.ShadowSmOffsetY)))
+                        else Modifier,
+                    )
+                    .clip(TasShapes.Chip)
+                    .background(if (active) TasColors.White else Color.Transparent)
+                    .selectable(selected = active, role = Role.Tab) { onSelect(view) }
+                    .padding(vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    view.label,
+                    color = if (active) TasColors.Brand else TasColors.DarkGray,
+                    fontSize = TasSizes.TinyFont,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    modifier = Modifier.lineBox(12.sp, TasSizes.TinyFont),
+                )
+            }
+        }
     }
 }
 
