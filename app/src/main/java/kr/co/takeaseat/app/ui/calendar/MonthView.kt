@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -24,7 +22,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -59,11 +55,8 @@ import kr.co.takeaseat.app.domain.Reservation
 import kr.co.takeaseat.app.domain.ReservationStatus
 import kr.co.takeaseat.app.domain.StoreClosedKind
 import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
-import kr.co.takeaseat.app.domain.bookedRevenueTotal
-import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.isNewCustomerVisit
 import kr.co.takeaseat.app.domain.monthGrid
-import kr.co.takeaseat.app.domain.servicePriceTotal
 import kr.co.takeaseat.app.domain.storeClosedKind
 import kr.co.takeaseat.app.domain.toDateKey
 import kr.co.takeaseat.app.ui.components.hexColor
@@ -101,13 +94,9 @@ fun MonthView(
     val selectedReservations = remember(reservationsByDate, selected) {
         reservationsByDate[selected.toDateKey()].orEmpty().sortedBy { it.startTime }
     }
-    val density = LocalDensity.current
-    // 웹은 격자 높이를 고정하고 남는 자리를 목록이 제 안에서 스크롤한다. 가로 화면처럼 낮으면 격자가 잘리고
-    // 목록이 0 이 되므로, 그때만 격자·목록을 한 스크롤로 잇는다.
-    BoxWithConstraints(modifier) {
-        var gridHeight by remember { mutableStateOf(0.dp) }
-        val compact = gridHeight > maxHeight - MIN_LIST_HEIGHT
-        Column(Modifier.fillMaxSize().then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)) {
+    CalendarGridWithList(
+        modifier = modifier,
+        grid = { gridModifier ->
             MonthGrid(
                 date = date,
                 today = today,
@@ -119,12 +108,16 @@ fun MonthView(
                 assigneeColors = assigneeColors,
                 onSelect = onSelect,
                 onReservationClick = onReservationClick,
-                modifier = Modifier.onSizeChanged { gridHeight = with(density) { it.height.toDp() } },
+                modifier = gridModifier,
             )
-            DayReservationList(
-                day = selected,
+        },
+        list = { lazy, listModifier ->
+            ReservationListSection(
+                title = "${selected.monthValue}월 ${selected.dayOfMonth}일",
+                listKey = selected,
                 reservations = selectedReservations,
-                lazy = !compact,
+                grouped = false,
+                lazy = lazy,
                 snapshot = snapshot,
                 customerNames = customerNames,
                 firstVisit = firstVisit,
@@ -133,8 +126,29 @@ fun MonthView(
                 onReservationClick = onReservationClick,
                 onCustomerClick = onCustomerClick,
                 onCreate = { onCreate(selected) },
-                modifier = if (compact) Modifier else Modifier.weight(1f),
+                modifier = listModifier,
             )
+        },
+    )
+}
+
+/**
+ * 웹은 격자(월·연) 높이를 고정하고 남는 자리를 아래 목록이 제 안에서 스크롤한다. 가로 화면처럼 낮으면 격자가 잘리고
+ * 목록이 0 이 되므로, 격자 밑에 [MIN_LIST_HEIGHT] 가 안 남을 때만 격자·목록을 한 스크롤로 잇는다(목록은 lazy 아님).
+ */
+@Composable
+internal fun CalendarGridWithList(
+    modifier: Modifier,
+    grid: @Composable (Modifier) -> Unit,
+    list: @Composable (lazy: Boolean, Modifier) -> Unit,
+) {
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier) {
+        var gridHeight by remember { mutableStateOf(0.dp) }
+        val compact = gridHeight > maxHeight - MIN_LIST_HEIGHT
+        Column(Modifier.fillMaxSize().then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)) {
+            grid(Modifier.onSizeChanged { gridHeight = with(density) { it.height.toDp() } })
+            list(!compact, if (compact) Modifier else Modifier.weight(1f))
         }
     }
 }
@@ -231,44 +245,14 @@ private fun DayCell(
             .padding(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 웹 Num — 30 원. 오늘은 옅게, 고른 날은 꽉 차게(iOS monthDayCell). 앞뒤 달은 "9/27" 로 폭이 늘어난다.
-        Box(
-            Modifier
-                .height(30.dp)
-                .widthIn(min = 30.dp)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        isSelected -> TasColors.Brand
-                        isToday -> TasColors.BrandBorder
-                        else -> Color.Transparent
-                    },
-                )
-                .clickable(role = Role.Button, onClick = onSelect)
-                .clearAndSetSemantics {
-                    contentDescription = label
-                    role = Role.Button
-                    selected = isSelected
-                    onClick { onSelect(); true }
-                }
-                // 웹은 0 8px 이지만 360dp 칸(안쪽 약 41)엔 "12/31"(약 31) + 16 이 안 들어가 4 로 줄인다.
-                .padding(horizontal = if (adjacent) 4.dp else 0.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                if (adjacent) "${day.monthValue}/${day.dayOfMonth}" else day.dayOfMonth.toString(),
-                color = when {
-                    isSelected -> TasColors.White
-                    adjacent -> TasColors.DarkGray2
-                    else -> TasColors.Black
-                },
-                fontSize = TasSizes.SmallFont,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                maxLines = 1,
-                // 더 좁은 화면에서도 잘리지 않게 그때만 줄인다
-                autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = TasSizes.SmallFont),
-            )
-        }
+        DateCircle(
+            text = if (adjacent) "${day.monthValue}/${day.dayOfMonth}" else day.dayOfMonth.toString(),
+            label = label,
+            isToday = isToday,
+            isSelected = isSelected,
+            faded = adjacent,
+            onClick = onSelect,
+        )
         when {
             reservations.isEmpty() -> Unit
             // 웹 StyledCountButton — 건수만, 브랜드색 평문. 누르면 아래 목록이 그날로.
@@ -297,6 +281,51 @@ private fun DayCell(
                 )
             }
         }
+    }
+}
+
+/**
+ * 웹 `Num` — 30 원. 오늘은 옅게, 고른 날은 꽉 차게(iOS monthDayCell). [faded](앞뒤 달 "9/27")는 회색 글자에 폭이 늘어난다.
+ * 월 칸의 날짜, 연 칸의 달 숫자가 같이 쓴다.
+ */
+@Composable
+internal fun DateCircle(text: String, label: String, isToday: Boolean, isSelected: Boolean, faded: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .height(30.dp)
+            .widthIn(min = 30.dp)
+            .clip(CircleShape)
+            .background(
+                when {
+                    isSelected -> TasColors.Brand
+                    isToday -> TasColors.BrandBorder
+                    else -> Color.Transparent
+                },
+            )
+            .clickable(role = Role.Button, onClick = onClick)
+            .clearAndSetSemantics {
+                contentDescription = label
+                role = Role.Button
+                selected = isSelected
+                onClick { onClick(); true }
+            }
+            // 웹은 0 8px 이지만 360dp 칸(안쪽 약 41)엔 "12/31"(약 31) + 16 이 안 들어가 4 로 줄인다.
+            .padding(horizontal = if (faded) 4.dp else 0.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            color = when {
+                isSelected -> TasColors.White
+                faded -> TasColors.DarkGray2
+                else -> TasColors.Black
+            },
+            fontSize = TasSizes.SmallFont,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1,
+            // 더 좁은 화면에서도 잘리지 않게 그때만 줄인다
+            autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = TasSizes.SmallFont),
+        )
     }
 }
 
@@ -335,100 +364,5 @@ private fun MonthNameTag(reservation: Reservation, name: String, color: Color, d
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.lineBox(12.sp, TasSizes.TinyFont),
         )
-    }
-}
-
-/** 웹 ReservationListSection(날짜) — 회색 머리줄(날짜 · N건 · 합계 · ＋) + 예약 카드 목록. */
-@Composable
-private fun DayReservationList(
-    day: LocalDate,
-    reservations: List<Reservation>,
-    lazy: Boolean,
-    snapshot: LocalDbSnapshot,
-    customerNames: Map<Int, String>,
-    firstVisit: Map<Int, String>,
-    assigneeColors: Map<Int, String>,
-    serviceColorMap: Map<String, String>,
-    onReservationClick: (Int) -> Unit,
-    onCustomerClick: (Int) -> Unit,
-    onCreate: () -> Unit,
-    modifier: Modifier,
-) {
-    val title = "${day.monthValue}월 ${day.dayOfMonth}일"
-    val assigneeNames = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.name } }
-    val total = remember(reservations, snapshot.services) { bookedRevenueTotal(reservations, snapshot.services) }
-    Column(
-        modifier
-            .fillMaxWidth()
-            .drawBehind { drawRect(TasColors.LightGray, size = Size(size.width, 1.dp.toPx())) } // 웹 border-top
-            .padding(top = 1.dp),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().background(TasColors.Gray2).padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(title, color = TasColors.Black, fontSize = TasSizes.TinyFont, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-            Text(
-                "${reservations.size}건 · ${formatPrice(total)}",
-                color = TasColors.DarkGray2,
-                fontSize = TasSizes.SmallFont,
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f),
-            )
-            // 웹 StyledHeaderAdd — 글리프 18, 누르는 자리 24. 헤더 ＋예약 은 늘 오늘로 열려 고른 날엔 이걸 쓴다.
-            Box(
-                Modifier
-                    .padding(start = 2.dp)
-                    .size(24.dp)
-                    .clickable(role = Role.Button, onClick = onCreate)
-                    .clearAndSetSemantics {
-                        contentDescription = "$title 예약 추가"
-                        role = Role.Button
-                        onClick { onCreate(); true }
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("+", color = TasColors.Brand, fontSize = 18.sp, modifier = Modifier.lineBox(18.sp, 18.sp))
-            }
-        }
-        if (reservations.isEmpty()) {
-            Text(
-                "$title 예약이 없습니다.",
-                color = TasColors.DarkGray2,
-                fontSize = TasSizes.MediumFont,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
-            )
-        } else {
-            val card: @Composable (Reservation) -> Unit = { r ->
-                val id = r.assigneeId?.takeIf { it != 0 }
-                val name = customerNames[r.customerId]
-                ReservationInfoCard(
-                    reservation = r,
-                    serviceColorMap = serviceColorMap,
-                    assigneeName = id?.let { assigneeNames[it] } ?: "미지정",
-                    assigneeColor = hexColor(id?.let { assigneeColors[it] } ?: UNASSIGNED_COLOR),
-                    displayPrice = r.price ?: servicePriceTotal(r.service, snapshot.services),
-                    onClick = { onReservationClick(r.id) },
-                    customerName = name ?: "-",
-                    isNewCustomer = isNewCustomerVisit(firstVisit[r.customerId], r.date),
-                    showDate = false,
-                    onCustomerClick = name?.let { { onCustomerClick(r.customerId) } },
-                )
-            }
-            val padding = PaddingValues(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 18.dp)
-            if (lazy) {
-                // 날짜를 바꾸면 맨 위부터 — 앞 날짜에서 내린 자리가 남으면 이른 예약을 놓친다.
-                key(day) {
-                    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        items(reservations, key = { it.id }) { card(it) }
-                    }
-                }
-            } else {
-                Column(Modifier.padding(padding), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    reservations.forEach { card(it) }
-                }
-            }
-        }
     }
 }
