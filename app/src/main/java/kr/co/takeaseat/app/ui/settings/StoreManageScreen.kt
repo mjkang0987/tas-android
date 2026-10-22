@@ -57,6 +57,9 @@ import kr.co.takeaseat.app.domain.formatDateLabel
 import kr.co.takeaseat.app.domain.primaryIndustry
 import kr.co.takeaseat.app.domain.saveStoreInfo
 import kr.co.takeaseat.app.ui.components.ActionButton
+import kr.co.takeaseat.app.domain.LATE_ALERT_OPTIONS
+import kr.co.takeaseat.app.domain.lateAlertLabel
+import kr.co.takeaseat.app.domain.lateAlertMinutesOf
 import kr.co.takeaseat.app.ui.components.ActionTone
 import kr.co.takeaseat.app.ui.components.FieldError
 import kr.co.takeaseat.app.ui.components.LocalToast
@@ -101,12 +104,34 @@ fun StoreManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     store.update { it.copy(storeSettings = it.storeSettings.copy(closedDates = dates)) }
                     toast.show("휴업일이 저장되었습니다.")
                 }
+                LateAlertCard(lateAlertMinutesOf(saved)) { minutes ->
+                    store.update { it.copy(storeSettings = it.storeSettings.copy(lateAlertMinutes = minutes)) }
+                    toast.show(if (minutes > 0) "지각 알림을 ${lateAlertLabel(minutes)}로 바꿨습니다." else "지각 알림을 껐습니다.")
+                }
                 FeatureCard(snapshot.usePointSystem == true) { on ->
                     store.update { it.copy(usePointSystem = on) }
                     toast.show(if (on) "적립금 시스템을 켰습니다." else "적립금 시스템을 껐습니다.")
                 }
             }
         }
+    }
+}
+
+/**
+ * 지각 알림(앱 기능, 지시자 2026-10-22 "매장에서 설정") — 예약 시작 뒤 고른 시간이 지나도 완료·노쇼 처리가 안 되면 알린다.
+ * 매장 설정이라 이 매장의 모든 폰이 같은 기준을 쓴다. 고르는 즉시 저장(기능 사용 카드와 같게).
+ */
+@Composable
+private fun LateAlertCard(minutes: Int, onSave: (Int) -> Unit) {
+    StoreCard("지각 알림") {
+        Text("예약 시간이 지나도 완료·노쇼 처리가 안 된 손님을 알려 드립니다.", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont)
+        TasSelect(
+            label = "지각 알림 기준",
+            options = LATE_ALERT_OPTIONS.map { if (it > 0) "예약 시간 ${lateAlertLabel(it)}" else lateAlertLabel(it) },
+            selectedIndex = LATE_ALERT_OPTIONS.indexOf(minutes).coerceAtLeast(0),
+            onSelect = { onSave(LATE_ALERT_OPTIONS[it]) },
+            showLabel = false,
+        )
     }
 }
 
