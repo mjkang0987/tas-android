@@ -41,6 +41,9 @@ object ReminderScheduler {
     private const val REFILL_REQUEST = -1
     private const val REFILL_INTERVAL_MS = 24 * 60 * 60 * 1000L
 
+    // 이 프로세스에서 한 번이라도 다 걸었는지. 강제 중지는 알람을 지우고 저장된 서명은 남기므로, 새 프로세스의 첫 sync 는 늘 다시 건다.
+    @Volatile private var syncedInProcess = false
+
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     /** 설정의 알림 시점(분, 0 = 끔). 기기 설정이라 웹과 같은 모양인 게스트 데이터(JSON)에는 넣지 않는다. */
@@ -75,7 +78,7 @@ object ReminderScheduler {
     /**
      * 지금 데이터·설정에 맞춰 알람을 다시 맞춘다. 데이터가 바뀔 때·알림이 울릴 때·재부팅 뒤·하루 한 번(7일 창 채우기)에 부른다.
      * 맞출 알람이 지난번과 같으면 건너뛴다(메모·서비스만 고쳐도 불려 매번 100번씩 다시 걸지 않게).
-     * [force] — 알람이 사라졌을 수 있을 때(재부팅·업데이트·시각 변경·설정 변경·울림 뒤)는 같아도 다시 건다.
+     * [force] — 알람이 사라졌을 수 있을 때(재부팅·업데이트·시각 변경·설정 변경·울림 뒤)는 같아도 다시 건다. 강제 중지 뒤엔 프로세스 첫 sync 가 다시 건다.
      */
     fun sync(context: Context, force: Boolean = false) {
         val app = context.applicationContext
@@ -84,7 +87,7 @@ object ReminderScheduler {
         val lead = leadMinutes(app)
         val reminders = upcomingReminders(snapshot.reservations, customers, lead, LocalDateTime.now())
         val signature = "$lead|" + reminders.joinToString(",") { "${it.reservationId}@${it.triggerAt}" }
-        if (!force && signature == prefs(app).getString(KEY_SIGNATURE, null)) return
+        if (!force && syncedInProcess && signature == prefs(app).getString(KEY_SIGNATURE, null)) return
         val alarms = app.getSystemService(AlarmManager::class.java)
         val keep = reminders.map { it.reservationId }.toSet()
         prefs(app).getStringSet(KEY_SCHEDULED, emptySet()).orEmpty()
@@ -100,6 +103,7 @@ object ReminderScheduler {
             putStringSet(KEY_SCHEDULED, keep.map { it.toString() }.toSet())
             putString(KEY_SIGNATURE, signature)
         }
+        syncedInProcess = true
     }
 
     private fun refillIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
