@@ -245,12 +245,12 @@ private fun AssigneeCard(
                 }
             }
             if (editing) {
-                ActionButton("삭제", onClick = onResign, tone = ActionTone.DangerOutline)
+                ActionButton("삭제", onClick = onResign, tone = ActionTone.DangerSoft)
                 ActionButton("완료", onClick = onFinish)
             } else {
                 SmallButton("수정", onEdit)
             }
-            onPermanentDelete?.let { ActionButton("영구 삭제", onClick = it, tone = ActionTone.DangerOutline) }
+            onPermanentDelete?.let { ActionButton("영구 삭제", onClick = it, tone = ActionTone.DangerSoft) }
         }
         if (editing) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

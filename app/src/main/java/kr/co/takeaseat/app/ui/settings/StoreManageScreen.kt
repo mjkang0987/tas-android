@@ -322,7 +322,7 @@ private fun ClosedDatesCard(saved: List<String>, onSave: (List<String>) -> Unit)
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(formatDateLabel(date), color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, modifier = Modifier.weight(1f))
-                        if (editing) ActionButton("삭제", onClick = { draft = draft - date }, tone = ActionTone.DangerOutline)
+                        if (editing) ActionButton("삭제", onClick = { draft = draft - date }, tone = ActionTone.DangerSoft)
                     }
                 }
             }

@@ -320,8 +320,8 @@ fun TasSelect(
 internal val ButtonLine = 14.sp
 
 /** 웹 StyledActionButton 의 $primary / $danger / $dangerOutline. */
-/** [Blue] = 웹 --blue-color 채운 버튼(적립금 '충전'). */
-enum class ActionTone { Default, Primary, Danger, DangerOutline, Blue }
+/** [Blue] = 웹 --blue-color 채운 버튼(적립금 '충전'). [DangerSoft] = 웹 설정 StyledDeleteBtn(옅은 빨강 바탕 · 빨강 테두리·글자). */
+enum class ActionTone { Default, Primary, Danger, DangerOutline, DangerSoft, Blue }
 
 /** 웹 StyledActionButton(모바일) — 30 높이, 7 둥글게, 좌우 10, 12. 채운 것(주·위험)은 흰 글자 600, 나머지 500. */
 @Composable
@@ -337,13 +337,14 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
                     ActionTone.Primary -> TasColors.Brand
                     ActionTone.Danger -> TasColors.Danger
                     ActionTone.Blue -> TasColors.Blue
+                    ActionTone.DangerSoft -> TasColors.DangerBg
                     else -> TasColors.White
                 },
             )
             .then(
                 when (tone) {
                     ActionTone.Default -> Modifier.border(1.dp, TasColors.Border, shape)
-                    ActionTone.DangerOutline -> Modifier.border(1.dp, TasColors.DangerBorder, shape)
+                    ActionTone.DangerOutline, ActionTone.DangerSoft -> Modifier.border(1.dp, TasColors.DangerBorder, shape)
                     else -> Modifier
                 },
             )
@@ -355,7 +356,7 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
             text,
             color = when (tone) {
                 ActionTone.Default -> TasColors.DarkGray
-                ActionTone.DangerOutline -> TasColors.Danger
+                ActionTone.DangerOutline, ActionTone.DangerSoft -> TasColors.Danger
                 else -> TasColors.White
             },
             fontSize = TasSizes.SmallFont,
