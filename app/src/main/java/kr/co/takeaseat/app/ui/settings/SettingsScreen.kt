@@ -1,5 +1,18 @@
 package kr.co.takeaseat.app.ui.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import kr.co.takeaseat.app.domain.REMINDER_LEAD_OPTIONS
+import kr.co.takeaseat.app.domain.reminderLeadLabel
+import kr.co.takeaseat.app.notify.ReminderScheduler
+import kr.co.takeaseat.app.ui.components.LocalToast
+import kr.co.takeaseat.app.ui.components.TasSelect
+import kr.co.takeaseat.app.ui.components.ToastType
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -29,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -102,11 +116,53 @@ private fun SettingsMenu(storeName: String?, serviceLabel: String, assigneeLabel
             MenuDivider()
             MenuRow(AssigneeIcon, "$assigneeLabel 관리") { onPage(SettingsPage.ASSIGNEE) }
         }
+        // 웹에 없는 안드로이드 기능(지시자 2026-10-22) — 예약 시각 전 휴대폰 알림
+        MenuGroup { ReminderRow() }
         // 웹 StyledLegalLinks — 11 회색, 사이 6 16
         FlowRow(Modifier.padding(start = 6.dp, end = 6.dp, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             LegalLink("이용약관") { openWeb("/terms") }
             LegalLink("개인정보처리방침") { openWeb("/privacy") }
         }
+    }
+}
+
+/**
+ * 예약 알림 줄 — 메뉴 줄과 같은 모양(아이콘 상자·이름)에 오른쪽은 › 대신 고르는 칸(끔·10분·30분·1시간 전).
+ * 켤 때 알림 권한이 없으면(Android 13+) 묻고, 거절하면 휴대폰 설정에서 켜라고 알린다.
+ */
+@Composable
+private fun ReminderRow() {
+    val context = LocalContext.current
+    val toast = LocalToast.current
+    var lead by remember { mutableIntStateOf(ReminderScheduler.leadMinutes(context)) }
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) toast.show("알림 권한이 꺼져 있어 알림을 보낼 수 없습니다. 휴대폰 설정에서 켜 주세요.", ToastType.Info)
+    }
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(30.dp).clip(RoundedCornerShape(6.dp)).background(TasColors.BrandBg), contentAlignment = Alignment.Center) {
+            Icon(BellIcon, contentDescription = null, tint = TasColors.Brand, modifier = Modifier.size(18.dp))
+        }
+        // 이름은 옆 고르는 칸이 "예약 알림, 30분 전" 으로 함께 읽는다 — 글자만 따로 한 번 더 읽히지 않게
+        Text("예약 알림", color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).clearAndSetSemantics {})
+        TasSelect(
+            label = "예약 알림",
+            options = REMINDER_LEAD_OPTIONS.map(::reminderLeadLabel),
+            selectedIndex = REMINDER_LEAD_OPTIONS.indexOf(lead).coerceAtLeast(0),
+            onSelect = { index ->
+                lead = REMINDER_LEAD_OPTIONS[index]
+                ReminderScheduler.setLeadMinutes(context, lead)
+                if (lead > 0 && Build.VERSION.SDK_INT >= 33 && !ReminderScheduler.hasNotificationPermission(context)) {
+                    askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            showLabel = false,
+            compact = true,
+            modifier = Modifier.width(104.dp),
+        )
     }
 }
 
@@ -149,6 +205,8 @@ private val GroupShape = RoundedCornerShape(8.dp) // --radius-lg
 
 // 웹 AsideMenuIcon(viewBox 24, 선 1.8) · 줄 끝 꺾쇠(선 2)
 private val StoreIcon = svgLineIcon(24f, listOf("M5 10.5H19V19.5H5V10.5ZM6.5 10.5V7.5C6.5 5.6 8.1 4 10 4H14C15.9 4 17.5 5.6 17.5 7.5V10.5M9 14H15"), strokeWidth = 1.8f, name = "store")
+// 웹 NaverSyncNotification 의 종(bell)
+private val BellIcon = svgLineIcon(24f, listOf("M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8", "M13.73 21A2 2 0 0 1 10.27 21"), strokeWidth = 1.8f, name = "bell")
 private val PointIcon = svgLineIcon(24f, listOf("M20.5 12A8.5 8.5 0 1 1 3.5 12A8.5 8.5 0 1 1 20.5 12Z", "M12 8.5V15.5M9.5 10.5H14.5M9.5 13.5H14"), strokeWidth = 1.8f, name = "point")
 private val AssigneeIcon = svgLineIcon(
     24f,
