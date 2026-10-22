@@ -21,6 +21,7 @@ import kr.co.takeaseat.app.domain.buildAssigneeColorMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.firstVisitDates
 import kr.co.takeaseat.app.domain.isNewCustomerVisit
+import kr.co.takeaseat.app.domain.listDateWithin
 import kr.co.takeaseat.app.domain.placeReservations
 import kr.co.takeaseat.app.domain.storeClosedKind
 import kr.co.takeaseat.app.domain.timelineRange
@@ -32,12 +33,14 @@ import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.rememberDetailStack
 
-/** 캘린더 탭 — 일·3일·주 보기(웹 `/day|three|week/yyyy/mm/dd`). */
+/** 캘린더 탭 — 일·3일·주·월 보기(웹 `/day|three|week/yyyy/mm/dd`, `/month/yyyy/mm`). */
 @Composable
 fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val snapshot by store.snapshot.collectAsState()
     var dateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
     var view by rememberSaveable { mutableStateOf(CalendarView.Day) }
+    // 월 보기 아래 목록의 날짜(웹 reservationListFilter) — 월에 들어오면 오늘, 달을 옮기면 따라간다.
+    var listDateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
     val date = LocalDate.parse(dateKey)
 
     // 자정을 넘기면 '오늘'이 바뀐다 — 1분마다 확인
@@ -55,11 +58,13 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
     val firstVisit = remember(snapshot.reservations) { firstVisitDates(snapshot.reservations) }
     val customers = remember(snapshot.customers) { snapshot.customers.associateBy { it.id } }
+    val customerNames = remember(customers) { customers.mapValues { it.value.name } }
     val scale = remember(snapshot.services) { timelineScaleFor(snapshot.services) }
 
     // 취소·노쇼도 그대로 그린다(웹과 같이 빗금으로 구분).
     val reservationsByDate = remember(snapshot.reservations) { snapshot.reservations.groupBy { it.date } }
     val columns = remember(reservationsByDate, snapshot.storeSettings, dateKey, view, today, customers, firstVisit, assigneeColors) {
+        if (view == CalendarView.Month) return@remember emptyList()
         viewDates(date, view).map { day ->
             val key = day.toDateKey()
             TimelineColumn(
@@ -82,17 +87,40 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
 
     // 열린 상세 창(예약 → 고객 → …) — 회전해도 유지
     val details = rememberDetailStack()
-    var creating by rememberSaveable { mutableStateOf(false) }
+    // 예약 추가 창 — null 이면 닫힘, "" 이면 헤더 ＋예약(오늘·지금), 날짜면 월 목록 ＋(그날 10:00).
+    var creating by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(modifier.fillMaxSize()) {
-        CalendarHeader(view = view, date = date, onDateChange = { dateKey = it.toDateKey() }, onCreate = { creating = true })
-        // 웹 MobileViewTabs — 일·3일은 오늘로, 주는 오늘이 든 주(그 주 일요일)로.
+        CalendarHeader(view = view, date = date, onDateChange = {
+            dateKey = it.toDateKey()
+            listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
+        }, onCreate = { creating = "" })
+        // 웹 MobileViewTabs — 일·3일·월은 오늘로, 주는 오늘이 든 주(그 주 일요일)로. 월은 아래 목록도 오늘.
         CalendarViewTabs(selected = view, onSelect = {
             view = it
-            dateKey = (if (it == CalendarView.Week) weekStart(LocalDate.now()) else LocalDate.now()).toDateKey()
+            val now = LocalDate.now()
+            dateKey = (if (it == CalendarView.Week) weekStart(now) else now).toDateKey()
+            listDateKey = now.toDateKey()
         })
         // 뷰마다 스크롤을 새로 잡는다(웹도 뷰 종류마다 새 노드 — 주에서 민 가로 위치가 남지 않게).
-        key(view) {
+        if (view == CalendarView.Month) {
+            MonthView(
+                date = date,
+                today = today,
+                selected = LocalDate.parse(listDateKey),
+                snapshot = snapshot,
+                reservationsByDate = reservationsByDate,
+                customerNames = customerNames,
+                firstVisit = firstVisit,
+                assigneeColors = assigneeColors,
+                serviceColorMap = serviceColorMap,
+                onSelect = { listDateKey = it.toDateKey() },
+                onReservationClick = { details.openReservation(it) },
+                onCustomerClick = { details.openCustomer(it) },
+                onCreate = { creating = it.toDateKey() },
+                modifier = Modifier.weight(1f),
+            )
+        } else key(view) {
             CalendarTimeline(
                 view = view,
                 hours = timelineRange(snapshot.storeSettings.businessHours),
@@ -111,6 +139,13 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
 
     DetailSheets(store, details)
 
-    if (creating) ReservationCreateSheet(store, onDismiss = { creating = false })
+    creating?.let { day ->
+        ReservationCreateSheet(
+            store,
+            onDismiss = { creating = null },
+            initialDate = day.ifEmpty { null },
+            initialStart = if (day.isEmpty()) null else "10:00",
+        )
+    }
 }
 
