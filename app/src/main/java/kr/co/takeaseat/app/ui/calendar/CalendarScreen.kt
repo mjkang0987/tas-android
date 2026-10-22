@@ -102,7 +102,6 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
             dateKey = (if (it == CalendarView.Week) weekStart(now) else now).toDateKey()
             listDateKey = now.toDateKey()
         })
-        // 뷰마다 스크롤을 새로 잡는다(웹도 뷰 종류마다 새 노드 — 주에서 민 가로 위치가 남지 않게).
         if (view == CalendarView.Month) {
             MonthView(
                 date = date,
@@ -121,6 +120,7 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
             )
         } else key(view) {
+            // 뷰마다 스크롤을 새로 잡는다(웹도 뷰 종류마다 새 노드 — 주에서 민 가로 위치가 남지 않게).
             CalendarTimeline(
                 view = view,
                 hours = timelineRange(snapshot.storeSettings.businessHours),
