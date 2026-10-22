@@ -75,8 +75,10 @@ class MainActivity : ComponentActivity() {
         reminderTarget(intent)?.let { openReservationId = it }
     }
 
+    // 최근 앱에서 다시 열면 시스템이 처음 인텐트(알림)를 또 주므로 그때는 무시한다
     private fun reminderTarget(intent: Intent?): Int? =
-        intent?.getIntExtra(ReminderScheduler.EXTRA_RESERVATION_ID, -1)?.takeIf { it >= 0 }
+        intent?.takeIf { it.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0 }
+            ?.getIntExtra(ReminderScheduler.EXTRA_RESERVATION_ID, -1)?.takeIf { it >= 0 }
 }
 
 @Composable

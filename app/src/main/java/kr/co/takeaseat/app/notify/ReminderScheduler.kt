@@ -36,6 +36,10 @@ object ReminderScheduler {
     private const val KEY_LEAD = "leadMinutes"
     private const val KEY_SCHEDULED = "scheduledIds"
     private const val KEY_ASKED = "permissionAsked"
+    private const val KEY_SIGNATURE = "signature"
+    private const val ACTION_REFILL = "kr.co.takeaseat.app.REMINDER_REFILL"
+    private const val REFILL_REQUEST = -1
+    private const val REFILL_INTERVAL_MS = 24 * 60 * 60 * 1000L
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -44,7 +48,7 @@ object ReminderScheduler {
 
     fun setLeadMinutes(context: Context, minutes: Int) {
         prefs(context).edit { putInt(KEY_LEAD, minutes) }
-        sync(context)
+        sync(context, force = true)
     }
 
     /** 처음 실행 때 한 번만 권한을 묻는다 — 기본이 켜짐(30분 전)이라 묻지 않으면 조용히 안 울린다. */
@@ -68,12 +72,19 @@ object ReminderScheduler {
         }
     }
 
-    /** 지금 데이터·설정에 맞춰 알람을 다시 맞춘다. 데이터가 바뀔 때·알림이 울릴 때·재부팅 뒤에 부른다. */
-    fun sync(context: Context) {
+    /**
+     * 지금 데이터·설정에 맞춰 알람을 다시 맞춘다. 데이터가 바뀔 때·알림이 울릴 때·재부팅 뒤·하루 한 번(7일 창 채우기)에 부른다.
+     * 맞출 알람이 지난번과 같으면 건너뛴다(메모·서비스만 고쳐도 불려 매번 100번씩 다시 걸지 않게).
+     * [force] — 알람이 사라졌을 수 있을 때(재부팅·업데이트·시각 변경·설정 변경·울림 뒤)는 같아도 다시 건다.
+     */
+    fun sync(context: Context, force: Boolean = false) {
         val app = context.applicationContext
         val snapshot = GuestStore.forApp(app).snapshot.value
         val customers = snapshot.customers.associate { it.id to it.name }
-        val reminders = upcomingReminders(snapshot.reservations, customers, leadMinutes(app), LocalDateTime.now())
+        val lead = leadMinutes(app)
+        val reminders = upcomingReminders(snapshot.reservations, customers, lead, LocalDateTime.now())
+        val signature = "$lead|" + reminders.joinToString(",") { "${it.reservationId}@${it.triggerAt}" }
+        if (!force && signature == prefs(app).getString(KEY_SIGNATURE, null)) return
         val alarms = app.getSystemService(AlarmManager::class.java)
         val keep = reminders.map { it.reservationId }.toSet()
         prefs(app).getStringSet(KEY_SCHEDULED, emptySet()).orEmpty()
@@ -81,8 +92,22 @@ object ReminderScheduler {
             .filter { it !in keep }
             .forEach { alarms.cancel(alarmIntent(app, it)) }
         reminders.forEach { schedule(app, alarms, it) }
-        prefs(app).edit { putStringSet(KEY_SCHEDULED, keep.map { it.toString() }.toSet()) }
+        // 7일 밖 예약은 아직 안 걸려 있다 — 앱을 안 열어도 하루 한 번 창을 다시 채운다(대략 알람이면 충분).
+        val refill = refillIntent(app)
+        if (lead > 0) alarms.setAndAllowWhileIdle(AlarmManager.RTC, System.currentTimeMillis() + REFILL_INTERVAL_MS, refill)
+        else alarms.cancel(refill)
+        prefs(app).edit {
+            putStringSet(KEY_SCHEDULED, keep.map { it.toString() }.toSet())
+            putString(KEY_SIGNATURE, signature)
+        }
     }
+
+    private fun refillIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        REFILL_REQUEST,
+        Intent(context, ReminderRestoreReceiver::class.java).setAction(ACTION_REFILL),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
     private fun schedule(context: Context, alarms: AlarmManager, reminder: ReservationReminder) {
         val at = reminder.triggerAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -108,7 +133,7 @@ object ReminderScheduler {
         // 시각이 옮겨졌으면(1분 넘게 어긋나면) 이번 알람은 버린다 — sync 가 새 시각으로 다시 맞췄다.
         val stale = reminder == null || reminder.triggerAt.isAfter(LocalDateTime.now().plusMinutes(1))
         if (!stale && hasNotificationPermission(context)) notify(context, reminder!!)
-        sync(context)
+        sync(context, force = true)
     }
 
     private fun notify(context: Context, reminder: ReservationReminder) {
@@ -146,9 +171,9 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 }
 
-/** 재부팅·앱 업데이트·시각/시간대 변경 — 기기 알람은 재부팅 때 지워지고, 시각이 바뀌면 울릴 때가 어긋난다. */
+/** 재부팅·앱 업데이트·시각/시간대 변경·하루 한 번 채우기 — 기기 알람은 재부팅 때 지워지고, 시각이 바뀌면 울릴 때가 어긋난다. */
 class ReminderRestoreReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        ReminderScheduler.sync(context)
+        ReminderScheduler.sync(context, force = true)
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -145,7 +146,8 @@ private fun ReminderRow() {
         Box(Modifier.size(30.dp).clip(RoundedCornerShape(6.dp)).background(TasColors.BrandBg), contentAlignment = Alignment.Center) {
             Icon(BellIcon, contentDescription = null, tint = TasColors.Brand, modifier = Modifier.size(18.dp))
         }
-        Text("예약 알림", color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        // 이름은 옆 고르는 칸이 "예약 알림, 30분 전" 으로 함께 읽는다 — 글자만 따로 한 번 더 읽히지 않게
+        Text("예약 알림", color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).clearAndSetSemantics {})
         TasSelect(
             label = "예약 알림",
             options = REMINDER_LEAD_OPTIONS.map(::reminderLeadLabel),
