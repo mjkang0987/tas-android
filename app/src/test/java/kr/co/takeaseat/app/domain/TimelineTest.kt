@@ -73,4 +73,10 @@ class TimelineTest {
             placed.map { it.lane },
         )
     }
+
+    @Test fun `칸 수 - 그날 가장 많이 겹친 수, 예약이 없으면 1`() {
+        assertEquals(1, maxLanes(emptyList()))
+        assertEquals(2, maxLanes(placeReservations(listOf(r(1, "10:00", "11:00"), r(2, "10:30", "11:30"), r(3, "11:00", "12:00")))))
+        assertEquals(3, maxLanes(placeReservations(listOf(r(1, "10:00", "12:00"), r(2, "10:30", "12:00"), r(3, "11:00", "12:00"), r(4, "14:00", "15:00")))))
+    }
 }

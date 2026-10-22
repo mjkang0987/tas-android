@@ -60,7 +60,8 @@ fun addClosedDate(dates: List<String>, date: String): Pair<List<String>, String?
     else -> (dates + date).sorted() to null
 }
 
-private val WEEKDAYS = listOf("월", "화", "수", "목", "금", "토", "일")
+/** 요일 이름 — 0=월 … 6=일(`DayOfWeek.value - 1`). */
+val WEEKDAYS = listOf("월", "화", "수", "목", "금", "토", "일")
 
 /** 웹 정기 휴무 칸 이름 — 0=월 … 6=일. */
 val CLOSED_WEEKDAY_LABELS: List<String> = WEEKDAYS
