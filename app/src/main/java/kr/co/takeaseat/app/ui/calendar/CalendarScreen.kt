@@ -33,7 +33,7 @@ import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.rememberDetailStack
 
-/** 캘린더 탭 — 일·3일·주·월 보기(웹 `/day|three|week/yyyy/mm/dd`, `/month/yyyy/mm`). */
+/** 캘린더 탭 — 일·3일·주·월·년 보기(웹 `/day|three|week/yyyy/mm/dd`, `/month/yyyy/mm`, `/year/yyyy`). */
 @Composable
 fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val snapshot by store.snapshot.collectAsState()
@@ -41,6 +41,8 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var view by rememberSaveable { mutableStateOf(CalendarView.Day) }
     // 월 보기 아래 목록의 날짜(웹 reservationListFilter) — 월에 들어오면 오늘, 달을 옮기면 따라간다.
     var listDateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
+    // 연 보기 아래 목록의 달(1~12) — 해를 옮겨도 달은 그대로(웹 filterWithinTarget 'month').
+    var listMonth by rememberSaveable { mutableStateOf(LocalDate.now().monthValue) }
     val date = LocalDate.parse(dateKey)
 
     // 자정을 넘기면 '오늘'이 바뀐다 — 1분마다 확인
@@ -64,7 +66,7 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
     // 취소·노쇼도 그대로 그린다(웹과 같이 빗금으로 구분).
     val reservationsByDate = remember(snapshot.reservations) { snapshot.reservations.groupBy { it.date } }
     val columns = remember(reservationsByDate, snapshot.storeSettings, dateKey, view, today, customers, firstVisit, assigneeColors) {
-        if (view == CalendarView.Month) return@remember emptyList()
+        if (view == CalendarView.Month || view == CalendarView.Year) return@remember emptyList()
         viewDates(date, view).map { day ->
             val key = day.toDateKey()
             TimelineColumn(
@@ -95,14 +97,37 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier) {
             dateKey = it.toDateKey()
             listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
         }, onCreate = { creating = "" })
-        // 웹 MobileViewTabs — 일·3일·월은 오늘로, 주는 오늘이 든 주(그 주 일요일)로. 월은 아래 목록도 오늘.
+        // 웹 MobileViewTabs — 일·3일·월·년은 오늘로, 주는 오늘이 든 주(그 주 일요일)로. 월·년은 아래 목록도 오늘(이번 달).
         CalendarViewTabs(selected = view, onSelect = {
             view = it
             val now = LocalDate.now()
             dateKey = (if (it == CalendarView.Week) weekStart(now) else now).toDateKey()
             listDateKey = now.toDateKey()
+            listMonth = now.monthValue
         })
-        if (view == CalendarView.Month) {
+        if (view == CalendarView.Year) {
+            YearView(
+                year = date.year,
+                today = today,
+                selectedMonth = listMonth,
+                snapshot = snapshot,
+                customerNames = customerNames,
+                firstVisit = firstVisit,
+                assigneeColors = assigneeColors,
+                serviceColorMap = serviceColorMap,
+                onSelectMonth = { listMonth = it },
+                onOpenMonth = { month ->
+                    // 웹 '자세히' — 그 달 월 보기. 목록은 오늘이 그 달이면 오늘, 아니면 1일(웹도 결과가 같다).
+                    val first = LocalDate.of(date.year, month, 1)
+                    dateKey = first.toDateKey()
+                    listDateKey = listDateWithin(LocalDate.now(), first).toDateKey()
+                    view = CalendarView.Month
+                },
+                onReservationClick = { details.openReservation(it) },
+                onCustomerClick = { details.openCustomer(it) },
+                modifier = Modifier.weight(1f),
+            )
+        } else if (view == CalendarView.Month) {
             MonthView(
                 date = date,
                 today = today,

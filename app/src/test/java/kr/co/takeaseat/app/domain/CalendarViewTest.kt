@@ -55,4 +55,20 @@ class CalendarViewTest {
         assertEquals(LocalDate.of(2026, 11, 1), listDateWithin(thu, LocalDate.of(2026, 11, 1)))
         assertEquals(LocalDate.of(2027, 10, 1), listDateWithin(thu, LocalDate.of(2027, 10, 22)))
     }
+
+    @Test fun `연 - 이동은 해 단위, 제목은 연도, 달 목록은 그 해 그 달만 날짜·시작 순`() {
+        assertEquals(LocalDate.of(2027, 10, 22), moveDate(thu, CalendarView.Year, forward = true))
+        assertEquals(LocalDate.of(2025, 10, 22), moveDate(thu, CalendarView.Year, forward = false))
+        assertEquals("2026", calendarHeading(thu, CalendarView.Year))
+        fun r(id: Int, date: String, start: String) = Reservation(id, date, start, "23:00", "커트", 1, null, null, null)
+        val list = listOf(r(1, "2026-10-20", "13:00"), r(2, "2026-10-19", "15:00"), r(3, "2026-10-19", "10:00"), r(4, "2025-10-19", "10:00"), r(5, "2026-01-05", "10:00"))
+        val months = reservationsByMonth(list, 2026)
+        assertEquals(12, months.size)
+        assertEquals(listOf(3, 2, 1), months[9].map { it.id })
+        assertEquals(listOf(5), months[0].map { it.id })
+        assertEquals(emptyList<Int>(), months[10].map { it.id })
+        // 깨진 날짜("2026-1")는 어느 달에도 안 들고 죽지도 않는다
+        val withBroken = reservationsByMonth(listOf(r(8, "2026-10-19", "10:00"), r(9, "2026-1", "10:00")), 2026)
+        assertEquals(listOf(8), withBroken.flatten().map { it.id })
+    }
 }

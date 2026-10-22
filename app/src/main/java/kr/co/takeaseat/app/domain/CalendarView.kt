@@ -10,6 +10,7 @@ enum class CalendarView(val label: String, val move: Int, val a11y: String) {
     Three("3일", 3, "3일"),
     Week("주", 7, "주"),
     Month("월", 0, "달"), // 이동은 날 수가 아니라 달 단위(moveDate)
+    Year("년", 0, "년"), // 해 단위
 }
 
 /** 그 날이 든 주의 일요일 — 웹 주는 일요일부터. */
@@ -21,6 +22,7 @@ fun viewDates(date: LocalDate, view: CalendarView): List<LocalDate> = when (view
     CalendarView.Three -> (0L..2L).map { date.plusDays(it) }
     CalendarView.Week -> weekStart(date).let { start -> (0L..6L).map { start.plusDays(it) } }
     CalendarView.Month -> monthGrid(date)
+    CalendarView.Year -> emptyList() // 연 보기는 날짜 칸이 아니라 열두 달(YearView)
 }
 
 /** 웹 MonthWrap — 그 달 1일이 든 주의 일요일부터 말일이 든 주의 토요일까지(앞뒤 달 날짜 포함, 5~6주). */
@@ -42,6 +44,7 @@ fun listDateWithin(selected: LocalDate, target: LocalDate): LocalDate =
 /** 웹 ‹ › — 주는 그 주 일요일에서 7일, 월은 다음·이전 달 1일, 나머지는 move 만큼. */
 fun moveDate(date: LocalDate, view: CalendarView, forward: Boolean): LocalDate {
     if (view == CalendarView.Month) return date.withDayOfMonth(1).plusMonths(if (forward) 1 else -1)
+    if (view == CalendarView.Year) return date.plusYears(if (forward) 1 else -1)
     val step = if (forward) view.move.toLong() else -view.move.toLong()
     return if (view == CalendarView.Week) weekStart(date).plusDays(step) else date.plusDays(step)
 }
@@ -53,6 +56,7 @@ fun moveDate(date: LocalDate, view: CalendarView, forward: Boolean): LocalDate {
 fun calendarHeading(date: LocalDate, view: CalendarView): String {
     if (view == CalendarView.Day) return "${date.year} / ${date.monthValue} / ${date.dayOfMonth}"
     if (view == CalendarView.Month) return "${date.year} / ${date.monthValue}"
+    if (view == CalendarView.Year) return "${date.year}"
     val dates = viewDates(date, view)
     val start = dates.first()
     val end = dates.last()
@@ -61,4 +65,13 @@ fun calendarHeading(date: LocalDate, view: CalendarView): String {
         start.monthValue != end.monthValue -> "${start.year} / ${start.monthValue} - ${end.monthValue}"
         else -> "${start.year} / ${start.monthValue}"
     }
+}
+
+/** 웹 연 보기 달 목록 — 그 해 열두 달(0=1월)의 예약을 한 번에 나눈다. 달마다 날짜·시작 순. */
+fun reservationsByMonth(reservations: List<Reservation>, year: Int): List<List<Reservation>> {
+    val prefix = "$year-"
+    val byMonth = reservations.filter { it.date.startsWith(prefix) }
+        .sortedWith(compareBy({ it.date }, { it.startTime }))
+        .groupBy { it.date.drop(5).take(2).takeIf { m -> m.length == 2 }?.toIntOrNull() } // 깨진 날짜("2026-1")에도 죽지 않게 — 그 줄은 어느 달에도 안 든다
+    return (1..12).map { byMonth[it].orEmpty() }
 }
