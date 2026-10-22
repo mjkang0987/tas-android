@@ -72,6 +72,6 @@ fun reservationsByMonth(reservations: List<Reservation>, year: Int): List<List<R
     val prefix = "$year-"
     val byMonth = reservations.filter { it.date.startsWith(prefix) }
         .sortedWith(compareBy({ it.date }, { it.startTime }))
-        .groupBy { it.date.substring(5, 7).toIntOrNull() }
+        .groupBy { it.date.drop(5).take(2).takeIf { m -> m.length == 2 }?.toIntOrNull() } // 깨진 날짜("2026-1")에도 죽지 않게 — 그 줄은 어느 달에도 안 든다
     return (1..12).map { byMonth[it].orEmpty() }
 }

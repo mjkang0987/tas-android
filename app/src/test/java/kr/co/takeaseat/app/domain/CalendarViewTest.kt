@@ -67,5 +67,7 @@ class CalendarViewTest {
         assertEquals(listOf(3, 2, 1), months[9].map { it.id })
         assertEquals(listOf(5), months[0].map { it.id })
         assertEquals(emptyList<Int>(), months[10].map { it.id })
+        // 깨진 날짜는 건너뛴다(죽지 않는다)
+        assertEquals(listOf(listOf(3)), reservationsByMonth(list.take(3).drop(2) + r(9, "2026-1", "10:00"), 2026).filter { it.isNotEmpty() }.map { m -> m.map { it.id } })
     }
 }
