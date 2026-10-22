@@ -113,3 +113,6 @@ fun placeReservations(reservations: List<Reservation>): List<PlacedReservation> 
     flush()
     return result
 }
+
+/** 웹 maxLanesOfDay — 겹침을 접지 않을 때 필요한 칸 수(그날 가장 많이 겹친 수). 예약이 없으면 1. */
+fun maxLanes(placed: List<PlacedReservation>): Int = placed.maxOfOrNull { it.lane.count } ?: 1
