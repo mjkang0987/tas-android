@@ -21,7 +21,9 @@ import kr.co.takeaseat.app.R
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.DEFAULT_REMINDER_LEAD
 import kr.co.takeaseat.app.domain.ReservationReminder
-import kr.co.takeaseat.app.domain.reminderFor
+import kr.co.takeaseat.app.domain.ReminderKind
+import kr.co.takeaseat.app.domain.lateAlertMinutesOf
+import kr.co.takeaseat.app.domain.reminderOf
 import kr.co.takeaseat.app.domain.upcomingReminders
 
 /**
@@ -32,6 +34,9 @@ import kr.co.takeaseat.app.domain.upcomingReminders
 object ReminderScheduler {
     const val CHANNEL_ID = "reservation_reminder"
     const val EXTRA_RESERVATION_ID = "reservationId"
+    const val EXTRA_KIND = "kind"
+    // 지각 알람은 같은 예약의 시작 전 알람과 따로 걸려야 해서 액션으로 가른다(시작 전은 예전 알람과 맞물리게 액션 없음 그대로).
+    private const val ACTION_LATE = "kr.co.takeaseat.app.REMINDER_LATE"
     private const val PREFS = "reminder"
     private const val KEY_LEAD = "leadMinutes"
     private const val KEY_SCHEDULED = "scheduledIds"
@@ -85,22 +90,23 @@ object ReminderScheduler {
         val snapshot = GuestStore.forApp(app).snapshot.value
         val customers = snapshot.customers.associate { it.id to it.name }
         val lead = leadMinutes(app)
-        val reminders = upcomingReminders(snapshot.reservations, customers, lead, LocalDateTime.now())
-        val signature = "$lead|" + reminders.joinToString(",") { "${it.reservationId}@${it.triggerAt}" }
+        val late = lateAlertMinutesOf(snapshot.storeSettings)
+        val reminders = upcomingReminders(snapshot.reservations, customers, lead, LocalDateTime.now(), lateMinutes = late)
+        val signature = "$lead|$late|" + reminders.joinToString(",") { "${it.kind}${it.reservationId}@${it.triggerAt}" }
         if (!force && syncedInProcess && signature == prefs(app).getString(KEY_SIGNATURE, null)) return
         val alarms = app.getSystemService(AlarmManager::class.java)
-        val keep = reminders.map { it.reservationId }.toSet()
+        val keep = reminders.map { scheduledKey(it.kind, it.reservationId) }.toSet()
         prefs(app).getStringSet(KEY_SCHEDULED, emptySet()).orEmpty()
-            .mapNotNull { it.toIntOrNull() }
             .filter { it !in keep }
-            .forEach { alarms.cancel(alarmIntent(app, it)) }
+            .mapNotNull(::parseScheduledKey)
+            .forEach { (kind, id) -> alarms.cancel(alarmIntent(app, id, kind)) }
         reminders.forEach { schedule(app, alarms, it) }
         // 7일 밖 예약은 아직 안 걸려 있다 — 앱을 안 열어도 하루 한 번 창을 다시 채운다(대략 알람이면 충분).
         val refill = refillIntent(app)
-        if (lead > 0) alarms.setAndAllowWhileIdle(AlarmManager.RTC, System.currentTimeMillis() + REFILL_INTERVAL_MS, refill)
+        if (lead > 0 || late > 0) alarms.setAndAllowWhileIdle(AlarmManager.RTC, System.currentTimeMillis() + REFILL_INTERVAL_MS, refill)
         else alarms.cancel(refill)
         prefs(app).edit {
-            putStringSet(KEY_SCHEDULED, keep.map { it.toString() }.toSet())
+            putStringSet(KEY_SCHEDULED, keep)
             putString(KEY_SIGNATURE, signature)
         }
         syncedInProcess = true
@@ -115,25 +121,38 @@ object ReminderScheduler {
 
     private fun schedule(context: Context, alarms: AlarmManager, reminder: ReservationReminder) {
         val at = reminder.triggerAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val intent = alarmIntent(context, reminder.reservationId)
+        val intent = alarmIntent(context, reminder.reservationId, reminder.kind)
         val exact = Build.VERSION.SDK_INT < 31 || alarms.canScheduleExactAlarms()
         if (exact) alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)
         else alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)
     }
 
-    private fun alarmIntent(context: Context, reservationId: Int): PendingIntent = PendingIntent.getBroadcast(
+    private fun alarmIntent(context: Context, reservationId: Int, kind: ReminderKind): PendingIntent = PendingIntent.getBroadcast(
         context,
         reservationId,
-        Intent(context, ReminderReceiver::class.java).putExtra(EXTRA_RESERVATION_ID, reservationId),
+        Intent(context, ReminderReceiver::class.java)
+            .apply { if (kind == ReminderKind.Late) action = ACTION_LATE }
+            .putExtra(EXTRA_RESERVATION_ID, reservationId)
+            .putExtra(EXTRA_KIND, kind.name),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    /** 울릴 때 — 그사이 예약이 바뀌었을 수 있어 지금 데이터로 다시 확인하고 띄운다. */
-    internal fun fire(context: Context, reservationId: Int) {
+    // 맞춰 둔 알람 기록 — "Late:16". 예전 기록은 숫자만이라 시작 전 알람으로 읽는다.
+    private fun scheduledKey(kind: ReminderKind, id: Int) = "${kind.name}:$id"
+
+    private fun parseScheduledKey(key: String): Pair<ReminderKind, Int>? {
+        val parts = key.split(':')
+        if (parts.size == 1) return parts[0].toIntOrNull()?.let { ReminderKind.Before to it }
+        val kind = ReminderKind.entries.firstOrNull { it.name == parts[0] } ?: return null
+        return parts[1].toIntOrNull()?.let { kind to it }
+    }
+
+    /** 울릴 때 — 그사이 예약이 바뀌었을 수 있어 지금 데이터로 다시 확인하고 띄운다(지각은 그새 완료·노쇼·결제됐으면 안 띄움). */
+    internal fun fire(context: Context, reservationId: Int, kind: ReminderKind) {
         val snapshot = GuestStore.forApp(context.applicationContext).snapshot.value
         val reservation = snapshot.reservations.firstOrNull { it.id == reservationId }
         val customers = snapshot.customers.associate { it.id to it.name }
-        val reminder = reservation?.let { reminderFor(it, customers, leadMinutes(context)) }
+        val reminder = reservation?.let { reminderOf(kind, it, customers, leadMinutes(context), lateAlertMinutesOf(snapshot.storeSettings)) }
         // 시각이 옮겨졌으면(1분 넘게 어긋나면) 이번 알람은 버린다 — sync 가 새 시각으로 다시 맞췄다.
         val stale = reminder == null || reminder.triggerAt.isAfter(LocalDateTime.now().plusMinutes(1))
         if (!stale && hasNotificationPermission(context)) notify(context, reminder!!)
@@ -160,7 +179,8 @@ object ReminderScheduler {
             .setAutoCancel(true)
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(reminder.reservationId, notification)
+            // 같은 예약의 시작 전·지각 알림이 서로 덮지 않게 종류를 태그로
+            NotificationManagerCompat.from(context).notify(reminder.kind.name, reminder.reservationId, notification)
         } catch (_: SecurityException) {
             // 권한을 막 거둔 경우 — 알림만 못 띄운다
         }
@@ -171,7 +191,8 @@ object ReminderScheduler {
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getIntExtra(ReminderScheduler.EXTRA_RESERVATION_ID, -1)
-        if (id >= 0) ReminderScheduler.fire(context, id)
+        val kind = ReminderKind.entries.firstOrNull { it.name == intent.getStringExtra(ReminderScheduler.EXTRA_KIND) } ?: ReminderKind.Before
+        if (id >= 0) ReminderScheduler.fire(context, id, kind)
     }
 }
 
