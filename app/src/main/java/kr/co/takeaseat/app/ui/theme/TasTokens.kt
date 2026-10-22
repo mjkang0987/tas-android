@@ -14,6 +14,7 @@ object TasColors {
     val White60 = Color.hsl(0f, 0f, 1f, alpha = 0.6f)          // --white-color-60
     val Brand = Color(0x65, 0x26, 0xD9)                        // --brand-color #6526d9
     val BrandBg = Color(101, 38, 217).copy(alpha = 0.08f)      // --brand-color-bg
+    val BrandBorder = Color(101, 38, 217).copy(alpha = 0.2f)   // --brand-color-border
     val GlassBg = Color(255, 255, 255).copy(alpha = 0.72f)     // --glass-bg
     val ShadowMd = Color(0, 0, 0).copy(alpha = 0.12f)          // --shadow-md 색
     val ShadowSm = Color(0, 0, 0).copy(alpha = 0.08f)          // --shadow-sm 색
