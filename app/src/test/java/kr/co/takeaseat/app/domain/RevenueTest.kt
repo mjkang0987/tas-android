@@ -140,4 +140,16 @@ class RevenueTest {
         assertEquals(true, isPaidTarget(r(1, "d").copy(paymentCompleted = true), null))
         assertEquals(false, isPaidTarget(r(1, "d", ReservationStatus.NOSHOW).copy(paymentCompleted = true), null))
     }
+
+    @Test fun `캘린더 목록 합계 - 취소·노쇼·신청 빼고 받은 돈`() {
+        val list = listOf(
+            r(1, "2026-10-20"),
+            r(2, "2026-10-20", price = 30000, entries = listOf(PaymentEntry("카드", 25000), PaymentEntry("적립금", 5000))),
+            r(3, "2026-10-20", status = "cancelled"),
+            r(4, "2026-10-20", status = "noshow"),
+            r(5, "2026-10-20", status = "requested"),
+        )
+        assertEquals(45000, bookedRevenueTotal(list, catalog))
+        assertEquals(0, bookedRevenueTotal(emptyList(), catalog))
+    }
 }
