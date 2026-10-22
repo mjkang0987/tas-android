@@ -60,10 +60,10 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 /**
  * 웹 `overlays/ReservationCreate.tsx` + `useReservationCreateForm` — 예약 추가 시트.
  * 규칙(바꾸기·검사·저장)은 `domain/ReservationCreate.kt`, 여기는 칸을 그리고 부르기만 한다.
- * 웹 모바일 '+ 예약'처럼 오늘·지금(30분 반올림)으로 연다.
+ * 웹 모바일 '+ 예약'처럼 오늘·지금(30분 반올림)으로 연다. 월 목록의 ＋ 는 그날 10:00 으로([initialDate]·[initialStart]).
  */
 @Composable
-fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
+fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit, initialDate: String? = null, initialStart: String? = null) {
     val snapshot by store.snapshot.collectAsState()
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     val catalogMap = remember(snapshot.services) { buildCatalogMap(snapshot.services) }
@@ -72,7 +72,7 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit) {
     val customers = remember(snapshot.customers) { sortCustomersByName(snapshot.customers.filter(::isSelectableCustomer)) }
 
     var form by rememberSaveable(stateSaver = reservationFormSaver) {
-        mutableStateOf(ReservationForm.initial(LocalDate.now().toDateKey(), roundedStartTime(LocalDateTime.now()), snapshot.assignees))
+        mutableStateOf(ReservationForm.initial(initialDate ?: LocalDate.now().toDateKey(), initialStart ?: roundedStartTime(LocalDateTime.now()), snapshot.assignees))
     }
     var errorField by rememberSaveable { mutableStateOf<FormField?>(null) }
     var errorMessage by rememberSaveable { mutableStateOf("") }
