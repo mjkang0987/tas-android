@@ -7,6 +7,28 @@
 
 ---
 
+## 🟡 진행 — 17단계: 어두운 화면(시스템 테마 따라) (`claude/android-dark-mode`, 15-2 위)
+
+### 요구 (지시자 2026-10-24 "테마를 맞춰서 지원해야지"·"시스템 테마 따라가면 좋을 듯", 2026-10-26 "웹이랑 안드로이드 다크모드")
+- 세 플랫폼 같은 값 — 웹 `prefers-color-scheme: dark`(tas #310)·iOS `Theme.swift`(v0.21.0)와 같은 어두운 값. 글자 7:1(배지)·4.5:1(글자색), 배지 바탕이 카드와 구분.
+
+### 구현
+- `TasTokens.kt` — `TasColors` 를 밝은/어두운 두 벌(`LightPalette`·`DarkPalette`, `TasPalette`)로. `TasColors` 는 지금 테마의 벌을 돌려주는 컴포저블 속성이라 화면 코드는 그대로.
+  `TasTheme` 이 `isSystemInDarkTheme()` 로 고르고 머티리얼 색도 두 벌. 창 배경(`values-night/themes.xml`)·시스템 바 아이콘(`SystemBarStyle.auto`)도 따라간다.
+- 두 뜻이던 색을 나눔(웹과 같게): 바탕 `Surface`, 흰 글자를 얹는 채움 `BrandFill`·`BlueFill`·`DangerFill`·`NaverFill`, 검정 바탕 `InverseBg/Text`. `White`·`Brand` 는 흰 글자·글자색 전용.
+- 그리기(`drawBehind`) 안에서 테마 색 — `Modifier.drawBehindThemed { colors -> }`. 취소·노쇼 빗금도 어두운 화면에선 흰 빗금.
+- 상태 배지 어두운 표 `RESERVATION_STATUS_BADGE_STYLES_DARK`, 라벨 배지(`LabelTone`)·알림 바탕도 테마 따라. 서비스 칩은 `tintText`/`tintFill`(iOS 와 같은 55% 섞기).
+- 화면에 직접 적힌 색(카드 글자 #0f172a·네이버 예약금 상자·변경 이력 카드 등)을 토큰으로.
+
+### 검증
+- 단위: 어두운 배지(글자 7:1·카드와 1.3:1) · 어두운 글자색 토큰 16개(#1C1C1E·#2C2C2E 위 4.5:1) · 채움 위 흰 글자(두 벌) 추가, 전체 통과.
+- 에뮬레이터 어두운 화면: 일·월 캘린더(예약 카드·배지·칩), 예약 상세, 고객 명단, 매출, 설정, 시작 화면 / 밝은 화면 그대로.
+
+### 다음
+- 폴드·듀오(접는 화면·큰 화면) 대응 — 지시자 2026-10-26.
+
+---
+
 ## 🟡 진행 — 15-2단계: 손님 지각 알림 (`claude/android-late-alert`, #26 위)
 
 ### 요구 (지시자 2026-10-22)
