@@ -91,6 +91,10 @@ class TasPalette(
     val CardInk: Color,
     val Toast: Color,
     val KpiGradientEnd: Color,
+    val AsideBg: Color,
+    val AsideText: Color,
+    val AsideHover: Color,
+    val AsideDivider: Color,
     val HintBg: Color,
 )
 
@@ -168,6 +172,10 @@ val LightPalette = TasPalette(
     CardInk = Color(0xFF0F172A), // 예약 카드 시간·가격 #0f172a
     Toast = Color(0xFF1E293B), // --toast-bg(안내 알림 바탕)
     KpiGradientEnd = Color(0xF9, 0xFB, 0xFF), // 매출 숫자 카드 아래 #f9fbff
+    AsideBg = Color(0xFF1C1C1E), // --aside-bg — 넓은 화면 왼쪽 메뉴(웹도 두 테마 같은 값)
+    AsideText = Color(0xFFF5F5F7), // --aside-text
+    AsideHover = Color.White.copy(alpha = 0.08f), // --aside-hover
+    AsideDivider = Color.White.copy(alpha = 0.12f), // --aside-divider
     HintBg = Color(0xF6, 0xF8, 0xFC), // 매출 집계기준 설명 #f6f8fc
 )
 
@@ -243,6 +251,10 @@ val DarkPalette = TasPalette(
     CardInk = hex(0xF5F5F7),
     Toast = hex(0x2C2C2E),
     KpiGradientEnd = hex(0x1C1C1E),
+    AsideBg = Color(0xFF111113), // 어두운 화면 바탕(#1C1C1E)과 같으면 경계가 사라져 한 단계 어둡게
+    AsideText = Color(0xFFF5F5F7),
+    AsideHover = Color.White.copy(alpha = 0.08f),
+    AsideDivider = Color.White.copy(alpha = 0.12f),
     HintBg = hex(0x2C2C2E),
 )
 
