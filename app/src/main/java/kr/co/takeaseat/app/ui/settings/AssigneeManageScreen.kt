@@ -210,7 +210,7 @@ private fun AssigneeCard(
             .then(if (editing) Modifier.border(2.dp, TasColors.Blue, shape).padding(2.dp) else Modifier)
             .dropShadow(shape, Shadow(radius = 10.dp, color = Color(15, 23, 42).copy(alpha = 0.05f), offset = DpOffset(0.dp, 4.dp)))
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.96f), color.copy(alpha = 0x10 / 255f))))
+            .background(Brush.verticalGradient(listOf(TasColors.Surface.copy(alpha = 0.96f), color.copy(alpha = 0x10 / 255f))))
             .drawBehind {
                 val w = 1.dp.toPx()
                 drawRoundRect(color.copy(alpha = 0x44 / 255f), topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), cornerRadius = CornerRadius(10.dp.toPx()), style = Stroke(w))
@@ -297,7 +297,7 @@ private fun AssigneeCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            Checkbox(checked = day.enabled, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.Brand), modifier = Modifier.size(18.dp))
+                            Checkbox(checked = day.enabled, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill), modifier = Modifier.size(18.dp))
                             Text(if (day.enabled) "근무" else "휴무", color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, modifier = Modifier.width(26.dp))
                         }
                         TimeField("$label 시작", day.start, day.enabled, Modifier.weight(1f), showLabel = false) { t -> onDay(index) { it.copy(start = t) } }
@@ -322,6 +322,7 @@ private fun AssigneeCard(
 @Composable
 private fun StatusNotice(status: String) {
     val tone = statusTone(status)
+    val border = tone.border // 그리기 안(컴포저블 밖)에서 쓰려고 먼저 읽는다
     Text(
         if (status == "휴직") "휴직 상태에서는 근무시간 설정을 접어 둡니다. 복귀 후 다시 조정할 수 있습니다."
         else "퇴직 상태에서는 예약 선택이 비활성화되며 근무시간 설정을 표시하지 않습니다.",
@@ -334,7 +335,7 @@ private fun StatusNotice(status: String) {
             .background(TasColors.White60)
             .drawBehind {
                 val w = 1.dp.toPx()
-                drawRoundRect(tone.border, topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), cornerRadius = CornerRadius(8.dp.toPx()),
+                drawRoundRect(border, topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), cornerRadius = CornerRadius(8.dp.toPx()),
                     style = Stroke(w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))))
             }
             .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -353,7 +354,7 @@ private fun AddAssigneeForm(assigneeLabel: String, nextId: Int, onCancel: () -> 
     var note by rememberSaveable { mutableStateOf("") }
     var color by rememberSaveable { mutableStateOf(assigneeColor(Assignee(id = nextId, name = ""))) }
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(TasColors.White).border(1.dp, TasColors.LightGray, RoundedCornerShape(10.dp)).padding(10.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(TasColors.Surface).border(1.dp, TasColors.LightGray, RoundedCornerShape(10.dp)).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

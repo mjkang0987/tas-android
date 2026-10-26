@@ -68,6 +68,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -142,8 +143,8 @@ fun DetailSheet(
                         .pointerInput(Unit) { detectTapGestures { } }
                         .clip(shape)
                         // 웹은 뒤를 흐리게(backdrop blur) 한 위에 98% 흰색이라 뒤 글자가 안 읽힌다. 흐림이 없으니 바닥을 불투명 흰색으로 깐다.
-                        .background(Color.White)
-                        .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.98f), TasColors.BgSubtle98)))
+                        .background(TasColors.Surface)
+                        .background(Brush.verticalGradient(listOf(TasColors.Surface.copy(alpha = 0.98f), TasColors.BgSubtle98)))
                         .border(1.dp, TasColors.ModalBorder, shape)
                         .semantics { paneTitle = title },
                 ) {
@@ -159,7 +160,7 @@ fun DetailSheet(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .drawBehind { drawRect(TasColors.ModalHeaderBorder, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+                                .drawBehindThemed { colors -> drawRect(colors.ModalHeaderBorder, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
                                 .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp),
                         ) {
                             // 웹 StyledFooter — 오른쪽 정렬, 간격 6(--modal-footer-gap)
@@ -181,10 +182,10 @@ private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit,
     Row(
         Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.88f), TasColors.BgSubtle92)))
-            .drawBehind {
+            .background(Brush.verticalGradient(listOf(TasColors.Surface.copy(alpha = 0.88f), TasColors.BgSubtle92)))
+            .drawBehindThemed { colors ->
                 val h = 1.dp.toPx()
-                drawRect(TasColors.ModalHeaderBorder, topLeft = Offset(0f, size.height - h), size = androidx.compose.ui.geometry.Size(size.width, h))
+                drawRect(colors.ModalHeaderBorder, topLeft = Offset(0f, size.height - h), size = androidx.compose.ui.geometry.Size(size.width, h))
             }
             .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -194,7 +195,7 @@ private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit,
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = title,
-                color = Color.Black,
+                color = TasColors.Black,
                 fontSize = 16.sp, // --modal-title-font
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.02f * 16).sp,
@@ -223,7 +224,7 @@ private fun SheetHeader(title: String, subtitle: String?, onDismiss: () -> Unit,
             Modifier
                 .size(34.dp)
                 .clip(TasShapes.RadiusMd)
-                .background(Color.White)
+                .background(TasColors.Surface)
                 .border(1.dp, TasColors.LightGray, TasShapes.RadiusMd)
                 .clickable(role = Role.Button, onClick = onDismiss)
                 .semantics { contentDescription = "닫기" },

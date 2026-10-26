@@ -34,6 +34,7 @@ import kr.co.takeaseat.app.domain.formatDuration
 import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.groupedCatalog
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -81,7 +82,7 @@ fun ServiceFields(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .drawBehind { drawRect(TasColors.LightGray, Offset(0f, size.height - 1.dp.toPx()), Size(size.width, 1.dp.toPx())) }
+                            .drawBehindThemed { colors -> drawRect(colors.LightGray, Offset(0f, size.height - 1.dp.toPx()), Size(size.width, 1.dp.toPx())) }
                             .padding(8.dp)
                             .semantics { heading() },
                     )
@@ -102,7 +103,7 @@ fun ServiceFields(
                         val price = catalogMap[name]?.price ?: 0
                         Row(
                             Modifier
-                                .background(TasColors.White, TasShapes.RadiusSm)
+                                .background(TasColors.Surface, TasShapes.RadiusSm)
                                 .border(1.dp, TasColors.LightGray, TasShapes.RadiusSm)
                                 .padding(horizontal = 4.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -137,7 +138,7 @@ private fun ServiceRow(item: ServiceItem, checked: Boolean, serviceColorMap: Map
         Checkbox(
             checked = checked,
             onCheckedChange = null,
-            colors = CheckboxDefaults.colors(checkedColor = TasColors.Brand),
+            colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill),
             modifier = Modifier.size(20.dp),
         )
         ServiceChipList(item.name, serviceColorMap)

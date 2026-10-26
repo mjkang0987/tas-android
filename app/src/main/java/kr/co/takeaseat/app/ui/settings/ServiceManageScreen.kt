@@ -84,6 +84,7 @@ import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.components.ToastType
 import kr.co.takeaseat.app.ui.customers.MemoColorPalette
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
@@ -244,7 +245,7 @@ private fun ServiceRow(item: ServiceItem, serviceColorMap: Map<String, String>, 
             .padding(horizontal = 10.dp)
             .fillMaxWidth()
             .heightIn(min = 40.dp)
-            .drawBehind { drawRect(TasColors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
+            .drawBehindThemed { colors -> drawRect(colors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
             .clickable(role = Role.Button, onClickLabel = "수정", onClick = onClick)
             .padding(start = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -275,10 +276,10 @@ private fun AddServiceButton(text: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .heightIn(min = 30.dp)
             .clip(RoundedCornerShape(6.dp))
-            .drawBehind {
+            .drawBehindThemed { colors ->
                 val w = 1.dp.toPx()
                 drawRoundRect(
-                    TasColors.LightGray, topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), cornerRadius = CornerRadius(6.dp.toPx()),
+                    colors.LightGray, topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), cornerRadius = CornerRadius(6.dp.toPx()),
                     style = Stroke(w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))),
                 )
             }

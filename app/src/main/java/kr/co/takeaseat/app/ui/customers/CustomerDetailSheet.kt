@@ -66,6 +66,7 @@ import kr.co.takeaseat.app.ui.components.FieldError
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 private val editFormSaver = Saver<CustomerEditForm, String>(
@@ -265,7 +266,7 @@ private fun Section(spacing: Int = 0, content: @Composable ColumnScope.() -> Uni
     Column(
         Modifier
             .fillMaxWidth()
-            .drawBehind { drawLine(TasColors.LightGray, Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx()) }
+            .drawBehindThemed { colors -> drawLine(colors.LightGray, Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx()) }
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(spacing.dp),
         content = content,

@@ -297,7 +297,7 @@ internal fun DateCircle(text: String, label: String, isToday: Boolean, isSelecte
             .clip(CircleShape)
             .background(
                 when {
-                    isSelected -> TasColors.Brand
+                    isSelected -> TasColors.BrandFill
                     isToday -> TasColors.BrandBorder
                     else -> Color.Transparent
                 },

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /** 웹 Header(모바일) — 높이 48, 제목 18 굵게 #525252, 아래 1px. 오른쪽 [actions]('+ 고객' 등). */
@@ -32,7 +33,7 @@ fun ScreenHeader(title: String, actions: @Composable RowScope.() -> Unit = {}) {
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .drawBehind { drawRect(TasColors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
+            .drawBehindThemed { colors -> drawRect(colors.LightGray, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
             .padding(horizontal = 10.dp),
     ) {
         Row(Modifier.fillMaxWidth().align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {

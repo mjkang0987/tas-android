@@ -105,6 +105,7 @@ import kr.co.takeaseat.app.ui.components.svgLineIcon
 import kr.co.takeaseat.app.ui.customers.CustomerDetailSheet
 import kr.co.takeaseat.app.ui.rememberDetailStack
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /** 웹 RevenueViewTab(모바일) — 그래프 탭은 웹 모바일도 숨긴다. */
@@ -234,7 +235,7 @@ private fun RevenueFilters(
     onToggleHint: () -> Unit,
 ) {
     Column(
-        Modifier.fillMaxWidth().background(TasColors.White).padding(start = 10.dp, end = 10.dp, top = 8.dp),
+        Modifier.fillMaxWidth().background(TasColors.Surface).padding(start = 10.dp, end = 10.dp, top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -282,7 +283,7 @@ private fun RevenueFilters(
                 color = TasColors.DarkGray2,
                 fontSize = TasSizes.XSmallFont,
                 lineHeight = TasSizes.XSmallFont * 1.45f,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(HintBg).padding(horizontal = 8.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(TasColors.HintBg).padding(horizontal = 8.dp, vertical = 6.dp),
             )
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(TasColors.LightGray))
@@ -297,10 +298,10 @@ private enum class ChipStyle(val radius: Int, val horizontal: Int) { Quick(13, 1
 private fun FilterChip(text: String, selected: Boolean, style: ChipStyle, onClick: () -> Unit) {
     val shape = RoundedCornerShape(style.radius.dp)
     val (bg, border, color) = when {
-        !selected -> Triple(TasColors.White, TasColors.LightGray, TasColors.DarkGray)
-        style == ChipStyle.View -> Triple(TasColors.Black, TasColors.Black, TasColors.White)
+        !selected -> Triple(TasColors.Surface, TasColors.LightGray, TasColors.DarkGray)
+        style == ChipStyle.View -> Triple(TasColors.InverseBg, TasColors.InverseBg, TasColors.InverseText)
         style == ChipStyle.Mode -> Triple(TasColors.InfoBg, TasColors.Blue, TasColors.Blue)
-        else -> Triple(TasColors.Blue, TasColors.Blue, TasColors.White)
+        else -> Triple(TasColors.BlueFill, TasColors.BlueFill, TasColors.White)
     }
     Box(
         Modifier
@@ -328,7 +329,7 @@ private fun InfoButton(expanded: Boolean, onClick: () -> Unit) {
             .semantics { contentDescription = "집계기준 설명"; stateDescription = if (expanded) "펼침" else "접힘" },
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(20.dp).clip(CircleShape).background(TasColors.White).border(1.dp, TasColors.LightGray, CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(20.dp).clip(CircleShape).background(TasColors.Surface).border(1.dp, TasColors.LightGray, CircleShape), contentAlignment = Alignment.Center) {
             Text("i", color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.Bold, modifier = Modifier.clearAndSetSemantics {})
         }
     }
@@ -362,7 +363,7 @@ private fun DateField(label: String, date: LocalDate, bounds: LocalDate, onPick:
             .height(32.dp)
             .dropShadow(shape, Shadow(radius = 2.dp, color = FieldShadow, offset = DpOffset(0.dp, 1.dp)))
             .clip(shape)
-            .background(TasColors.White)
+            .background(TasColors.Surface)
             .border(1.dp, TasColors.LightGray, shape)
             .semantics { contentDescription = "$label, ${date.year}년 ${date.monthValue}월 ${date.dayOfMonth}일" }
             .clickable(role = Role.Button, onClickLabel = "날짜 선택") { picking = true }
@@ -407,7 +408,7 @@ private fun RowScope.KpiCard(item: KpiItem, onClick: () -> Unit) {
             .weight(1f)
             .fillMaxHeight()
             .card(shape, CardShadowKpi)
-            .background(Brush.verticalGradient(listOf(TasColors.White, KpiGradientEnd)))
+            .background(Brush.verticalGradient(listOf(TasColors.Surface, TasColors.KpiGradientEnd)))
             .border(1.dp, TasColors.LightGray, shape)
             // 낭독은 '총 매출, 18,000원' 한 덩어리로 — 누르면 지표 상세
             .clickable(role = Role.Button, onClickLabel = "상세 보기", onClick = onClick)
@@ -434,7 +435,7 @@ private fun DailyCard(
             .padding(horizontal = 10.dp)
             .fillMaxWidth()
             .card(shape, CardShadowDaily)
-            .background(TasColors.White)
+            .background(TasColors.Surface)
             .border(1.dp, TasColors.LightGray, shape)
             .padding(10.dp),
     ) {
@@ -446,8 +447,8 @@ private fun DailyCard(
         summary.days.forEach { day ->
             val key = day.date.toString()
             val open = key in openDates
-            Column(Modifier.fillMaxWidth().drawBehind {
-                drawRect(TasColors.Black10, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx()))
+            Column(Modifier.fillMaxWidth().drawBehindThemed { colors ->
+                drawRect(colors.Black10, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx()))
             }) {
                 DayHeader(day, open) { onToggle(key) }
                 if (open) {
@@ -524,8 +525,6 @@ private fun SaleItem(sale: StoreSale, customerName: String?, onCustomerClick: ()
 private fun Modifier.card(shape: Shape, shadow: Shadow) = dropShadow(shape, shadow).clip(shape)
 
 private val BigFont = TasSizes.LargeFont * 1.125f                                       // --big-font 18
-private val HintBg = Color(0xF6, 0xF8, 0xFC)                                            // #f6f8fc
-private val KpiGradientEnd = Color(0xF9, 0xFB, 0xFF)                                    // #f9fbff
 private val FieldShadow = Color(15, 23, 42).copy(alpha = 0.04f)                         // 날짜 칸 0 1 2
 private val SaleBorder = Color(148, 163, 184).copy(alpha = 0.18f)
 private val CardShadowKpi = Shadow(radius = 20.dp, color = Color(15, 23, 42).copy(alpha = 0.05f), offset = DpOffset(0.dp, 8.dp))

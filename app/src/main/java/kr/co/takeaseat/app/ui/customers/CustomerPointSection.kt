@@ -48,6 +48,7 @@ import kr.co.takeaseat.app.ui.components.DetailSheet
 import kr.co.takeaseat.app.ui.components.TasSelect
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
@@ -80,9 +81,9 @@ internal fun CustomerPointSection(
         Modifier
             .fillMaxWidth()
             // 웹: 위 1px 점선(옅은 회색)
-            .drawBehind {
+            .drawBehindThemed { colors ->
                 drawLine(
-                    TasColors.LightGray, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth = 1.dp.toPx(),
+                    colors.LightGray, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth = 1.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
                 )
             }
@@ -178,7 +179,7 @@ internal fun PointHistoryCard(entry: PointHistoryEntry, onClick: (() -> Unit)?) 
         Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(TasColors.White)
+            .background(TasColors.Surface)
             .border(1.dp, TasColors.LightGray, shape)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "예약 보기", onClick = onClick) else Modifier)
             .padding(horizontal = 10.dp, vertical = 8.dp),

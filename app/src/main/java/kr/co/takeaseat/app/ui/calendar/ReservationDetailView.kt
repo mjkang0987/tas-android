@@ -65,6 +65,7 @@ import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -109,7 +110,7 @@ fun ReservationDetailView(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (isNewCustomer) NewCustomerBadge()
-                DetailText(customer?.name ?: "-", color = if (customer != null && onCustomerClick != null) TasColors.Link else Color.Black)
+                DetailText(customer?.name ?: "-", color = if (customer != null && onCustomerClick != null) TasColors.Link else TasColors.Black)
             }
         }
         DetailRow("연락처") {
@@ -154,14 +155,14 @@ private fun HistoryButton(count: Int, onClick: () -> Unit) {
         Modifier
             .padding(top = 8.dp) // 행 간격 8 + 8 = 웹 margin-top 16
             .fillMaxWidth()
-            .drawBehind { drawRect(TasColors.LightGray, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+            .drawBehindThemed { colors -> drawRect(colors.LightGray, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
             .padding(top = 12.dp),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
-                .background(TasColors.White)
+                .background(TasColors.Surface)
                 .border(1.dp, TasColors.LightGray, RoundedCornerShape(6.dp))
                 .clickable(role = Role.Button, onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -202,15 +203,15 @@ private fun NaverDepositLine(deposit: Int, modifier: Modifier = Modifier) {
     val shape = TasShapes.RadiusMd
     Row(
         modifier
-            .background(Color(0xFFF0FAF4), shape)
-            .border(1.dp, Color(0xFFD4EDDA), shape)
+            .background(TasColors.SuccessBg, shape)
+            .border(1.dp, TasColors.SuccessBorder, shape)
             .padding(horizontal = 8.dp, vertical = 4.dp), // 웹 패딩 3/7 + 바깥 테두리 1
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Icon(NaverLogo, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(14.dp))
-        Text("네이버 예약 확정 예약금", color = Color(0xFF333333), fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
-        Text(formatPrice(deposit), color = Color(0xFF333333), fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+        Text("네이버 예약 확정 예약금", color = TasColors.Black, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+        Text(formatPrice(deposit), color = TasColors.Black, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -229,7 +230,7 @@ private fun NaverBookingInfo(bookingId: String, bookingUrl: String?) {
         if (!bookingUrl.isNullOrEmpty()) {
             Text(
                 "바로가기 ↗",
-                color = Color(0xFF00803C), // 웹 바로가기 — 흰 바탕 대비 4.5 이상(브랜드 #03C75A 는 2.3)
+                color = TasColors.SuccessText, // 웹 바로가기 #00803C 자리 — 흰 바탕 대비 4.5 이상(브랜드 #03C75A 는 2.3)
                 fontSize = TasSizes.XSmallFont,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clickable(role = Role.Button, onClickLabel = "네이버 예약 열기") {
@@ -240,7 +241,7 @@ private fun NaverBookingInfo(bookingId: String, bookingUrl: String?) {
     }
     Text(
         "네이버예약의 실제 변경/취소는 스마트플레이스 통해서 가능합니다.",
-        color = Color(0xFF0F5132),
+        color = TasColors.SuccessText,
         fontSize = TasSizes.SmallFont,
         lineHeight = 1.45.em,
         // 웹 word-break: keep-all — 한글을 글자마다 끊지 않는다(안드로이드 13+, 그 아래는 기본 줄바꿈)
@@ -273,7 +274,7 @@ private fun DetailRow(term: String, gap: androidx.compose.ui.unit.Dp = 12.dp, va
 private fun DetailText(
     text: String,
     modifier: Modifier = Modifier,
-    color: Color = Color.Black,
+    color: Color = TasColors.Black,
     style: androidx.compose.ui.text.TextStyle = LocalTextStyle.current,
 ) {
     Text(text, color = color, fontSize = TasSizes.MediumFont, style = style, modifier = modifier)

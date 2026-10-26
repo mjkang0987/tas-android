@@ -62,7 +62,7 @@ fun CustomerAutocomplete(
                     .heightIn(max = 160.dp)
                     .dropShadow(TasShapes.RadiusSm, Shadow(radius = 12.dp, color = Color.Black.copy(alpha = 0.1f), offset = DpOffset(0.dp, 4.dp)))
                     .clip(TasShapes.RadiusSm)
-                    .background(TasColors.White)
+                    .background(TasColors.Surface)
                     .border(1.dp, TasColors.LightGray, TasShapes.RadiusSm)
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 4.dp),

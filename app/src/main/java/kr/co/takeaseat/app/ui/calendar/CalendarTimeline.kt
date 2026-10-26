@@ -63,6 +63,7 @@ import kr.co.takeaseat.app.domain.TimelineScale
 import kr.co.takeaseat.app.domain.cardHeightFor
 import kr.co.takeaseat.app.domain.toMinutes
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 // 웹 `Timeline.tsx` 의 좌표계. 정시선·카드·현재시각 바가 같은 오프셋을 쓴다.
@@ -164,13 +165,13 @@ fun CalendarTimeline(
         Column(Modifier.fillMaxSize()) {
             if (multi) {
                 // 웹 StyledNumWrap — 흰 바탕 + 옅은 그림자로 밑으로 지나가는 카드와 경계를 준다.
-                Row(Modifier.fillMaxWidth().zIndex(1f).background(TasColors.White)) {
+                Row(Modifier.fillMaxWidth().zIndex(1f).background(TasColors.Surface)) {
                     Spacer(Modifier.width(TasSizes.TimelineCol).height(WEEK_HEADING))
                     Row(
                         Modifier
                             .weight(1f)
                             .dropShadow(RectangleShape, Shadow(radius = 4.dp, color = HeadingShadow, offset = DpOffset(0.dp, 2.dp)))
-                            .background(TasColors.White)
+                            .background(TasColors.Surface)
                             .then(if (sideways) Modifier.horizontalScroll(hScroll) else Modifier),
                     ) {
                         columns.forEachIndexed { i, column ->
@@ -265,12 +266,12 @@ private fun DayColumn(
         modifier
             .then(closedKind?.let { Modifier.background(if (it == StoreClosedKind.Date) TasColors.ClosedDateBg else TasColors.ClosedWeekdayBg) } ?: Modifier)
             .semantics { if (closedKind != null && announceClosed) contentDescription = closedKind.label }
-            .drawBehind {
+            .drawBehindThemed { colors ->
                 // 정시선은 본문이 그린다(웹과 같이 카드 아래에 깔리게). 카드와 같은 오프셋.
                 var y = blockOffset.toPx()
                 val step = hourHeight.toPx()
                 while (y < size.height) {
-                    drawRect(TasColors.CalendarGridLine, topLeft = Offset(0f, y), size = Size(size.width, 1.dp.toPx()))
+                    drawRect(colors.CalendarGridLine, topLeft = Offset(0f, y), size = Size(size.width, 1.dp.toPx()))
                     y += step
                 }
             }
@@ -303,8 +304,9 @@ private fun DayColumn(
 }
 
 /** 웹 StyledWeek:after — 칸 오른쪽 1px 세로선(주의 마지막 칸은 없음). */
-private fun Modifier.rightLine() = drawBehind {
-    drawRect(TasColors.CalendarGridLine, topLeft = Offset(size.width - 1.dp.toPx(), 0f), size = Size(1.dp.toPx(), size.height))
+@Composable
+private fun Modifier.rightLine() = drawBehindThemed { colors ->
+    drawRect(colors.CalendarGridLine, topLeft = Offset(size.width - 1.dp.toPx(), 0f), size = Size(1.dp.toPx(), size.height))
 }
 
 /** 웹 `TimelineTitle` — 정시만 두 자리 숫자, 30분은 짧은 눈금. */
@@ -318,12 +320,12 @@ private fun TimeAxis(hours: IntRange, labelCount: Int, scale: TimelineScale, blo
         Modifier
             .width(TasSizes.TimelineCol)
             .fillMaxHeight()
-            .drawBehind {
-                drawRect(TasColors.CalendarGridLine, topLeft = Offset(size.width - 1.dp.toPx(), 0f), size = Size(1.dp.toPx(), size.height))
+            .drawBehindThemed { colors ->
+                drawRect(colors.CalendarGridLine, topLeft = Offset(size.width - 1.dp.toPx(), 0f), size = Size(1.dp.toPx(), size.height))
                 if (halfTick) {
                     for (i in 0 until labelCount) {
                         val y = (blockOffset + hourHeight * i + hourHeight / 2).toPx()
-                        drawRect(TasColors.DarkGray2.copy(alpha = 0.35f), topLeft = Offset(size.width - 6.dp.toPx(), y), size = Size(6.dp.toPx(), 1.dp.toPx()))
+                        drawRect(colors.DarkGray2.copy(alpha = 0.35f), topLeft = Offset(size.width - 6.dp.toPx(), y), size = Size(6.dp.toPx(), 1.dp.toPx()))
                     }
                 }
             },

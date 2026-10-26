@@ -95,6 +95,7 @@ import kr.co.takeaseat.app.ui.components.backgroundForWhiteText
 import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -144,7 +145,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
             }
             stickyHeader {
                 // 웹 검색(위로 붙어 있다) — 32 높이 칸
-                Box(Modifier.fillMaxWidth().background(TasColors.White).padding(horizontal = 20.dp, vertical = 4.dp)) {
+                Box(Modifier.fillMaxWidth().background(TasColors.Surface).padding(horizontal = 20.dp, vertical = 4.dp)) {
                     TasTextField(
                         label = "고객 검색",
                         value = query,
@@ -239,10 +240,10 @@ private fun CustomerRow(
         Modifier
             .padding(horizontal = 20.dp)
             .fillMaxWidth()
-            .drawBehind {
+            .drawBehindThemed { colors ->
                 // 웹: 접힘 1px 연회색, 펼침 2px 검정
                 val h = (if (open) 2 else 1).dp.toPx()
-                drawRect(if (open) TasColors.Black else TasColors.LightGray, topLeft = Offset(0f, size.height - h), size = Size(size.width, h))
+                drawRect(if (open) colors.Black else colors.LightGray, topLeft = Offset(0f, size.height - h), size = Size(size.width, h))
             },
     ) {
         Column(
@@ -283,9 +284,9 @@ private fun CustomerRow(
                         .size(10.dp)
                         .rotate(if (open) 90f else 0f)
                         .clearAndSetSemantics {}
-                        .drawBehind {
+                        .drawBehindThemed { colors ->
                             val p = Path().apply { moveTo(size.width * 0.25f, 0f); lineTo(size.width * 0.75f, size.height / 2); lineTo(size.width * 0.25f, size.height); close() }
-                            drawPath(p, TasColors.DarkGray)
+                            drawPath(p, colors.DarkGray)
                         },
                 )
             }
@@ -455,7 +456,7 @@ private fun MemoButton(text: String, onClick: () -> Unit, description: String = 
         Modifier
             .heightIn(min = 28.dp)
             .clip(shape)
-            .background(TasColors.White)
+            .background(TasColors.Surface)
             .border(1.dp, TasColors.LightGray, shape)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description }

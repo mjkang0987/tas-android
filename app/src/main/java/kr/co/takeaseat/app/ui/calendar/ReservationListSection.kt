@@ -44,11 +44,11 @@ import kr.co.takeaseat.app.domain.servicePriceTotal
 import kr.co.takeaseat.app.ui.components.hexColor
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 private val GroupTitleBorder = Color(148, 163, 184).copy(alpha = 0.18f) // 웹 StyledDateTitle 테두리
-private val GroupTitleInk = Color(0xFF111111)
 
 /**
  * 웹 `ReservationListSection` — 월·연 보기에서 고른 날·달의 예약 목록. 레이어가 아니라 격자 아래 자리다.
@@ -81,7 +81,7 @@ internal fun ReservationListSection(
     Column(
         modifier
             .fillMaxWidth()
-            .drawBehind { drawRect(TasColors.LightGray, size = Size(size.width, 1.dp.toPx())) } // 웹 border-top
+            .drawBehindThemed { colors -> drawRect(colors.LightGray, size = Size(size.width, 1.dp.toPx())) } // 웹 border-top
             .padding(top = 1.dp),
     ) {
         Row(
@@ -172,7 +172,7 @@ internal fun ReservationListSection(
 private fun GroupTitle(date: String, count: Int, first: Boolean) {
     // 위에 붙었을 때 둥근 모서리·위 여백 틈으로 지나가는 카드가 비치지 않게 흰 띠째로 붙는다.
     // 웹은 반투명 흰 + 흐림(backdrop-filter)인데 흐림이 없으니 가리는 쪽을 택한다.
-    Box(Modifier.fillMaxWidth().background(TasColors.White).padding(top = if (first) 6.dp else 4.dp)) { // 그룹 사이 8 = 간격 4 + 4
+    Box(Modifier.fillMaxWidth().background(TasColors.Surface).padding(top = if (first) 6.dp else 4.dp)) { // 그룹 사이 8 = 간격 4 + 4
         Box(
             Modifier
                 .fillMaxWidth()
@@ -183,7 +183,7 @@ private fun GroupTitle(date: String, count: Int, first: Boolean) {
                 .semantics(mergeDescendants = true) { heading() },
             contentAlignment = Alignment.CenterStart,
         ) {
-            Text("$date ($count)", color = GroupTitleInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold)
+            Text("$date ($count)", color = TasColors.CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold)
         }
     }
 }

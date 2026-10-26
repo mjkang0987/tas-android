@@ -69,6 +69,7 @@ import kr.co.takeaseat.app.ui.components.SystemDialogEffect
 import kr.co.takeaseat.app.ui.components.TasSelect
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
@@ -144,7 +145,7 @@ private fun StoreCard(title: String, actions: @Composable () -> Unit = {}, conte
             .fillMaxWidth()
             .dropShadow(shape, Shadow(radius = TasSizes.ShadowSmBlur, color = TasColors.ShadowSm, offset = DpOffset(0.dp, TasSizes.ShadowSmOffsetY)))
             .clip(shape)
-            .background(TasColors.White)
+            .background(TasColors.Surface)
             .border(1.dp, TasColors.LightGray, shape)
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -282,7 +283,7 @@ private fun ClosedWeekdaysCard(saved: List<Int>, onSave: (List<Int>) -> Unit) {
                         .weight(1f)
                         .heightIn(min = 30.dp)
                         .clip(shape)
-                        .background(if (on) TasColors.Brand else TasColors.White)
+                        .background(if (on) TasColors.BrandFill else TasColors.Surface)
                         .border(1.dp, if (on) TasColors.Brand else TasColors.LightGray, shape)
                         .toggleable(value = on, enabled = editing, role = Role.Checkbox) { checked ->
                             draft = if (checked) (draft + index).sorted() else draft - index
@@ -337,12 +338,12 @@ private fun ClosedDatesCard(saved: List<String>, onSave: (List<String>) -> Unit)
             Empty("등록된 데이터가 없습니다")
         } else {
             // 웹 StyledClosedDateList — 위아래 1px 옅은 선, 줄 10 0, 13 진회색
-            Column(Modifier.fillMaxWidth().drawBehind { drawRect(TasColors.Black10, size = Size(size.width, 1.dp.toPx())) }) {
+            Column(Modifier.fillMaxWidth().drawBehindThemed { colors -> drawRect(colors.Black10, size = Size(size.width, 1.dp.toPx())) }) {
                 dates.forEach { date ->
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .drawBehind { drawRect(TasColors.Black10, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
+                            .drawBehindThemed { colors -> drawRect(colors.Black10, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) }
                             .padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -363,7 +364,7 @@ private fun FeatureCard(usePointSystem: Boolean, onToggle: (Boolean) -> Unit) {
             Modifier.fillMaxWidth().toggleable(usePointSystem, role = Role.Checkbox, onValueChange = onToggle).padding(horizontal = 4.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Checkbox(checked = usePointSystem, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.Brand), modifier = Modifier.size(20.dp))
+            Checkbox(checked = usePointSystem, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill), modifier = Modifier.size(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("적립금 시스템 사용", color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Text("결제 시 적립·선불 충전(선불금) 기능. 켜면 설정 메뉴에 ‘적립금 관리’가 나타납니다.", color = TasColors.DarkGray2,

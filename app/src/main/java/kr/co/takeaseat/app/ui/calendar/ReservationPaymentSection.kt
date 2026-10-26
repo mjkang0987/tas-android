@@ -51,6 +51,7 @@ import kr.co.takeaseat.app.ui.components.TasSelect
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -146,10 +147,10 @@ internal fun ReservationPaymentSection(
             Modifier
                 .fillMaxWidth()
                 .height(30.dp)
-                .drawBehind {
+                .drawBehindThemed { colors ->
                     val r = 8.dp.toPx()
                     drawRoundRect(
-                        TasColors.LightGray,
+                        colors.LightGray,
                         cornerRadius = CornerRadius(r),
                         style = Stroke(width = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))),
                     )
@@ -168,7 +169,7 @@ internal fun ReservationPaymentSection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Checkbox(checked = form.pointAward.enabled, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.Brand), modifier = Modifier.size(20.dp))
+                    Checkbox(checked = form.pointAward.enabled, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill), modifier = Modifier.size(20.dp))
                     Text("적립 적용", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
                 }
                 // 웹: 끄면 금액 칸이 흐려진다(값은 남는다)

@@ -121,7 +121,7 @@ fun PointManageScreen(store: GuestStore, modifier: Modifier = Modifier) {
             item { PageHero("POINT", "고객 적립금·선불금(충전) 내역 조회, 수동 적립/차감, 적립·충전 정책을 설정합니다.", PaddingValues(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 18.dp)) }
             stickyHeader {
                 // 웹 StyledStickyHeader — 위에 붙고 아래 1px. 탭 · 전체 잔액
-                Column(Modifier.fillMaxWidth().background(TasColors.White)) {
+                Column(Modifier.fillMaxWidth().background(TasColors.Surface)) {
                     // 웹: 넓으면 한 줄(탭 · 잔액 오른쪽 끝), 640 이하면 잔액이 다음 줄 오른쪽 끝으로
                     BoxWithConstraints(Modifier.fillMaxWidth().padding(10.dp)) {
                         val tabs: @Composable () -> Unit = {
@@ -217,7 +217,7 @@ private fun TabChip(text: String, selected: Boolean, onClick: () -> Unit) {
             .heightIn(min = 30.dp)
             .widthIn(min = 72.dp)
             .clip(shape)
-            .background(if (selected) TasColors.InfoBg else TasColors.White)
+            .background(if (selected) TasColors.InfoBg else TasColors.Surface)
             .border(1.dp, if (selected) TasColors.Blue else TasColors.LightGray, shape)
             .selectable(selected, role = Role.Tab, onClick = onClick)
             .padding(horizontal = 12.dp),
@@ -242,7 +242,7 @@ private fun SurfaceCard(padding: PaddingValues, modifier: Modifier = Modifier, g
             .fillMaxWidth()
             .dropShadow(shape, Shadow(radius = TasSizes.ShadowSmBlur, color = TasColors.ShadowSm, offset = DpOffset(0.dp, TasSizes.ShadowSmOffsetY)))
             .clip(shape)
-            .background(TasColors.White)
+            .background(TasColors.Surface)
             .border(1.dp, TasColors.LightGray, shape)
             .padding(padding),
         verticalArrangement = Arrangement.spacedBy(gap.dp),
@@ -402,7 +402,7 @@ private fun PolicyOption(checked: Boolean, enabled: Boolean, title: String, desc
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(Modifier.fillMaxWidth().toggleable(checked, enabled = enabled, role = Role.Checkbox, onValueChange = onCheck), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Checkbox(checked = checked, onCheckedChange = null, enabled = enabled, colors = CheckboxDefaults.colors(checkedColor = TasColors.Brand), modifier = Modifier.size(20.dp))
+            Checkbox(checked = checked, onCheckedChange = null, enabled = enabled, colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill), modifier = Modifier.size(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(title, color = TasColors.Black, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold)
                 Text(desc, color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont, lineHeight = TasSizes.SmallFont * 1.45f)

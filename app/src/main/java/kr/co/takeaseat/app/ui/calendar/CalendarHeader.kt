@@ -103,7 +103,7 @@ fun CalendarHeader(
             ) {
                 Text(
                     calendarHeading(date, view),
-                    color = Color.Black,
+                    color = TasColors.Black,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     // 해가 걸친 주("2025 / 12 - 2026 / 1")는 16sp 로 안 들어간다 — 잘리지 않게 그때만 줄인다(웹은 두 줄로 접힌다).
@@ -143,7 +143,7 @@ fun CalendarViewTabs(selected: CalendarView, onSelect: (CalendarView) -> Unit, m
                         else Modifier,
                     )
                     .clip(TasShapes.Chip)
-                    .background(if (active) TasColors.White else Color.Transparent)
+                    .background(if (active) TasColors.Surface else Color.Transparent)
                     .selectable(selected = active, role = Role.Tab) { onSelect(view) }
                     .padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center,
@@ -180,7 +180,7 @@ private fun PillButton(
             .widthIn(min = 32.dp)
             .dropShadow(TasShapes.Chip, Shadow(radius = TasSizes.ShadowSmBlur, color = TasColors.ShadowSm, offset = DpOffset(0.dp, TasSizes.ShadowSmOffsetY)))
             .clip(TasShapes.Chip)
-            .background(if (pressed) TasColors.Gray2 else TasColors.White)
+            .background(if (pressed) TasColors.Gray2 else TasColors.Surface)
             .border(1.dp, TasColors.Border, TasShapes.Chip)
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)

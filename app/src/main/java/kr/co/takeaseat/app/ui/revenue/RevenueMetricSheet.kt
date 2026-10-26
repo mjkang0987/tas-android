@@ -94,7 +94,7 @@ private fun MetricCustomerCard(item: MetricCustomer, isNew: Boolean, onClick: ()
             .fillMaxWidth()
             .dropShadow(shape, Shadow(radius = 18.dp, color = Color(15, 23, 42).copy(alpha = 0.05f), offset = DpOffset(0.dp, 8.dp)))
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.96f), Color(248, 250, 252).copy(alpha = 0.96f))))
+            .background(Brush.verticalGradient(listOf(TasColors.Surface.copy(alpha = 0.96f), TasColors.BgSubtle98)))
             .border(1.dp, CardBorder, shape)
             .clickable(role = Role.Button, onClickLabel = "고객 정보 보기", onClick = onClick)
             .padding(8.dp),
@@ -104,7 +104,7 @@ private fun MetricCustomerCard(item: MetricCustomer, isNew: Boolean, onClick: ()
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (isNew) NewCustomerBadge()
-                Text(c.name, color = Ink, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold, lineHeight = (13 * 1.35).sp, modifier = Modifier.weight(1f, fill = false))
+                Text(c.name, color = TasColors.CardInk, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold, lineHeight = (13 * 1.35).sp, modifier = Modifier.weight(1f, fill = false))
                 if (!isNew && item.prevVisitDate != null) {
                     Text(
                         formatVisitGap(item.visitDate, item.prevVisitDate),
@@ -144,5 +144,4 @@ private fun InfoItem(label: String, value: @Composable () -> Unit) {
     }
 }
 
-private val Ink = Color(0xFF0F172A)                              // 웹 #0f172a
 private val CardBorder = Color(148, 163, 184).copy(alpha = 0.18f)

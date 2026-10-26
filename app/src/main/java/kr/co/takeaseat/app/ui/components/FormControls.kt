@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -74,15 +75,16 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
  * 웹 formControlStyle — 흰 바탕, 1px #e3e3e3, 6 둥글게(36 높이), 아주 옅은 그림자. 초점이면 테두리 보라 + 바깥 3px 옅은 보라 링.
  * [compact] = 결제 줄 칸(웹 paymentEntryFieldStyles — 30 높이, 4 둥글게).
  */
+@Composable
 private fun Modifier.formControl(focused: Boolean, compact: Boolean = false): Modifier {
     val shape = if (compact) TasShapes.RadiusSm else TasShapes.RadiusMd
     val radius = if (compact) 4.dp else 6.dp
     return this
-        .drawBehind {
+        .drawBehindThemed { colors ->
             if (focused) {
                 val ring = 3.dp.toPx()
                 drawRoundRect(
-                    TasColors.FocusRing,
+                    colors.FocusRing,
                     topLeft = Offset(-ring, -ring),
                     size = Size(size.width + ring * 2, size.height + ring * 2),
                     cornerRadius = CornerRadius(radius.toPx() + ring),
@@ -91,7 +93,7 @@ private fun Modifier.formControl(focused: Boolean, compact: Boolean = false): Mo
         }
         .dropShadow(shape, Shadow(radius = 2.dp, color = TasColors.Scrim.copy(alpha = 0.04f), offset = DpOffset(0.dp, 1.dp)))
         .clip(shape)
-        .background(TasColors.White)
+        .background(TasColors.Surface)
         .border(1.dp, if (focused) TasColors.Brand else TasColors.LightGray, shape)
         // 최소 높이 — 큰 글자(시스템 글꼴 크기)에선 글자에 맞춰 늘어난다(고정이면 글자가 잘렸다)
         .heightIn(min = if (compact) 30.dp else 36.dp)
@@ -334,11 +336,11 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
             .clip(shape)
             .background(
                 when (tone) {
-                    ActionTone.Primary -> TasColors.Brand
-                    ActionTone.Danger -> TasColors.Danger
-                    ActionTone.Blue -> TasColors.Blue
+                    ActionTone.Primary -> TasColors.BrandFill
+                    ActionTone.Danger -> TasColors.DangerFill
+                    ActionTone.Blue -> TasColors.BlueFill
                     ActionTone.DangerSoft -> TasColors.DangerBg
-                    else -> TasColors.White
+                    else -> TasColors.Surface
                 },
             )
             .then(

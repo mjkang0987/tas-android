@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,11 +32,13 @@ import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 // 웹 HISTORY_ITEM_STYLES — 종류별 카드 바탕·테두리(변경은 옅은 회색, 테두리 없음)
+@Composable
+@ReadOnlyComposable
 private fun cardColors(kind: HistoryKind): Pair<Color, Color> = when (kind) {
-    HistoryKind.Cancelled -> Color(241, 245, 249).copy(alpha = 0.92f) to Color(203, 213, 225).copy(alpha = 0.95f)
+    HistoryKind.Cancelled -> TasColors.NeutralBg to TasColors.NeutralBorder
     HistoryKind.Noshow -> TasColors.DangerBg to TasColors.DangerBorder
-    HistoryKind.Completed -> Color(0xFFE6F4EA) to Color(0xFFCDEAD6)
-    HistoryKind.Restored -> Color(0xFFEFF6FF) to Color(0xFFBFDBFE)
+    HistoryKind.Completed -> TasColors.SuccessBg to TasColors.SuccessBorder // 밝은 화면 #E6F4EA·#CDEAD6 에 가까운 --success-*
+    HistoryKind.Restored -> TasColors.InfoBg to TasColors.InfoBorder
     HistoryKind.Edit -> TasColors.Black10 to Color.Transparent
 }
 

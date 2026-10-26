@@ -98,7 +98,7 @@ private fun SettingsMenu(storeName: String?, serviceLabel: String, assigneeLabel
     ) {
         // 웹 StyledHeaderCard — 매장명(11 굵게 회색) · 게스트(18 굵게)
         Column(
-            Modifier.fillMaxWidth().clip(GroupShape).background(TasColors.White).border(1.dp, TasColors.LightGray, GroupShape).padding(horizontal = 16.dp, vertical = 14.dp),
+            Modifier.fillMaxWidth().clip(GroupShape).background(TasColors.Surface).border(1.dp, TasColors.LightGray, GroupShape).padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             if (!storeName.isNullOrBlank()) Text(storeName, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.SemiBold)
@@ -175,7 +175,7 @@ private fun MenuDivider() {
 /** 웹 StyledGroup — 1px 옅은 회색 테두리, 8 둥글게, 줄 사이 1px. */
 @Composable
 private fun MenuGroup(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(GroupShape).background(TasColors.White).border(1.dp, TasColors.LightGray, GroupShape)) { content() }
+    Column(Modifier.fillMaxWidth().clip(GroupShape).background(TasColors.Surface).border(1.dp, TasColors.LightGray, GroupShape)) { content() }
 }
 
 /** 웹 StyledRow — 52 높이, 좌우 14, 아이콘 상자 30(브랜드 옅은 배경) · 이름 14 굵게 · › . */

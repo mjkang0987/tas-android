@@ -49,6 +49,7 @@ import kr.co.takeaseat.app.ui.components.LabelBadge
 import kr.co.takeaseat.app.ui.components.LabelTone
 import kr.co.takeaseat.app.ui.components.lineBox
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -74,7 +75,7 @@ fun ReservationCard(
     val noshow = status == ReservationStatus.NOSHOW
     // 좁은 칸(3일·주)은 카드가 높아도 넣을 가로 폭이 없다 — 이름만, 신규 배지도 뺀다(웹 forcedDetail 'name').
     val detail = if (nameOnly) CardDetail.Name else cardDetailForHeight(height.value)
-    val textColor = if (cancelled) TasColors.DarkGray2 else Color.Black
+    val textColor = if (cancelled) TasColors.DarkGray2 else TasColors.Black
     val decoration = if (cancelled) TextDecoration.LineThrough else TextDecoration.None
     val borderColor = if (cancelled) TasColors.Gray else color
 
@@ -151,7 +152,7 @@ fun ReservationCard(
         }
         if (status == ReservationStatus.REQUESTED) {
             // 아직 수락 전인 신청 — 있지만 정해지지 않았다
-            Box(Modifier.matchParentSize().background(Color.White.copy(alpha = 0.72f)))
+            Box(Modifier.matchParentSize().background(TasColors.Surface.copy(alpha = 0.72f)))
             if (height >= 34.dp) LabelBadge("확정대기", LabelTone.Warning, Modifier.align(Alignment.Center), pill = true)
         }
     }
@@ -184,8 +185,11 @@ private fun Modifier.cardBorder(color: Color) = drawBehind {
  * 웹 `inactiveHatch` — repeating-linear-gradient(-45deg, 줄 0 6px, 투명 6px 12px).
  * 취소는 무채색, 노쇼는 붉은 기운(매출이 빈 자리라 눈에 걸려야 한다).
  */
-internal fun Modifier.inactiveHatch(noshow: Boolean) = drawBehind {
-    val stripe = if (noshow) Color(201, 58, 48).copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.05f)
+@Composable
+internal fun Modifier.inactiveHatch(noshow: Boolean) = drawBehindThemed { colors ->
+    // 어두운 화면에선 검정 빗금이 안 보여 흰 빗금으로(웹 inactiveHatch 와 같은 세기)
+    val stripe = if (noshow) Color(201, 58, 48).copy(alpha = if (colors.isDark) 0.3f else 0.18f)
+        else (if (colors.isDark) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.05f))
     val step = 12.dp.toPx() / sqrt(2f)
     drawRect(
         Brush.linearGradient(

@@ -35,7 +35,7 @@ fun AddPill(text: String, description: String, onClick: () -> Unit, modifier: Mo
             .height(32.dp)
             .dropShadow(TasShapes.Chip, Shadow(radius = 12.dp, color = TasColors.BrandShadow, offset = DpOffset(0.dp, 4.dp)))
             .clip(TasShapes.Chip)
-            .background(TasColors.Brand)
+            .background(TasColors.BrandFill)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description }
             .padding(start = 9.dp, end = 13.dp),

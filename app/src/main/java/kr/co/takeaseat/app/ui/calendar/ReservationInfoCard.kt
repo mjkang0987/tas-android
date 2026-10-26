@@ -44,7 +44,6 @@ import kr.co.takeaseat.app.ui.components.StatusBadge
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
-private val CardInk = Color(0xFF0F172A) // 웹 카드 시간·가격 #0f172a
 private val CardShape = RoundedCornerShape(8.dp)
 
 /** 웹 getReservationState — 카드 오른쪽 상태 배지. */
@@ -87,7 +86,7 @@ internal fun ReservationInfoCard(
             .clip(CardShape)
             .then(
                 if (inactive) Modifier.background(TasColors.Gray2).inactiveHatch(reservation.status == ReservationStatus.NOSHOW)
-                else Modifier.background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.96f), assigneeColor.copy(alpha = 0x12 / 255f)))),
+                else Modifier.background(Brush.verticalGradient(listOf(TasColors.Surface.copy(alpha = 0.96f), assigneeColor.copy(alpha = 0x12 / 255f)))),
             )
             .drawBehind {
                 val thin = 1.dp.toPx()
@@ -109,8 +108,8 @@ internal fun ReservationInfoCard(
     ) {
         Column {
             if (showDate && dateFirst) Text(reservation.date, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont)
-            Text(reservation.startTime, color = CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, lineHeight = (12 * 1.25).sp)
-            Text(reservation.endTime, color = CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, lineHeight = (12 * 1.25).sp)
+            Text(reservation.startTime, color = TasColors.CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, lineHeight = (12 * 1.25).sp)
+            Text(reservation.endTime, color = TasColors.CardInk, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.Bold, lineHeight = (12 * 1.25).sp)
             if (showDate && !dateFirst) Text(reservation.date, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -120,7 +119,7 @@ internal fun ReservationInfoCard(
                     if (isNewCustomer) NewCustomerBadge()
                     Text(
                         customerName,
-                        color = if (inactive) TasColors.DarkGray2 else CardInk,
+                        color = if (inactive) TasColors.DarkGray2 else TasColors.CardInk,
                         fontSize = TasSizes.SmallFont,
                         fontWeight = FontWeight.Bold,
                         textDecoration = if (inactive) TextDecoration.LineThrough else null,
@@ -136,7 +135,7 @@ internal fun ReservationInfoCard(
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             StatusBadge(stateType, stateLabel)
-            Text(formatPrice(displayPrice), color = CardInk, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold)
+            Text(formatPrice(displayPrice), color = TasColors.CardInk, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.Bold)
         }
     }
 }
