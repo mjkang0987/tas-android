@@ -17,16 +17,44 @@ class TextColorContrastTest {
         return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
     }
 
+    private fun textTokens(p: TasPalette) = mapOf(
+        "Blue" to p.Blue, "Warning" to p.Warning, "Danger" to p.Danger, "Info" to p.Info, "Caution" to p.Caution,
+        "DarkGray2" to p.DarkGray2, "Link" to p.Link, "Brand" to p.Brand, "Black" to p.Black, "DarkGray" to p.DarkGray,
+        "Success" to p.Success, "SuccessText" to p.SuccessText, "WarningText" to p.WarningText, "NeutralText" to p.NeutralText,
+        "NewCustomer" to p.NewCustomer, "CardInk" to p.CardInk,
+    )
+
     @Test fun `글자색 토큰이 4_5 대 1 이상`() {
+        val p = LightPalette
         val tokens = mapOf(
-            "Blue" to TasColors.Blue, "Warning" to TasColors.Warning, "Danger" to TasColors.Danger,
-            "Info" to TasColors.Info, "Caution" to TasColors.Caution, "DarkGray2" to TasColors.DarkGray2, "Link" to TasColors.Link,
+            "Blue" to p.Blue, "Warning" to p.Warning, "Danger" to p.Danger,
+            "Info" to p.Info, "Caution" to p.Caution, "DarkGray2" to p.DarkGray2, "Link" to p.Link,
         )
         for ((name, color) in tokens) {
             for (bg in listOf(Color.White, Color(0xFFF7F7F7))) {
                 val r = ratio(color, bg)
                 assertTrue("$name 대비 $r", r >= 4.5)
             }
+        }
+    }
+
+    // 어두운 화면 — 카드 바탕(Surface #1C1C1E)·옅은 회색(Gray2 #2C2C2E) 위 4.5:1 이상. 웹 '어두운 화면 글자색 토큰 대비' 와 같은 기준.
+    @Test fun `어두운 화면 글자색 토큰이 4_5 대 1 이상`() {
+        for ((name, color) in textTokens(DarkPalette)) {
+            for (bg in listOf(DarkPalette.Surface, DarkPalette.Gray2)) {
+                val r = ratio(color, bg)
+                assertTrue("어두운 $name 대비 $r", r >= 4.5)
+            }
+        }
+    }
+
+    // 흰 글자를 얹는 채움은 모드와 상관없이 4.5:1 이상
+    @Test fun `채움 위 흰 글자 4_5 대 1 이상`() {
+        for (p in listOf(LightPalette, DarkPalette)) {
+            for (fill in listOf(p.BrandFill, p.BlueFill, p.DangerFill, p.NaverFill)) {
+                assertTrue("채움 $fill", ratio(p.White, fill) >= 4.5)
+            }
+            assertTrue("뒤집은 칩", ratio(p.InverseText, p.InverseBg) >= 4.5)
         }
     }
 

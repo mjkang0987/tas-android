@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +26,8 @@ import kr.co.takeaseat.app.domain.parseServiceString
 import kr.co.takeaseat.app.domain.serviceColor
 import kr.co.takeaseat.app.domain.statusBadgeColors
 import kr.co.takeaseat.app.ui.theme.TasColors
+import kr.co.takeaseat.app.ui.theme.tintFill
+import kr.co.takeaseat.app.ui.theme.tintText
 import kr.co.takeaseat.app.ui.theme.TasShapes
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
@@ -47,13 +50,44 @@ fun NewCustomerBadge(modifier: Modifier = Modifier) {
     )
 }
 
-enum class LabelTone(val text: Color, val bg: Color, val border: Color) {
-    Warning(TasColors.WarningText, TasColors.WarningBgSoft, TasColors.WarningBorderSoft),
-    Info(TasColors.Info, TasColors.InfoBg, TasColors.InfoBorder),
-    Brand(TasColors.White, Color(0xFF208200), Color(0xFF1A6B00)), // --naver-color / --naver-color-dark (흰 글자 대비 4.5 이상)
-    Neutral(Color(0xFF475569), Color(241, 245, 249).copy(alpha = 0.92f), Color(203, 213, 225).copy(alpha = 0.95f)), // --neutral-* (7.0)
-    Danger(TasColors.Danger, TasColors.DangerBg, TasColors.DangerBorder), // --danger-* (4.65)
-    Success(Color(0xFF15803D), Color(34, 197, 94).copy(alpha = 0.12f), Color(34, 197, 94).copy(alpha = 0.2f)), // --success-* (4.52)
+enum class LabelTone {
+    Warning, Info,
+    Brand, // --naver-color / --naver-color-dark (흰 글자 대비 4.5 이상)
+    Neutral, // --neutral-* (7.0)
+    Danger, // --danger-* (4.65)
+    Success, // --success-* (4.52)
+    ;
+
+    // 색은 테마(밝은/어두운)를 따라야 해서 enum 값이 아니라 그 자리에서 읽는다
+    val text: Color
+        @Composable @ReadOnlyComposable get() = when (this) {
+            Warning -> TasColors.WarningText
+            Info -> TasColors.Info
+            Brand -> TasColors.White
+            Neutral -> TasColors.NeutralText
+            Danger -> TasColors.Danger
+            Success -> TasColors.SuccessText
+        }
+
+    val bg: Color
+        @Composable @ReadOnlyComposable get() = when (this) {
+            Warning -> TasColors.WarningBgSoft
+            Info -> TasColors.InfoBg
+            Brand -> TasColors.NaverFill
+            Neutral -> TasColors.NeutralBg
+            Danger -> TasColors.DangerBg
+            Success -> TasColors.SuccessBg
+        }
+
+    val border: Color
+        @Composable @ReadOnlyComposable get() = when (this) {
+            Warning -> TasColors.WarningBorderSoft
+            Info -> TasColors.InfoBorder
+            Brand -> TasColors.NaverBorder
+            Neutral -> TasColors.NeutralBorder
+            Danger -> TasColors.DangerBorder
+            Success -> TasColors.SuccessBorder
+        }
 }
 
 /**
@@ -102,7 +136,7 @@ fun ServiceChipList(
             val color = hexColor(serviceColor(name, serviceColorMap))
             Text(
                 text = name,
-                color = if (muted) TasColors.DarkGray2 else color,
+                color = if (muted) TasColors.DarkGray2 else TasColors.tintText(color),
                 fontSize = TasSizes.XSmallFont,
                 lineHeight = TasSizes.XSmallFont,
                 fontWeight = FontWeight.SemiBold,
@@ -110,7 +144,7 @@ fun ServiceChipList(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .background(color.copy(alpha = 0x18 / 255f), TasShapes.Chip)
+                    .background(TasColors.tintFill(color), TasShapes.Chip)
                     .padding(horizontal = 7.dp, vertical = 3.dp)
                     .lineBox(13.2.sp, TasSizes.XSmallFont), // 웹 칩 19.2 = 11 × 1.2 + 3·2
             )
@@ -132,7 +166,7 @@ fun hexColor(hex: String): Color {
 /** 웹 `ReservationStatusBadge` — 결제완료·미결제·취소·노쇼·완료·확정대기. 색은 RESERVATION_STATUS_BADGE_STYLES. */
 @Composable
 fun StatusBadge(type: String, text: String, modifier: Modifier = Modifier) {
-    val colors = statusBadgeColors(type)
+    val colors = statusBadgeColors(type, dark = TasColors.isDark)
     Text(
         text = text,
         color = hexColor(colors.color),

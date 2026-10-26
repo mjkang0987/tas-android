@@ -35,7 +35,20 @@ val RESERVATION_STATUS_BADGE_STYLES: Map<String, BadgeColors> = mapOf(
     "requested" to BadgeColors("#FEF7E0", "#806600"),
 )
 
-fun statusBadgeColors(type: String): BadgeColors = RESERVATION_STATUS_BADGE_STYLES[type] ?: BadgeColors("#F1F1F1", "#999999")
+/** 어두운 화면 배지 — 웹 RESERVATION_STATUS_BADGE_STYLES_DARK·iOS BadgeTone.dark* 와 같은 값. 글자 7:1 이상, 바탕이 카드(#1C1C1E)와 구분. */
+val RESERVATION_STATUS_BADGE_STYLES_DARK: Map<String, BadgeColors> = mapOf(
+    "booked" to BadgeColors("#1F3A63", "#C2D7FB"),
+    "cancelled" to BadgeColors("#3A3A3C", "#D1D1D6"),
+    "completed" to BadgeColors("#1D4A2C", "#BDE5C8"),
+    "noshow" to BadgeColors("#5C221E", "#FFB4AB"),
+    "paid" to BadgeColors("#3B2A6B", "#D0BCFF"),
+    "unpaid" to BadgeColors("#574209", "#FDE68A"),
+    "requested" to BadgeColors("#4D3F0B", "#F6D860"),
+)
+
+fun statusBadgeColors(type: String, dark: Boolean = false): BadgeColors =
+    if (dark) RESERVATION_STATUS_BADGE_STYLES_DARK[type] ?: BadgeColors("#3A3A3C", "#D1D1D6")
+    else RESERVATION_STATUS_BADGE_STYLES[type] ?: BadgeColors("#F1F1F1", "#999999")
 
 /** 웹 pointRefundOnCancel — 취소·삭제 때 고객 적립금에 더할 값(결제에 쓴 적립금 반환 − 그 결제로 준 적립 회수). 이미 취소면 0. */
 fun pointRefundOnCancel(reservation: Reservation): Int {

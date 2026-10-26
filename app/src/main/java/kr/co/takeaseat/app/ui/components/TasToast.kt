@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.key
@@ -125,10 +126,10 @@ private fun ToastRow(toast: ToastItem, maxWidth: androidx.compose.ui.unit.Dp, on
 
 // 웹 typeStyles 색 · TOAST_ICON_PATHS(동그라미 + 표시, 선 2)
 private val ToastType.bg: Color
-    get() = when (this) {
+    @Composable @ReadOnlyComposable get() = when (this) {
         ToastType.Success -> Color(0xFF1A7F3C)
-        ToastType.Error -> TasColors.Danger
-        ToastType.Info -> Color(0xFF1E293B)
+        ToastType.Error -> TasColors.DangerFill // 흰 글자를 얹는 채움
+        ToastType.Info -> TasColors.Toast
     }
 
 private val ToastType.icon
