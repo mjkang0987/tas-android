@@ -1,5 +1,7 @@
 package kr.co.takeaseat.app.ui.calendar
 
+import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
+import kr.co.takeaseat.app.ui.nav.AsideToggleButton
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,6 +81,8 @@ fun CalendarHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        val aside = LocalAsideToggle.current
+        aside?.let { AsideToggleButton(it.open, it.toggle) }
         PillButton(onClick = { onDateChange(LocalDate.now()) }, contentPadding = PaddingValues(horizontal = 12.dp)) {
             Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1, modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont))
         }
@@ -113,7 +117,8 @@ fun CalendarHeader(
                 Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
             }
         }
-        AddPill("예약", description = "예약 추가", onClick = onCreate)
+        // 넓은 화면은 왼쪽 메뉴의 '예약추가'를 쓴다(웹 StyledMobileAddPill 은 641px 이상 숨김)
+        if (aside == null) AddPill("예약", description = "예약 추가", onClick = onCreate)
     }
 }
 

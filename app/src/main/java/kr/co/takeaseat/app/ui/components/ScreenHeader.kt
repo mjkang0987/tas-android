@@ -1,5 +1,7 @@
 package kr.co.takeaseat.app.ui.components
 
+import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
+import kr.co.takeaseat.app.ui.nav.AsideToggleButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +39,8 @@ fun ScreenHeader(title: String, actions: @Composable RowScope.() -> Unit = {}) {
             .padding(horizontal = 10.dp),
     ) {
         Row(Modifier.fillMaxWidth().align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
+            // 넓은 화면 — 웹 헤더처럼 맨 왼쪽에 메뉴 펼치기
+            LocalAsideToggle.current?.let { AsideToggleButton(it.open, it.toggle) }
             Text(title, color = TasColors.DarkGray, fontSize = 18.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f).semantics { heading() })
             actions()

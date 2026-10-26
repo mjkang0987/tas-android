@@ -1,5 +1,6 @@
 package kr.co.takeaseat.app.ui.calendar
 
+import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -35,7 +36,15 @@ import kr.co.takeaseat.app.ui.rememberDetailStack
 
 /** 캘린더 탭 — 일·3일·주·월·년 보기(웹 `/day|three|week/yyyy/mm/dd`, `/month/yyyy/mm`, `/year/yyyy`). */
 @Composable
-fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier, openReservationId: Int? = null, onReservationOpened: () -> Unit = {}) {
+fun CalendarScreen(
+    store: GuestStore,
+    modifier: Modifier = Modifier,
+    openReservationId: Int? = null,
+    onReservationOpened: () -> Unit = {},
+    command: CalendarCommand? = null,
+    onCommandHandled: () -> Unit = {},
+    onViewShown: (CalendarView) -> Unit = {},
+) {
     val snapshot by store.snapshot.collectAsState()
     var dateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
     var view by rememberSaveable { mutableStateOf(CalendarView.Day) }
@@ -98,20 +107,32 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier, openReserva
     }
     // 예약 추가 창 — null 이면 닫힘, "" 이면 헤더 ＋예약(오늘·지금), 날짜면 월 목록 ＋(그날 10:00).
     var creating by rememberSaveable { mutableStateOf<String?>(null) }
+    // 웹 MobileViewTabs·Aside — 일·3일·월·년은 오늘로, 주는 오늘이 든 주(그 주 일요일)로. 월·년은 아래 목록도 오늘(이번 달).
+    fun selectView(it: CalendarView) {
+        view = it
+        val now = LocalDate.now()
+        dateKey = (if (it == CalendarView.Week) weekStart(now) else now).toDateKey()
+        listDateKey = now.toDateKey()
+        listMonth = now.monthValue
+    }
+    // 넓은 화면 왼쪽 메뉴에서 온 요청(보기 바꾸기·예약추가) — 알림 예약 열기와 같은 방식
+    LaunchedEffect(command) {
+        when (command) {
+            is CalendarCommand.SelectView -> selectView(command.view)
+            CalendarCommand.Create -> creating = ""
+            null -> return@LaunchedEffect
+        }
+        onCommandHandled()
+    }
+    LaunchedEffect(view) { onViewShown(view) }
 
     Column(modifier.fillMaxSize()) {
         CalendarHeader(view = view, date = date, onDateChange = {
             dateKey = it.toDateKey()
             listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
         }, onCreate = { creating = "" })
-        // 웹 MobileViewTabs — 일·3일·월·년은 오늘로, 주는 오늘이 든 주(그 주 일요일)로. 월·년은 아래 목록도 오늘(이번 달).
-        CalendarViewTabs(selected = view, onSelect = {
-            view = it
-            val now = LocalDate.now()
-            dateKey = (if (it == CalendarView.Week) weekStart(now) else now).toDateKey()
-            listDateKey = now.toDateKey()
-            listMonth = now.monthValue
-        })
+        // 넓은 화면은 왼쪽 메뉴가 보기를 고른다(웹 MobileViewTabs 는 640px 이하만)
+        if (LocalAsideToggle.current == null) CalendarViewTabs(selected = view, onSelect = ::selectView)
         if (view == CalendarView.Year) {
             YearView(
                 year = date.year,
@@ -181,3 +202,8 @@ fun CalendarScreen(store: GuestStore, modifier: Modifier = Modifier, openReserva
     }
 }
 
+/** 넓은 화면 왼쪽 메뉴가 캘린더에 보내는 요청. */
+sealed interface CalendarCommand {
+    data class SelectView(val view: CalendarView) : CalendarCommand
+    data object Create : CalendarCommand
+}

@@ -1,5 +1,6 @@
 package kr.co.takeaseat.app.ui.customers
 
+import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
 import kr.co.takeaseat.app.ui.DetailSheets
 import kr.co.takeaseat.app.ui.rememberDetailStack
 import android.content.Intent
@@ -108,11 +109,13 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
+fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier, addRequested: Boolean = false, onAddHandled: () -> Unit = {}) {
     val snapshot by store.snapshot.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var openIds by rememberSaveable { mutableStateOf(listOf<Int>()) }
     var adding by rememberSaveable { mutableStateOf(false) }
+    // 넓은 화면 왼쪽 메뉴의 '고객추가'
+    LaunchedEffect(addRequested) { if (addRequested) { adding = true; onAddHandled() } }
     // 열린 상세 창(고객 → 예약 → …) — 연 순서대로 쌓는다
     val details = rememberDetailStack()
     // 웹 address.tsx — 메모 태그는 한 번에 한 고객만 편집, 입력·고른 색은 화면에 하나
@@ -137,7 +140,8 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize()) {
         ScreenHeader("고객 명단") {
             // 캘린더의 '+ 예약' 자리 — 고객 화면에선 '+ 고객'(지시자 2026-10-20 — 웹 모바일도 같게 넣음, tas v0.64.7 #299)
-            AddPill("고객", description = "고객 추가", onClick = { adding = true })
+            // 넓은 화면은 왼쪽 메뉴의 '고객추가'를 쓴다(웹 Header: 데스크톱은 aside 의 고객추가)
+            if (LocalAsideToggle.current == null) AddPill("고객", description = "고객 추가", onClick = { adding = true })
         }
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             item {

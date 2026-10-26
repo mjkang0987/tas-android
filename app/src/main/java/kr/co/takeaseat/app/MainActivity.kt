@@ -45,6 +45,24 @@ import kr.co.takeaseat.app.ui.revenue.RevenueScreen
 import kr.co.takeaseat.app.ui.settings.SettingsScreen
 import kr.co.takeaseat.app.ui.nav.MobileTabBar
 import kr.co.takeaseat.app.ui.nav.TasTab
+import kr.co.takeaseat.app.ui.settings.SettingsPage
+import kr.co.takeaseat.app.ui.nav.WIDE_MIN
+import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
+import kr.co.takeaseat.app.ui.nav.AsideToggle
+import kr.co.takeaseat.app.ui.nav.AsidePrefs
+import kr.co.takeaseat.app.ui.nav.AsideMenu
+import kr.co.takeaseat.app.ui.nav.AsideDestination
+import kr.co.takeaseat.app.ui.calendar.CalendarCommand
+import kr.co.takeaseat.app.domain.storeLabels
+import kr.co.takeaseat.app.domain.CalendarView
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.BoxWithConstraints
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasTheme
 
@@ -94,28 +112,92 @@ private fun TasApp(store: GuestStore, openReservationId: Int?, onReservationOpen
     var settingsPage by rememberSaveable { mutableStateOf<String?>(null) }
     // 웹 ToastContainer — 어느 화면에서든 LocalToast.current.show(…)
     val toast = remember { ToastState() }
+    // 넓은 화면 왼쪽 메뉴가 화면에 보내는 요청(보기 바꾸기·예약추가·고객추가)
+    var calendarCommand by remember { mutableStateOf<CalendarCommand?>(null) }
+    var calendarView by rememberSaveable { mutableStateOf(CalendarView.Day) }
+    var customerAdd by remember { mutableStateOf(false) }
+    // 웹 aside-visible(localStorage) — 다시 켜도 열려 있던 그대로
+    var asideOpen by rememberSaveable { mutableStateOf(AsidePrefs.open(context)) }
     CompositionLocalProvider(LocalToast provides toast) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .background(TasColors.Surface)
-                .statusBarsPadding()
-                // 키보드가 뜨면 화면을 키보드 위까지로 줄인다(웹 모바일처럼 탭바는 키보드 위에) — 아래쪽 입력칸(고객 메모 태그 등)이 가리지 않게.
-                // 내비게이션 바 몫은 탭바가 이미 띄우므로 뺀다. 시트는 따로 창이라 각자 키보드를 피한다.
-                .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars)),
-        ) {
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+        // 웹 641px 이상(펼친 폴드·태블릿) = 아래 탭바 대신 왼쪽 메뉴(웹 Aside). 640 이하 = 지금 그대로.
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val wide = maxWidth > WIDE_MIN
+            val screen: @Composable () -> Unit = {
                 when (tab) {
-                    TasTab.Calendar -> CalendarScreen(store, openReservationId = openReservationId, onReservationOpened = onReservationOpened)
-                    TasTab.Customers -> CustomersScreen(store)
+                    TasTab.Calendar -> CalendarScreen(
+                        store, openReservationId = openReservationId, onReservationOpened = onReservationOpened,
+                        command = calendarCommand, onCommandHandled = { calendarCommand = null }, onViewShown = { calendarView = it },
+                    )
+                    TasTab.Customers -> CustomersScreen(store, addRequested = customerAdd, onAddHandled = { customerAdd = false })
                     TasTab.Revenue -> RevenueScreen(store)
                     TasTab.Settings -> SettingsScreen(store, settingsPage, onPage = { settingsPage = it })
                 }
             }
-            MobileTabBar(selected = tab, onSelect = {
-                if (it == TasTab.Settings) settingsPage = null
-                tab = it
-            })
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    // 상태 표시줄 자리는 늘 바탕색 — 어두운 메뉴 위면 밝은 화면의 어두운 시계·배터리 아이콘이 안 보인다
+                    .background(TasColors.Surface)
+                    .statusBarsPadding()
+                    // 키보드가 뜨면 화면을 키보드 위까지로 줄인다(웹 모바일처럼 탭바는 키보드 위에) — 아래쪽 입력칸(고객 메모 태그 등)이 가리지 않게.
+                    // 내비게이션 바 몫은 탭바가 이미 띄우므로 뺀다. 시트는 따로 창이라 각자 키보드를 피한다.
+                    .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars)),
+            ) {
+                if (!wide) {
+                    Box(Modifier.weight(1f).fillMaxWidth()) { screen() }
+                    MobileTabBar(selected = tab, onSelect = {
+                        if (it == TasTab.Settings) settingsPage = null
+                        tab = it
+                    })
+                } else {
+                    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
+                    Row(Modifier.weight(1f).fillMaxWidth().background(if (asideOpen) TasColors.AsideBg else TasColors.Surface).navigationBarsPadding()) {
+                        if (asideOpen) {
+                            AsideMenu(
+                                storeName = snapshot.storeName,
+                                tab = tab,
+                                calendarView = calendarView,
+                                settingsPage = settingsPage,
+                                usePointSystem = snapshot.usePointSystem == true,
+                                serviceLabel = labels.service,
+                                assigneeLabel = labels.assignee,
+                                onSelectView = { tab = TasTab.Calendar; calendarCommand = CalendarCommand.SelectView(it) },
+                                onCreateReservation = { tab = TasTab.Calendar; calendarCommand = CalendarCommand.Create },
+                                onCreateCustomer = { tab = TasTab.Customers; customerAdd = true },
+                                onOpen = { dest ->
+                                    when (dest) {
+                                        AsideDestination.Revenue -> tab = TasTab.Revenue
+                                        AsideDestination.Customers -> tab = TasTab.Customers
+                                        else -> {
+                                            tab = TasTab.Settings
+                                            settingsPage = when (dest) {
+                                                AsideDestination.Store -> SettingsPage.STORE
+                                                AsideDestination.Point -> SettingsPage.POINT
+                                                AsideDestination.Service -> SettingsPage.SERVICE
+                                                AsideDestination.Assignee -> SettingsPage.ASSIGNEE
+                                                else -> null
+                                            }
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                        // 웹: 메뉴를 펴면 본문이 둥근 카드로 떠 보인다(위·오른쪽·아래 6)
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .then(if (asideOpen) Modifier.padding(top = 6.dp, end = 6.dp, bottom = 6.dp).clip(RoundedCornerShape(10.dp)) else Modifier)
+                                .background(TasColors.Surface),
+                        ) {
+                            CompositionLocalProvider(LocalAsideToggle provides AsideToggle(asideOpen) {
+                                asideOpen = !asideOpen
+                                AsidePrefs.setOpen(context, asideOpen)
+                            }) { screen() }
+                        }
+                    }
+                }
+            }
         }
         ToastHost(toast, topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
     }
