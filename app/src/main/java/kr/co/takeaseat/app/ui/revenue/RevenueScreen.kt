@@ -86,6 +86,11 @@ import kr.co.takeaseat.app.domain.quickRevenueRange
 import kr.co.takeaseat.app.domain.revenueMetricDetail
 import kr.co.takeaseat.app.domain.revenueSummary
 import kr.co.takeaseat.app.domain.servicePriceTotal
+import kr.co.takeaseat.app.domain.ChartDetailKey
+import kr.co.takeaseat.app.domain.RevenueMetricDetail
+import kr.co.takeaseat.app.domain.chartDetail
+import kr.co.takeaseat.app.domain.revenueCharts
+import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
 import kr.co.takeaseat.app.domain.sortAssignees
 import kr.co.takeaseat.app.domain.storeLabels
 import kr.co.takeaseat.app.domain.WEEKDAYS
@@ -109,11 +114,11 @@ import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /** 웹 RevenueViewTab(모바일) — 그래프 탭은 웹 모바일도 숨긴다. */
-private enum class RevenueView { All, List }
+private enum class RevenueView { All, Chart, List }
 
 /**
  * 웹 `/settings/revenue` 모바일 — 헤더 · 소개(REVENUE) · 필터(빠른 기간 · 기간 · 담당자 · 보기 · 집계) · 요약 카드 · 일별 목록.
- * 그래프는 웹 모바일(≤640)도 숨겨 없다. 일별 목록을 펼친 예약 카드 → 예약 상세, 충전 줄 고객명 → 고객 상세.
+ * 그래프(`RevenueChartGrid`)는 웹처럼 넓은 화면(641 이상)에만 — 보기에 '매출 그래프'도 그때만. 일별 목록을 펼친 예약 카드 → 예약 상세, 충전 줄 고객명 → 고객 상세.
  * 요약 카드·날짜를 눌러 여는 상세 창은 11-2단계, 엑셀 내보내기는 다음.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -134,9 +139,14 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var openDates by rememberSaveable { mutableStateOf(listOf<String>()) }
     val details = rememberDetailStack()
     var metric by rememberSaveable { mutableStateOf<RevenueMetric?>(null) }
+    var chartDetailKey by remember { mutableStateOf<ChartDetailKey?>(null) }
+    // 웹 그래프는 641px 이상만 — 넓은 화면(왼쪽 메뉴)일 때. 좁아지면(폴드 접음) 그래프 보기는 전체로
+    val wide = LocalAsideToggle.current != null
+    val shownView = if (!wide && view == RevenueView.Chart) RevenueView.All else view
 
     val zone = remember { ZoneId.systemDefault() }
     val summary = remember(snapshot, range, assigneeId, mode) { revenueSummary(snapshot, range, assigneeId, mode, zone) }
+    val charts = remember(snapshot, range, assigneeId, mode, wide) { if (wide) revenueCharts(snapshot, range, assigneeId, mode, zone) else null }
     val assignees = remember(snapshot.assignees) { sortAssignees(snapshot.assignees) }
     val assigneeNames = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.name } }
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
@@ -181,18 +191,34 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
                     assignees = assignees.map { it.id to it.name },
                     assigneeId = assigneeId,
                     onAssignee = { assigneeId = it },
-                    view = view,
+                    view = shownView,
                     onView = { view = it },
+                    showChartTab = wide,
                     mode = mode,
                     onMode = { mode = it },
                     showHint = showHint,
                     onToggleHint = { showHint = !showHint },
                 )
             }
-            if (view == RevenueView.All) {
+            if (shownView != RevenueView.List) {
                 item { KpiGrid(summary) { metric = it } }
             }
-            item {
+            if (shownView != RevenueView.List && charts != null) {
+                item {
+                    RevenueChartGrid(
+                        charts = charts,
+                        range = range,
+                        assigneeSelected = assigneeId != null,
+                        assigneeLabel = labels.assignee,
+                        assigneeNames = assigneeNames,
+                        rawAssigneeColors = snapshot.assignees.associate { it.id to it.color },
+                        customers = snapshot.customers.associateBy { it.id },
+                        onDetail = { chartDetailKey = it },
+                        onCustomerClick = { details.openCustomer(it) },
+                    )
+                }
+            }
+            if (shownView != RevenueView.Chart) item {
                 DailyCard(
                     summary = summary,
                     openDates = openDates,
@@ -209,7 +235,13 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     // 웹 RevenueMetricModal — 요약 카드를 누르면
     metric?.let { m ->
         val detail = remember(snapshot, range, assigneeId, mode, m, summary) { revenueMetricDetail(snapshot, range, assigneeId, mode, m, summary) }
-        RevenueMetricSheet(m, metricSubtitle(m, mode), detail, onCustomerClick = { details.openCustomer(it) }, onDismiss = { metric = null }) { reservationCard(it, true) }
+        RevenueMetricSheet(m.title, metricSubtitle(m, mode), detail, onCustomerClick = { details.openCustomer(it) }, onDismiss = { metric = null }, customerMetric = m) { reservationCard(it, true) }
+    }
+    // 웹 chartDetailLayer — 넓은 화면 차트를 누르면(같은 상세 창)
+    chartDetailKey?.let { key ->
+        val detail = remember(snapshot, range, assigneeId, mode, key) { chartDetail(snapshot, range, assigneeId, mode, key) }
+        RevenueMetricSheet(detail.title, null, RevenueMetricDetail(detail.summary, detail.reservations, emptyList()),
+            onCustomerClick = { details.openCustomer(it) }, onDismiss = { chartDetailKey = null }) { reservationCard(it, true) }
     }
     // 지표 창 위에 상세 창들 — 연 순서대로 쌓인다(지표 창에서 연 예약에서 다시 고객을 열어도 위로)
     DetailSheets(store, details)
@@ -233,6 +265,7 @@ private fun RevenueFilters(
     onMode: (RevenueFilterMode) -> Unit,
     showHint: Boolean,
     onToggleHint: () -> Unit,
+    showChartTab: Boolean,
 ) {
     Column(
         Modifier.fillMaxWidth().background(TasColors.Surface).padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -266,6 +299,8 @@ private fun RevenueFilters(
         ) {
             Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip("전체", view == RevenueView.All, ChipStyle.View) { onView(RevenueView.All) }
+                // 웹 $mobileHide — 641px 이상에서만
+                if (showChartTab) FilterChip("매출 그래프", view == RevenueView.Chart, ChipStyle.View) { onView(RevenueView.Chart) }
                 FilterChip("매출 일별목록", view == RevenueView.List, ChipStyle.View) { onView(RevenueView.List) }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -522,11 +557,11 @@ private fun SaleItem(sale: StoreSale, customerName: String?, onCustomerClick: ()
     }
 }
 
-private fun Modifier.card(shape: Shape, shadow: Shadow) = dropShadow(shape, shadow).clip(shape)
+internal fun Modifier.card(shape: Shape, shadow: Shadow) = dropShadow(shape, shadow).clip(shape)
 
-private val BigFont = TasSizes.LargeFont * 1.125f                                       // --big-font 18
+internal val BigFont = TasSizes.LargeFont * 1.125f                                       // --big-font 18
 private val FieldShadow = Color(15, 23, 42).copy(alpha = 0.04f)                         // 날짜 칸 0 1 2
 private val SaleBorder = Color(148, 163, 184).copy(alpha = 0.18f)
 private val CardShadowKpi = Shadow(radius = 20.dp, color = Color(15, 23, 42).copy(alpha = 0.05f), offset = DpOffset(0.dp, 8.dp))
-private val CardShadowDaily = Shadow(radius = 24.dp, color = Color(15, 23, 42).copy(alpha = 0.05f), offset = DpOffset(0.dp, 10.dp))
+internal val CardShadowDaily = Shadow(radius = 24.dp, color = Color(15, 23, 42).copy(alpha = 0.05f), offset = DpOffset(0.dp, 10.dp))
 private val CalendarIcon = svgLineIcon(24f, listOf("M4 6h16v14H4z", "M4 10h16", "M8 3v4", "M16 3v4"), strokeWidth = 2f, name = "calendar")
