@@ -38,13 +38,14 @@ data class RevenueCharts(
     val totalNoshow: Int,
     val totalNoshowRate: Int,
 ) {
-    val chartMax: Int get() = maxOf(series.maxOfOrNull { it.total } ?: 0, 1)
+    val chartMax: Int = maxOf(series.maxOfOrNull { it.total } ?: 0, 1)
     /** 매출이 0뿐인 기간은 빈 상태(웹 hasTrend). */
     val hasTrend: Boolean get() = series.any { it.total > 0 }
     val channelTotal: Int get() = channels.sumOf { it.count }
 }
 
-private fun percent(part: Int, total: Int) = if (total > 0) (part * 100.0 / total).roundToInt() else 0
+/** 웹 Math.round((part / total) * 100) — 나누기 먼저(곱하기 먼저면 23/40 이 58 로, 웹은 57). */
+fun chartPercent(part: Int, total: Int) = if (total > 0) (part.toDouble() / total * 100).roundToInt() else 0
 
 fun revenueCharts(
     snapshot: LocalDbSnapshot,
@@ -83,15 +84,16 @@ fun revenueCharts(
             if (assigneeStatus(a) == "퇴직" && total == 0) null else AssigneeChartItem(a.id, a.name, assigneeColor(a), total, list.size)
         }
 
-    // 웹 getOperationInsights — 상태와 무관한 기간 안 예약(담당자 필터만)
-    val operation = inRange.filter { assigneeId == null || it.assigneeId == assigneeId }
+    // 웹 getOperationInsights — 상태와 무관한 기간 안 예약(담당자 필터만). 웹은 날짜순으로 돌며 묶어
+    // 동점이면 첫 예약이 이른 쪽이 앞 — 저장 순서(새 예약은 맨 뒤)가 아니라 날짜순으로 묶는다(안정 정렬)
+    val operation = inRange.filter { assigneeId == null || it.assigneeId == assigneeId }.sortedBy { it.date }
     val cancellations = operation.groupBy { it.assigneeId }.map { (id, list) ->
         val hit = list.count { it.status == ReservationStatus.CANCELLED }
-        RateItem(id, list.size, hit, percent(hit, list.size))
+        RateItem(id, list.size, hit, chartPercent(hit, list.size))
     }.sortedWith(compareByDescending<RateItem> { it.rate }.thenByDescending { it.hit }.thenByDescending { it.total })
     val noshows = operation.groupBy { it.customerId }.map { (id, list) ->
         val hit = list.count { it.status == ReservationStatus.NOSHOW }
-        RateItem(id, list.size, hit, percent(hit, list.size))
+        RateItem(id, list.size, hit, chartPercent(hit, list.size))
     }.sortedWith(compareByDescending<RateItem> { it.rate }.thenByDescending { it.hit }.thenByDescending { it.total })
     val totalCancelled = cancellations.sumOf { it.hit }
     val totalNoshow = noshows.sumOf { it.hit }
@@ -105,9 +107,9 @@ fun revenueCharts(
         cancellations = cancellations.take(5),
         noshows = noshows.take(5),
         totalCancelled = totalCancelled,
-        totalCancelledRate = percent(totalCancelled, operation.size),
+        totalCancelledRate = chartPercent(totalCancelled, operation.size),
         totalNoshow = totalNoshow,
-        totalNoshowRate = percent(totalNoshow, operation.size),
+        totalNoshowRate = chartPercent(totalNoshow, operation.size),
     )
 }
 

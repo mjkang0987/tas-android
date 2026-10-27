@@ -94,6 +94,19 @@ class RevenueChartsTest {
         assertEquals(5, revenueCharts(many, range, null, RevenueFilterMode.Completed, seoul).noshows.size)
     }
 
+    @Test fun `비율 반올림 - 웹 Math round 나누기 먼저와 같다`() {
+        assertEquals(57, chartPercent(23, 40)) // 곱하기 먼저면 58
+        assertEquals(14, chartPercent(29, 200)) // 곱하기 먼저면 15
+        assertEquals(33, chartPercent(1, 3))
+        assertEquals(0, chartPercent(5, 0))
+    }
+
+    @Test fun `노쇼율 동점 - 저장 순서가 아니라 첫 예약 날짜가 이른 고객이 앞(웹과 같다)`() {
+        // 늦은 날짜 예약을 먼저 저장 — 웹은 날짜순으로 묶어 2(19일)가 1(21일)보다 앞
+        val s = snap(r(1, "2026-10-21", customerId = 1), r(2, "2026-10-19", customerId = 2))
+        assertEquals(listOf(2, 1), revenueCharts(s, range, null, RevenueFilterMode.Completed, seoul).noshows.map { it.id })
+    }
+
     @Test fun `차트 상세 - 웹 chartDetailLayer 제목·요약`() {
         val s = snap(
             r(1, "2026-10-19", entries = listOf(PaymentEntry("카드", 15000), PaymentEntry("현금", 5000))),
