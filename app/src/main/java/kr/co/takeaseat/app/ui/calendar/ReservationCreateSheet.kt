@@ -27,6 +27,19 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import kr.co.takeaseat.app.data.GuestStore
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.semantics.Role
+import kr.co.takeaseat.app.domain.CREATE_PAYMENT_METHODS
+import kr.co.takeaseat.app.domain.PointSettings
+import kr.co.takeaseat.app.domain.createPointPreview
+import kr.co.takeaseat.app.domain.formatPrice
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.domain.FormError
 import kr.co.takeaseat.app.domain.FormField
 import kr.co.takeaseat.app.domain.ReservationForm
@@ -147,6 +160,44 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit, initialDate
                 errorFor = ::errorFor,
                 errorSeq = errorSeq,
             )
+            CreatePaymentFields(form, ::edit, snapshot.storeSettings.pointSettings, errorFor(FormField.Payment), errorSeq)
         }
+    }
+}
+
+/**
+ * '결제완료로 등록' — 웹 추가 화면엔 없는 앱 기능(iOS 와 같다). 생김새는 웹 결제 칸('적립 적용' 체크 행·고르는 칸)을 따른다.
+ * 켜면 결제수단(기본 카드) · 안내 한 줄. 저장은 상세 결제와 같은 규칙([createPaymentForm]).
+ */
+@Composable
+private fun CreatePaymentFields(form: ReservationForm, onChange: (ReservationForm) -> Unit, settings: PointSettings, error: String?, errorSeq: Int) {
+    Column(
+        Modifier.fillMaxWidth().drawBehindThemed { colors -> drawRect(colors.LightGray, size = Size(size.width, 1.dp.toPx())) }.padding(top = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            Modifier.toggleable(form.markPaid, role = Role.Checkbox) { onChange(form.copy(markPaid = it)) }.heightIn(min = 30.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Checkbox(checked = form.markPaid, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill), modifier = Modifier.size(20.dp))
+            Text("결제완료로 등록", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+        }
+        if (form.markPaid) {
+            TasSelect(
+                label = "결제수단",
+                options = CREATE_PAYMENT_METHODS,
+                selectedIndex = CREATE_PAYMENT_METHODS.indexOf(form.payMethod),
+                onSelect = { onChange(form.copy(payMethod = CREATE_PAYMENT_METHODS[it])) },
+            )
+            val earned = createPointPreview(form, settings)
+            Text(
+                if (earned != null) "결제 ${formatPrice(form.price)} · 적립률 ${settings.serviceRate.toInt()}% → ${formatPrice(earned)} 적립"
+                else "결제 ${formatPrice(form.price)}로 결제완료 처리됩니다.",
+                color = TasColors.DarkGray2,
+                fontSize = TasSizes.SmallFont,
+            )
+        }
+        if (error != null) FieldError(error, scrollKey = errorSeq)
     }
 }
