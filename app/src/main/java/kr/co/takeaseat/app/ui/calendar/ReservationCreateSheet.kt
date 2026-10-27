@@ -26,7 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -193,7 +196,8 @@ private fun CreatePaymentFields(form: ReservationForm, onChange: (ReservationFor
             val earned = createPointPreview(form, settings)
             // 적립률은 설정에서 정수만 받지만 소수가 들어와도 틀리게 보이지 않게(2.5 → "2.5", 5.0 → "5")
             val rate = settings.serviceRate.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }
-            Text(
+            // 저장 오류가 떠 있으면(같은 뜻) 안내는 숨긴다
+            if (error == null) Text(
                 when {
                     // 저장하면 막힌다 — 미리 고칠 곳을 알려 준다
                     form.price <= 0 -> "가격을 입력해야 결제완료로 등록할 수 있습니다."
@@ -203,6 +207,8 @@ private fun CreatePaymentFields(form: ReservationForm, onChange: (ReservationFor
                 },
                 color = TasColors.DarkGray2,
                 fontSize = TasSizes.SmallFont,
+                // 결제수단·가격을 바꾸면 문구가 바뀐다 — 낭독기도 알려 준다
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
         if (error != null) FieldError(error, scrollKey = errorSeq)
