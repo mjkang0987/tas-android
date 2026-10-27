@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -77,7 +78,7 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
  * 웹 헤더 — 1줄(`CalendarDirection` + `CalendarHeading` + 모바일 '+ 예약') · 2줄(StyledToolRow: 담당자 고르기 …… 알림 종).
- * 넓은 화면(641 이상)은 웹처럼 한 줄에 이어 붙는다. 날짜를 누르면 시스템 날짜 선택이 뜬다(웹도 네이티브 `<input type="date">`).
+ * 넓은 화면(641 이상)은 웹처럼 한 줄에 이어 붙는다 — 헤더가 [ONE_ROW_MIN] 보다 좁으면 두 줄(안드로이드 보완). 날짜를 누르면 시스템 날짜 선택이 뜬다(웹도 네이티브 `<input type="date">`).
  */
 @Composable
 fun CalendarHeader(
@@ -89,6 +90,8 @@ fun CalendarHeader(
     onBell: () -> Unit,
     assignees: List<Assignee>,
     assigneeFilter: Int?,
+    /** 고른 칸에 보일 이름(미지정·담당자) — 목록 제목 ' · 이름'과 같은 값. null 이면 전체보기. */
+    assigneeFilterName: String?,
     onAssigneeFilter: (Int?) -> Unit,
     assigneeLabel: String,
     modifier: Modifier = Modifier,
@@ -103,14 +106,15 @@ fun CalendarHeader(
     // 펼침은 여기서 기억 — 한 줄↔두 줄로 바뀌어 고르는 칸 자리가 옮겨가도(폴드 접고 펴기) 펼친 채로
     var filterOpen by rememberSaveable { mutableStateOf(false) }
     val filter = @Composable {
-        AssigneeFilter(assignees, assigneeFilter, assigneeLabel, narrow = aside == null, open = filterOpen, onOpenChange = { filterOpen = it }, onSelect = onAssigneeFilter)
+        AssigneeFilter(assignees, assigneeFilter, assigneeFilterName ?: "전체보기", assigneeLabel, narrow = aside == null, open = filterOpen, onOpenChange = { filterOpen = it }, onSelect = onAssigneeFilter)
     }
     // 웹 헤더의 알림 종(곧 시작하는 예약)
     val notificationBell = @Composable { NotificationBell(count = bell.count, dot = bell.dot, onClick = onBell) }
     // 웹 641px 이상은 한 줄(날짜 칸이 좁아진다). 안드로이드는 폴드에 왼쪽 메뉴를 편 폭(약 470dp)에서 날짜가 잘려,
     // 헤더가 [ONE_ROW_MIN] 보다 좁으면 담당자·종 줄을 모바일처럼 다음 줄로 내린다(안드로이드 보완)
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val stacked = aside == null || maxWidth < ONE_ROW_MIN
+        // 글자를 키운 기기는 날짜·담당자 글자도 커져 기준 폭도 그만큼(줄이기만 하지는 않는다)
+        val stacked = aside == null || maxWidth < ONE_ROW_MIN * maxOf(LocalDensity.current.fontScale, 1f)
         // 웹: header padding 4 10 2 + 1줄 padding 3 0 5 · 2줄(모바일) padding 4 0
         Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 7.dp, bottom = if (stacked) 2.dp else 7.dp)) {
             Row(
@@ -184,6 +188,7 @@ private val ONE_ROW_MIN = 600.dp
 private fun AssigneeFilter(
     assignees: List<Assignee>,
     selected: Int?,
+    valueText: String,
     label: String,
     narrow: Boolean,
     open: Boolean,
@@ -191,11 +196,6 @@ private fun AssigneeFilter(
     onSelect: (Int?) -> Unit,
 ) {
     val (active, onLeave, resigned) = remember(assignees) { splitAssigneesByStatus(assignees) }
-    val valueText = when (selected) {
-        null -> "전체보기"
-        UNASSIGNED_FILTER -> "미지정"
-        else -> assignees.firstOrNull { it.id == selected }?.name.orEmpty()
-    }
     TasSelect(
         label = "달력 $label 필터",
         valueText = valueText,

@@ -89,7 +89,7 @@ fun CalendarScreen(
     val shown = remember(snapshot, filterId) {
         if (filterId == null) snapshot else snapshot.copy(reservations = snapshot.reservations.filter { matchesCalendarAssignee(it, filterId) })
     }
-    // 웹 ReservationListSection — 목록 제목 뒤 ' · 이름'
+    // 웹 ReservationListSection — 목록 제목 뒤 ' · 이름'. 헤더 고르는 칸도 같은 이름을 보인다.
     val filterName = when (filterId) {
         null -> null
         UNASSIGNED_FILTER -> "미지정"
@@ -155,7 +155,7 @@ fun CalendarScreen(
             dateKey = it.toDateKey()
             listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
         }, onCreate = { creating = "" }, bell = bellIndicator(todo = 0, soon = upcoming.soon.size), onBell = { notifying = true },
-            assignees = snapshot.assignees, assigneeFilter = filterId, onAssigneeFilter = { assigneeFilter = it }, assigneeLabel = labels.assignee)
+            assignees = snapshot.assignees, assigneeFilter = filterId, assigneeFilterName = filterName, onAssigneeFilter = { assigneeFilter = it }, assigneeLabel = labels.assignee)
         // 넓은 화면은 왼쪽 메뉴가 보기를 고른다(웹 MobileViewTabs 는 640px 이하만)
         if (LocalAsideToggle.current == null) CalendarViewTabs(selected = view, onSelect = ::selectView)
         if (view == CalendarView.Year) {
