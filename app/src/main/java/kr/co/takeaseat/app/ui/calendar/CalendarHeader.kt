@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
+import kr.co.takeaseat.app.domain.BellIndicator
 import kr.co.takeaseat.app.domain.CalendarView
 import kr.co.takeaseat.app.domain.calendarHeading
 import kr.co.takeaseat.app.domain.moveDate
@@ -67,6 +68,8 @@ fun CalendarHeader(
     date: LocalDate,
     onDateChange: (LocalDate) -> Unit,
     onCreate: () -> Unit,
+    bell: BellIndicator,
+    onBell: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
@@ -117,6 +120,8 @@ fun CalendarHeader(
                 Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
             }
         }
+        // 웹 헤더의 알림 종(곧 시작하는 예약)
+        NotificationBell(count = bell.count, dot = bell.dot, onClick = onBell)
         // 넓은 화면은 왼쪽 메뉴의 '예약추가'를 쓴다(웹 StyledMobileAddPill 은 641px 이상 숨김)
         if (aside == null) AddPill("예약", description = "예약 추가", onClick = onCreate)
     }

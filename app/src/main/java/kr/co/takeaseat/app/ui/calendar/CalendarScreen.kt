@@ -14,11 +14,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlinx.coroutines.delay
 import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.CalendarView
 import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
+import kr.co.takeaseat.app.domain.bellIndicator
 import kr.co.takeaseat.app.domain.buildAssigneeColorMap
+import kr.co.takeaseat.app.domain.upcomingReservations
 import kr.co.takeaseat.app.domain.buildServiceColorMap
 import kr.co.takeaseat.app.domain.firstVisitDates
 import kr.co.takeaseat.app.domain.isNewCustomerVisit
@@ -54,14 +57,17 @@ fun CalendarScreen(
     var listMonth by rememberSaveable { mutableStateOf(LocalDate.now().monthValue) }
     val date = LocalDate.parse(dateKey)
 
-    // 자정을 넘기면 '오늘'이 바뀐다 — 1분마다 확인
-    var today by remember { mutableStateOf(LocalDate.now()) }
+    // 자정을 넘기면 '오늘'이 바뀐다 · 알림 종 '곧 시작'도 다시 센다 — 분이 바뀔 때마다
+    var now by remember { mutableStateOf(LocalDateTime.now()) }
+    val today = now.toLocalDate()
     LaunchedEffect(Unit) {
         while (true) {
-            delay(60_000)
-            today = LocalDate.now()
+            delay(60_000 - System.currentTimeMillis() % 60_000)
+            now = LocalDateTime.now()
         }
     }
+    val upcoming = remember(snapshot.reservations, now) { upcomingReservations(snapshot.reservations, now) }
+    var notifying by rememberSaveable { mutableStateOf(false) }
 
     val serviceColorMap = remember(snapshot.services, snapshot.categoryBaseColors) {
         buildServiceColorMap(snapshot.services, snapshot.categoryBaseColors)
@@ -130,7 +136,7 @@ fun CalendarScreen(
         CalendarHeader(view = view, date = date, onDateChange = {
             dateKey = it.toDateKey()
             listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
-        }, onCreate = { creating = "" })
+        }, onCreate = { creating = "" }, bell = bellIndicator(todo = 0, soon = upcoming.soon.size), onBell = { notifying = true })
         // 넓은 화면은 왼쪽 메뉴가 보기를 고른다(웹 MobileViewTabs 는 640px 이하만)
         if (LocalAsideToggle.current == null) CalendarViewTabs(selected = view, onSelect = ::selectView)
         if (view == CalendarView.Year) {
@@ -191,6 +197,17 @@ fun CalendarScreen(
     }
 
     DetailSheets(store, details)
+
+    if (notifying) {
+        NotificationCenterSheet(
+            upcoming = upcoming,
+            customerNames = customerNames,
+            assignees = remember(snapshot.assignees) { snapshot.assignees.associateBy { it.id } },
+            assigneeColors = assigneeColors,
+            onOpenReservation = { details.openReservation(it) },
+            onDismiss = { notifying = false },
+        )
+    }
 
     creating?.let { day ->
         ReservationCreateSheet(
