@@ -17,6 +17,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlinx.coroutines.delay
 import kr.co.takeaseat.app.data.GuestStore
+import kr.co.takeaseat.app.domain.storeLabels
+import kr.co.takeaseat.app.domain.UNASSIGNED_FILTER
+import kr.co.takeaseat.app.domain.matchesCalendarAssignee
 import kr.co.takeaseat.app.domain.CalendarView
 import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
 import kr.co.takeaseat.app.domain.bellIndicator
@@ -55,6 +58,8 @@ fun CalendarScreen(
     var listDateKey by rememberSaveable { mutableStateOf(LocalDate.now().toDateKey()) }
     // 연 보기 아래 목록의 달(1~12) — 해를 옮겨도 달은 그대로(웹 filterWithinTarget 'month').
     var listMonth by rememberSaveable { mutableStateOf(LocalDate.now().monthValue) }
+    // 웹 calendarAssigneeId — null 전체보기, 0 미지정. 웹도 저장하지 않는다(새로 열면 전체보기).
+    var assigneeFilter by rememberSaveable { mutableStateOf<Int?>(null) }
     val date = LocalDate.parse(dateKey)
 
     // 자정을 넘기면 '오늘'이 바뀐다 · 알림 종 '곧 시작'도 다시 센다 — 분이 바뀔 때마다
@@ -78,8 +83,19 @@ fun CalendarScreen(
     val customerNames = remember(customers) { customers.mapValues { it.value.name } }
     val scale = remember(snapshot.services) { timelineScaleFor(snapshot.services) }
 
+    // 담당자 필터로 거른 예약 — 타임라인·월·연·아래 목록이 모두 이걸 본다. 알림 종·신규 배지(첫 방문)는 거르지 않는다(웹과 같다).
+    val shown = remember(snapshot, assigneeFilter) {
+        if (assigneeFilter == null) snapshot else snapshot.copy(reservations = snapshot.reservations.filter { matchesCalendarAssignee(it, assigneeFilter) })
+    }
+    // 웹 ReservationListSection — 목록 제목 뒤 ' · 이름'(지운 담당자면 붙이지 않는다)
+    val filterName = when (assigneeFilter) {
+        null -> null
+        UNASSIGNED_FILTER -> "미지정"
+        else -> snapshot.assignees.firstOrNull { it.id == assigneeFilter }?.name
+    }
+    val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     // 취소·노쇼도 그대로 그린다(웹과 같이 빗금으로 구분).
-    val reservationsByDate = remember(snapshot.reservations) { snapshot.reservations.groupBy { it.date } }
+    val reservationsByDate = remember(shown.reservations) { shown.reservations.groupBy { it.date } }
     val columns = remember(reservationsByDate, snapshot.storeSettings, dateKey, view, today, customers, firstVisit, assigneeColors) {
         if (view == CalendarView.Month || view == CalendarView.Year) return@remember emptyList()
         viewDates(date, view).map { day ->
@@ -136,7 +152,8 @@ fun CalendarScreen(
         CalendarHeader(view = view, date = date, onDateChange = {
             dateKey = it.toDateKey()
             listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
-        }, onCreate = { creating = "" }, bell = bellIndicator(todo = 0, soon = upcoming.soon.size), onBell = { notifying = true })
+        }, onCreate = { creating = "" }, bell = bellIndicator(todo = 0, soon = upcoming.soon.size), onBell = { notifying = true },
+            assignees = snapshot.assignees, assigneeFilter = assigneeFilter, onAssigneeFilter = { assigneeFilter = it }, assigneeLabel = labels.assignee)
         // 넓은 화면은 왼쪽 메뉴가 보기를 고른다(웹 MobileViewTabs 는 640px 이하만)
         if (LocalAsideToggle.current == null) CalendarViewTabs(selected = view, onSelect = ::selectView)
         if (view == CalendarView.Year) {
@@ -144,7 +161,8 @@ fun CalendarScreen(
                 year = date.year,
                 today = today,
                 selectedMonth = listMonth,
-                snapshot = snapshot,
+                snapshot = shown,
+                filterName = filterName,
                 customerNames = customerNames,
                 firstVisit = firstVisit,
                 assigneeColors = assigneeColors,
@@ -166,7 +184,8 @@ fun CalendarScreen(
                 date = date,
                 today = today,
                 selected = LocalDate.parse(listDateKey),
-                snapshot = snapshot,
+                snapshot = shown,
+                filterName = filterName,
                 reservationsByDate = reservationsByDate,
                 customerNames = customerNames,
                 firstVisit = firstVisit,
