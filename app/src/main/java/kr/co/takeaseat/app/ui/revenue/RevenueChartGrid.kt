@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -34,13 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -84,7 +84,7 @@ internal fun RevenueChartGrid(
     onCustomerClick: (Int) -> Unit,
 ) {
     // 웹 900px 기준은 창(뷰포트) 폭 — 본문 폭이 아니라
-    val twoColumns = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } > 900.dp
+    val twoColumns = LocalWindowInfo.current.containerDpSize.width > 900.dp
     val trend = @Composable { TrendCard(charts, range, twoColumns, onDetail) }
     val payment = @Composable { PaymentCard(charts, twoColumns, onDetail) }
     val channel = @Composable { m: Modifier -> ChannelCard(charts, twoColumns, m, onDetail) }
@@ -99,20 +99,33 @@ internal fun RevenueChartGrid(
         trend()
         payment()
         if (twoColumns) {
-            // 웹 grid — 한 줄의 두 카드는 같은 높이
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                channel(Modifier.weight(1f).fillMaxHeight())
-                assignee(Modifier.weight(1f).fillMaxHeight())
-            }
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                cancellation(Modifier.weight(1f).fillMaxHeight())
-                noshow(Modifier.weight(1f).fillMaxHeight())
-            }
+            EqualHeightPair({ channel(Modifier.fillMaxSize()) }, { assignee(Modifier.fillMaxSize()) })
+            EqualHeightPair({ cancellation(Modifier.fillMaxSize()) }, { noshow(Modifier.fillMaxSize()) })
         } else {
             channel(Modifier.fillMaxWidth())
             assignee(Modifier.fillMaxWidth())
             cancellation(Modifier.fillMaxWidth())
             noshow(Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/**
+ * 웹 grid 의 한 줄 — 두 카드를 반씩(간격 8), 높이는 큰 쪽에 맞춘다(align-self: stretch).
+ * 같은 자식은 두 번 잴 수 없어 한 벌로 높이를 재고, 다른 한 벌을 그 높이 이상으로 그린다(SubcomposeLayout).
+ * 높이를 딱 고정하면 FlowRow 범례가 마지막 줄을 버린다(IntrinsicSize.Min 때도 같았다) — 위로는 열어 둔다.
+ */
+@Composable
+private fun EqualHeightPair(start: @Composable () -> Unit, end: @Composable () -> Unit) {
+    SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
+        val gap = 8.dp.roundToPx()
+        val half = (constraints.maxWidth - gap) / 2
+        val loose = Constraints(minWidth = half, maxWidth = half)
+        val height = subcompose("measure") { start(); end() }.maxOf { it.measure(loose).height }
+        val (pa, pb) = subcompose("place") { start(); end() }.map { it.measure(Constraints(half, half, height)) }
+        layout(constraints.maxWidth, height) {
+            pa.place(0, 0)
+            pb.place(half + gap, 0)
         }
     }
 }
