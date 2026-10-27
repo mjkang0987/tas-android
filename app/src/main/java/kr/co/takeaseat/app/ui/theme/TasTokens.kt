@@ -55,6 +55,7 @@ class TasPalette(
     val ModalHeaderBorder: Color,
     val BgSubtle92: Color,
     val BgSubtle98: Color,
+    val NotificationUnreadBg: Color,
     val Success: Color,
     val Ink: Color,
     val BgSubtle90: Color,
@@ -136,6 +137,7 @@ val LightPalette = TasPalette(
     ModalHeaderBorder = Color(148, 163, 184).copy(alpha = 0.18f), // --modal-header-border
     BgSubtle92 = Color(248, 250, 252).copy(alpha = 0.92f), // --bg-subtle-92
     BgSubtle98 = Color(248, 250, 252).copy(alpha = 0.98f), // --bg-subtle-98
+    NotificationUnreadBg = Color(0xF0, 0xF8, 0xFF), // --notification-unread-bg
     Success = Color(0x24, 0x75, 0x3A), // --success-color #24753a
     Ink = Color(0x11, 0x18, 0x27), // StyledModalMessage 기본 #111827
     BgSubtle90 = Color(248, 250, 252).copy(alpha = 0.9f), // 변경 화면 고객 메모 상자 rgba(248,250,252,.9)
@@ -215,6 +217,7 @@ val DarkPalette = TasPalette(
     ModalHeaderBorder = Color(255, 255, 255).copy(alpha = 0.1f),
     BgSubtle92 = Color(44, 44, 46).copy(alpha = 0.92f),
     BgSubtle98 = Color(44, 44, 46).copy(alpha = 0.98f),
+    NotificationUnreadBg = Color(45, 127, 249).copy(alpha = 0.14f),
     Success = hex(0xA8DAB5),
     Ink = hex(0xF5F5F7),
     BgSubtle90 = Color(44, 44, 46).copy(alpha = 0.9f),

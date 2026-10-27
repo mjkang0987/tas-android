@@ -7,6 +7,23 @@
 
 ---
 
+## ✅ 완료 — 19단계: 알림 종 (`claude/android-notification-bell`, v0.2.0)
+
+### 요구 (지시자 2026-10-27 "알림 벨도 그대로 진행해줘", iOS 와 같이)
+- 웹 헤더 알림 종(`NotificationCenter`) 중 게스트에서 쓸 수 있는 칸 = **곧 시작하는 예약** 하나. 예약 요청·네이버·쿠폰/회원권 만료는 로그인 때.
+
+### 구현
+- `domain/Upcoming.kt` — 웹 `features/notifications/upcoming.ts` 이식(1시간 안 이른 순 · 그 뒤 오늘 다음 예약 하나 · '20분 후' 표기 · 종 표시). 테스트 `UpcomingTest`(웹 테스트와 같은 경우).
+- `ui/calendar/NotificationCenter.kt` — 종(32 투명 버튼, 빨간 숫자/보라 점, 낭독 '알림, 곧 시작하는 예약 있음') · 알림 시트(공용 `DetailSheet`, 회색 띠 칸 제목, 연한 파랑 줄 = 태그·시각·고객·서비스 / 담당자).
+  칸이 하나라 종류 탭 없음(웹 `tabs.length > 2`). 줄을 누르면 시트를 닫고 그 예약 상세.
+- 헤더 '+ 예약' 왼쪽에 종. 캘린더의 1분 시계를 분 경계에 맞춰 '오늘'·'곧 시작'을 같이 다시 센다.
+- 토큰: `NotificationUnreadBg`(--notification-unread-bg), `LabelTone.Purple`(--brand-color-*). 어두운 화면 점은 밝아지는 `Brand`(진한 brand-fill 은 바탕에 묻힌다 — iOS 와 같은 판단).
+
+### 검증
+- 유닛 통과 · 에뮬레이터(게스트 오늘 3건 20·45·150분 후) — 종 보라 점, 시트 두 줄(1시간 밖은 빠짐), 줄 → 예약 상세, 어두운 화면, 낭독 이름.
+
+---
+
 ## 🟡 진행 — 18단계: 폴드·듀오(접는 화면·넓은 화면) (`claude/android-wide-layout`, 17 위)
 
 ### 요구 (지시자 2026-10-26 "폴드랑 듀오도 진행해야 할 것 같은데" · "배포 끝나면 폴드랑 듀오 진행해줘")

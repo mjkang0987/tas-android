@@ -31,7 +31,7 @@ app/src/main/java/kr/co/takeaseat/app/
   ui/theme/             TasTokens(웹 globalStyle.ts :root 이식) · TasTheme(라이트 전용, 웹 줄높이)
   ui/nav/               MobileTabBar(웹 MobileTabBar.tsx 이식) · TabIcon(웹 AsideMenuIcon SVG)
   ui/components/        신규 배지·서비스 칩·lineBox(한글 줄높이)·svgLineIcon
-  ui/calendar/          CalendarScreen · CalendarHeader(보기 탭 포함) · CalendarTimeline(일·3일·주) · MonthView(월 격자) · YearView(열두 달) · ReservationListSection(고른 날·달 목록) · ReservationCard · 예약 창들
+  ui/calendar/          CalendarScreen · CalendarHeader(보기 탭 포함) · CalendarTimeline(일·3일·주) · MonthView(월 격자) · YearView(열두 달) · ReservationListSection(고른 날·달 목록) · ReservationCard · NotificationCenter(알림 종·시트) · 예약 창들
 app/src/debug/          예시 데이터(빈 매장일 때만, 예약 추가 화면 전까지)
 app/src/main/res/      앱 아이콘(mipmap-anydpi-v26 적응형 — 앞면 웹 logo.svg 의자, 바탕 웹 아이콘 그라데이션) · 알림 아이콘
 store/                 Play 스토어 등록용 512px 아이콘(png) + 원본 svg — 앱 아이콘을 바꾸면 svg 도 고쳐 다시 뽑는다
