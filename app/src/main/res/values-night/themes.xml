@@ -1,0 +1,8 @@
+<resources>
+    <!-- 어두운 화면(시스템 테마) — 창 배경 = TasTokens DarkPalette.Surface. 앱이 그려지기 전 흰 화면이 번쩍이지 않게. -->
+    <style name="Theme.Tas" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#1C1C1E</item>
+        <!-- 어두운 대화상자 위 강조 글자 = 웹 어두운 brand-color -->
+        <item name="android:colorAccent">#A57BFF</item>
+    </style>
+</resources>
