@@ -193,7 +193,7 @@ private fun CreatePaymentFields(form: ReservationForm, onChange: (ReservationFor
             val earned = createPointPreview(form, settings)
             Text(
                 if (earned != null) "결제 ${formatPrice(form.price)} · 적립률 ${settings.serviceRate.toInt()}% → ${formatPrice(earned)} 적립"
-                else "결제 ${formatPrice(form.price)}로 결제완료 처리됩니다.",
+                else "결제 ${formatPrice(form.price)}으로 결제완료 처리됩니다." // 금액은 늘 "원"(받침)으로 끝나 "으로",
                 color = TasColors.DarkGray2,
                 fontSize = TasSizes.SmallFont,
             )
