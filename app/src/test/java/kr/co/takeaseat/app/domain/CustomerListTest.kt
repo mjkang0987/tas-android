@@ -19,6 +19,23 @@ class CustomerListTest {
         assertFalse(matchesChosung("김민수", ""))
     }
 
+    // 웹 search-highlight.test.ts 와 같은 경우
+    @Test fun `검색어 구간 - 일반 부분일치 먼저, 다음 초성`() {
+        assertEquals(1 until 3, findMatchRange("김민수", "민수"))
+        assertNull(findMatchRange("Kim", "kim"))
+        assertEquals(0 until 3, findMatchRange("Kim", "kim", caseInsensitive = true))
+        assertEquals(0 until 3, findMatchRange("김민수", "ㄱㅁㅅ"))
+        assertEquals(1 until 4, findMatchRange("이김민수", "ㄱㅁㅅ"))
+        assertEquals(0 until 1, findMatchRange("가나다", "가"))
+        assertNull(findMatchRange("김민수", "박서준"))
+        assertNull(findMatchRange("김민수", "ㅂㅅㅈ"))
+        assertNull(findMatchRange("김민수", ""))
+        assertEquals(0 until 3, findMatchRange("김민수", "ㄱㅁㅅ", caseInsensitive = true))
+        // 🙂 는 UTF-16 두 칸 — 웹과 같은 인덱스
+        assertEquals(3 until 5, findMatchRange("🙂김민수", "민수"))
+        assertEquals(2 until 5, findMatchRange("🙂김민수", "ㄱㅁㅅ"))
+    }
+
     @Test fun `통계 - 지난 진행은 완료, 최근 서비스는 취소·노쇼 빼고 가장 늦은 것`() {
         val list = listOf(
             r(1, "2026-10-01", "10:00", service = "옛날"), r(2, "2026-10-25", "11:00", service = "다음주"),

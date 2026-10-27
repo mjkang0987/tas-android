@@ -7,6 +7,29 @@
 
 ---
 
+## 🟡 진행 — 20단계: iOS 에만 있던 게스트 기능 따라잡기 (지시자 2026-10-27 "iOS에만 있는 6개 전부 안드로이드에 맞춰줘", "디자인은 웹 기준")
+
+한 기능 = 한 브랜치·한 PR. 생김새는 웹 정의를 이식하고, 웹에 없는 기능(20-4)은 웹 시각 언어 + iOS 동작을 따른다.
+
+| # | 기능 | 웹 | iOS | 상태 |
+|---|------|----|-----|------|
+| 20-1 | 고객 명단 검색어 하이라이트 | `search-highlight.ts`·`HighlightMatch` | `SearchHighlight.swift` | ✅ v0.3.0 |
+| 20-2 | 고객 합치기 | 게스트는 숨김(tas #303) | `CustomerMergePicker` | ⏭ 안 함 — 웹 게스트처럼 숨김 유지, iOS 도 숨김(tas-ios #67) |
+| 20-3 | 넓은 화면 매출 차트(추이·담당자별) | `RevenueChartGrid`(데스크톱) | `RevenueView` extraCharts | ⬜ |
+| 20-4 | 예약 등록하며 결제완료 | 없음 | `ReservationCreateView` 결제 칸 | ⬜ |
+| 20-5 | 캘린더 담당자 필터 | 헤더 둘째 줄 '전체보기' 선택(`Header.tsx` StyledAssigneeFilter — 전체·미지정·담당자·휴직자 묶음) | `CalendarView` 필터 바 | ⬜ |
+| 20-6 | 고객 상세 방문 통계·첫 방문 | 없음 | (삭제, tas-ios #67) | ⏭ 안 함 — 지시자 2026-10-27 "특별히 추가 안해도" |
+
+### 20-1 검색어 하이라이트 (`claude/android-search-highlight`)
+- `domain/CustomerList.kt` 에 `findMatchRange` — 웹 `findMatchRange` 이식(일반 부분일치 먼저 → 초성 부분일치, 대소문자 무시는 선택). Kotlin 문자열도 UTF-16 이라 웹과 같은 인덱스.
+- 고객 명단 이름에 걸린 구간만 `WarningBgSoft`(웹 `--warning-bg-soft`, 글자색 그대로). 웹 `AddressCustomerSummary` 처럼 `caseInsensitive`·trim 한 검색어.
+  웹 mark 의 모서리 2px 는 Compose 글자 배경에 줄 수 없어 뺀다.
+- 웹 헤더 검색 레이어(`HeaderSearchLayer`)의 하이라이트는 안드로이드에 헤더 검색이 없어 해당 없음.
+- 테스트: 웹 `search-highlight.test.ts` 경우 그대로 `CustomerListTest` 에.
+- 검증: 유닛 통과 · 에뮬레이터(폰) 초성 'ㄱㅁ' → 김민지 '김민' · 'KIM' → Joakim Lee 'kim'(대소문자 무시, 잠깐 넣은 시험 고객은 원복) · 어두운 화면(웹과 같은 16% 노랑).
+
+---
+
 ## ✅ 완료 — 19단계: 알림 종 (`claude/android-notification-bell`, v0.2.0)
 
 ### 요구 (지시자 2026-10-27 "알림 벨도 그대로 진행해줘", iOS 와 같이)

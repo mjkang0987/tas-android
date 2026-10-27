@@ -17,6 +17,20 @@ fun chosungOf(text: String): String = text.map { ch ->
 fun matchesChosung(target: String, query: String): Boolean =
     query.isNotEmpty() && query.all { it in CHOSUNG_SET } && chosungOf(target).contains(query)
 
+/**
+ * 검색어가 걸린 구간(하이라이트용) — 웹 `search-highlight.ts` findMatchRange.
+ * 일반 부분일치 먼저, 못 찾으면 초성 — 검색 매칭(이름 OR 초성)과 같은 순서라 어긋나지 않는다.
+ */
+fun findMatchRange(text: String, query: String, caseInsensitive: Boolean = false): IntRange? {
+    if (query.isEmpty()) return null
+    val plain = text.indexOf(query, ignoreCase = caseInsensitive)
+    if (plain != -1) return plain until plain + query.length
+    if (!query.all { it in CHOSUNG_SET }) return null
+    // chosungOf 는 글자 수를 그대로 두므로 초성열 인덱스 = 원문 인덱스
+    val chosung = chosungOf(text).indexOf(query)
+    return if (chosung == -1) null else chosung until chosung + query.length
+}
+
 /** 고객 목록에서 예약 상태 — 지난 날짜의 진행 예약은 완료로 센다(웹 getEffectiveStatus). */
 enum class CustomerReservationGroup(val label: String) { Booked("예약"), Completed("완료"), Cancelled("취소"), Noshow("노쇼") }
 

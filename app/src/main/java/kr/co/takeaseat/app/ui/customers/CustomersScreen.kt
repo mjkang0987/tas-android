@@ -25,6 +25,7 @@ import kr.co.takeaseat.app.ui.components.PageHero
 import kr.co.takeaseat.app.ui.components.ScreenHeader
 import androidx.compose.foundation.layout.PaddingValues
 import kr.co.takeaseat.app.domain.addMemoTag
+import kr.co.takeaseat.app.domain.findMatchRange
 import kr.co.takeaseat.app.domain.rechargePoints
 import kr.co.takeaseat.app.domain.removeMemoTag
 import androidx.compose.foundation.clickable
@@ -64,6 +65,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -175,6 +179,7 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier, addRequest
                     customer = customer,
                     stats = statsById[customer.id] ?: customerStats(emptyList(), today),
                     matchedTags = match.matchedTags,
+                    nameMatch = findMatchRange(customer.name, query.trim(), caseInsensitive = true),
                     open = open,
                     onNameClick = { details.openCustomer(customer.id) },
                     onToggle = {
@@ -227,12 +232,20 @@ fun CustomersScreen(store: GuestStore, modifier: Modifier = Modifier, addRequest
     if (adding) CustomerAddSheet(store, onDismiss = { adding = false })
 }
 
+/** 웹 HighlightMatch — 검색어가 걸린 구간만 연노랑 바탕(--warning-bg-soft), 글자색은 그대로. 웹의 모서리 2px 는 글자 배경에 줄 수 없다. */
+@Composable
+private fun highlightMatch(text: String, range: IntRange?): AnnotatedString = buildAnnotatedString {
+    append(text)
+    if (range != null) addStyle(SpanStyle(background = TasColors.WarningBgSoft), range.first, range.last + 1)
+}
+
 /** 웹 AddressCustomerSummary(모바일 3줄) — 이름·연락처 / 최근 서비스 / 적립금 + 상태별 건수. 행 전체를 누르면 펼친다. */
 @Composable
 private fun CustomerRow(
     customer: Customer,
     stats: CustomerStats,
     matchedTags: List<CustomerMemoTag>,
+    nameMatch: IntRange?,
     open: Boolean,
     onToggle: () -> Unit,
     onNameClick: () -> Unit,
@@ -261,7 +274,7 @@ private fun CustomerRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
               Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 // 웹 StyledNameButton — 이름을 누르면 고객 상세(행의 나머지는 펼치기)
-                Text(customer.name, color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1,
+                Text(highlightMatch(customer.name, nameMatch), color = TasColors.Black, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false).heightIn(min = 24.dp).wrapContentHeight(Alignment.CenterVertically)
                         .clickable(role = Role.Button, onClickLabel = "고객 정보 보기", onClick = onNameClick))
