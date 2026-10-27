@@ -110,7 +110,9 @@ fun validateCreate(form: ReservationForm, snapshot: LocalDbSnapshot, labels: Sto
         return FormError(FormField.Time, "$name 예약(${overlap.startTime}~${overlap.endTime})과 시간이 겹칩니다.")
     }
     // 결제 줄은 0원이면 빠져 결제완료가 조용히 안 된다
-    if (form.markPaid && form.price <= 0) return FormError(FormField.Payment, "결제할 금액이 없습니다.")
+    if (form.markPaid && form.price <= 0) return FormError(FormField.Payment, "결제할 금액이 없습니다. 가격을 입력하거나 결제완료를 꺼 주세요.")
+    // 고르는 칸 밖의 수단(예: 적립금 — 잔액 확인 없이 빠진다)은 저장하지 않는다
+    if (form.markPaid && form.payMethod !in CREATE_PAYMENT_METHODS) return FormError(FormField.Payment, "결제 종류를 선택해 주세요.")
     return null
 }
 
@@ -155,9 +157,9 @@ val CREATE_PAYMENT_METHODS = PAYMENT_METHOD_OPTIONS - "적립금"
 fun createPaymentForm(form: ReservationForm, settings: PointSettings): PaymentForm =
     PaymentForm(emptyList(), PointAward(false, "0")).withEntries(listOf(PaymentDraft(form.payMethod, form.price.toString())), settings)
 
-/** 안내 줄의 적립 예정액 — 적립을 안 켠 매장이면 null. */
+/** 안내 줄의 적립 예정액 — 적립이 없으면(안 켠 매장·0%·할인처럼 받은 돈이 아닌 수단) null(iOS 도 적립률 0이면 적립 문구를 안 보인다). */
 fun createPointPreview(form: ReservationForm, settings: PointSettings): Int? =
-    createPaymentForm(form, settings).pointAward.takeIf { it.enabled }?.amount?.toIntOrNull()
+    createPaymentForm(form, settings).pointAward.takeIf { it.enabled }?.amount?.toIntOrNull()?.takeIf { it > 0 }
 
 /** 웹 예약경로 select 의 선택지. */
 val RESERVATION_CHANNELS = listOf("전화예약", "현장방문", "네이버예약")

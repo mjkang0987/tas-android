@@ -140,12 +140,24 @@ class ReservationCreateTest {
         val card = f.copy(payMethod = "카드")
         assertEquals(0, applyCreate(card, base, now).reservations.last().pointEarned)
         assertNull(createPointPreview(card, base.storeSettings.pointSettings))
+        assertNull(createPointPreview(f, rate10.storeSettings.pointSettings)) // 할인 — 적립 0이면 안내에 적립 문구 없음
+    }
+
+    @Test fun `등록하며 결제 - 새 고객에게 적립이 붙고, 네이버 예약금 수단도 한 줄 전액`() {
+        val f = valid().copy(markPaid = true, payMethod = "카드") // 새고객 — applyCreate 안에서 만들어진다
+        val next = applyCreate(f, rate10, now)
+        val created = next.customers.first { it.name == "새고객" }
+        assertEquals(next.reservations.last().customerId, created.id)
+        assertEquals(f.price / 10, created.points)
+        val naver = applyCreate(f.copy(customerId = 3, customerQuery = "김민수", payMethod = "네이버 예약금"), rate10, now).reservations.last()
+        assertEquals(listOf(PaymentEntry("네이버 예약금", f.price)), naver.paymentEntries)
     }
 
     @Test fun `등록하며 결제 - 끄면 결제 없음, 0원이면 막는다, 적립금은 고를 수 없다`() {
         val off = applyCreate(valid(), base, now).reservations.last()
         assertNull(off.paymentEntries)
-        assertEquals(FormError(FormField.Payment, "결제할 금액이 없습니다."), validateCreate(valid().copy(markPaid = true).changePrice("0"), base, labels))
+        assertEquals(FormField.Payment, validateCreate(valid().copy(markPaid = true).changePrice("0"), base, labels)?.field)
+        assertEquals(FormError(FormField.Payment, "결제 종류를 선택해 주세요."), validateCreate(valid().copy(markPaid = true, payMethod = "적립금"), base, labels))
         assertEquals(false, "적립금" in CREATE_PAYMENT_METHODS)
         assertEquals(9, CREATE_PAYMENT_METHODS.size)
     }
