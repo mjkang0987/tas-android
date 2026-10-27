@@ -105,7 +105,8 @@ fun CalendarHeader(
     }
     // 웹 헤더의 알림 종(곧 시작하는 예약)
     val notificationBell = @Composable { NotificationBell(count = bell.count, dot = bell.dot, onClick = onBell) }
-    // 웹 헤더는 flex-wrap — 넓은 화면이라도 자리가 모자라면(폴드에 왼쪽 메뉴를 편 폭) 담당자·종 줄이 다음 줄로 내려간다
+    // 웹 641px 이상은 한 줄(날짜 칸이 좁아진다). 안드로이드는 폴드에 왼쪽 메뉴를 편 폭(약 470dp)에서 날짜가 잘려,
+    // 헤더가 [ONE_ROW_MIN] 보다 좁으면 담당자·종 줄을 모바일처럼 다음 줄로 내린다(안드로이드 보완)
     BoxWithConstraints(modifier.fillMaxWidth()) {
     val stacked = aside == null || maxWidth < ONE_ROW_MIN
     // 웹: header padding 4 10 2 + 1줄 padding 3 0 5 · 2줄(모바일) padding 4 0
@@ -175,7 +176,7 @@ private val ONE_ROW_MIN = 520.dp
 
 /**
  * 웹 StyledAssigneeFilter — 알약 select. 전체보기 · 미지정(회색 점) · 재직(색 점) · '휴직자' · '퇴직자' 묶음.
- * 고른 줄은 연보라 바탕 + 굵게(웹 option:checked). 지운 담당자를 고르고 있으면 '전체보기'로 보인다(웹 select 도 값이 없으면 첫 줄).
+ * 고른 줄은 연보라 바탕 + 굵게(웹 option:checked). [selected] 는 지운 담당자를 걸러 낸 값(effectiveCalendarAssignee).
  */
 @Composable
 private fun AssigneeFilter(assignees: List<Assignee>, selected: Int?, label: String, narrow: Boolean, onSelect: (Int?) -> Unit) {
@@ -184,14 +185,14 @@ private fun AssigneeFilter(assignees: List<Assignee>, selected: Int?, label: Str
     val valueText = when (selected) {
         null -> "전체보기"
         UNASSIGNED_FILTER -> "미지정"
-        else -> assignees.firstOrNull { it.id == selected }?.name ?: "전체보기"
+        else -> assignees.firstOrNull { it.id == selected }?.name.orEmpty()
     }
     TasSelect(
         label = "달력 $label 필터",
         valueText = valueText,
         onClick = { open = true },
-        // 웹 min-width 128(모바일 96), 넓어도 글자만큼만
-        modifier = Modifier.widthIn(min = if (narrow) 96.dp else 128.dp).width(IntrinsicSize.Max),
+        // 웹 min-width 128(모바일 96), 넓어도 글자만큼만 — 긴 이름·큰 글자에 날짜 칸이 밀리지 않게 상한(넘치면 말줄임)
+        modifier = Modifier.widthIn(min = if (narrow) 96.dp else 128.dp, max = 200.dp).width(IntrinsicSize.Max),
         showLabel = false,
         pill = true,
     ) {
