@@ -255,7 +255,7 @@ private fun RowScope.TrendBars(charts: RevenueCharts, from: String, to: String, 
                                 // 매출이 있는 날은 아주 작아도 3 — 0원인 날과 구분
                                 // heightIn 이 먼저 — fillMaxHeight 뒤에 두면 고정된 높이를 못 넘어 최소값이 묻힌다
                                 Box(Modifier.fillMaxWidth().heightIn(min = 3.dp).fillMaxHeight(ratio)
-                                    .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(TasColors.BrandFill))
+                                    .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(TasColors.Brand)) // 글자색 브랜드 — 어두운 화면 대비 5.6:1(BrandFill 은 2.3:1)
                             }
                         }
                     }
