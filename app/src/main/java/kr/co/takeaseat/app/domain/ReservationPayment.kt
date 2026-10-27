@@ -102,9 +102,9 @@ private fun pointsUsed(entries: List<PaymentEntry>) = entries.filter { it.method
 
 /**
  * 결제 저장(검사 통과 뒤). 예약 = 결제완료 + 줄 + 적립. 고객 적립금 = 쓴 만큼 빼고(이전 결제와의 차이) 적립 차이를 더한다(0 아래로 안 내려감),
- * 이력은 '예약 결제 적립금 사용' · '예약 결제 적립'/'예약 결제 적립 조정'.
+ * 이력은 '예약 결제 적립금 사용' · '예약 결제 적립'/'예약 결제 적립 조정'. [recordHistory] = 예약 변경 이력 한 줄(등록하며 결제할 땐 남기지 않는다).
  */
-fun applyPayment(snapshot: LocalDbSnapshot, reservationId: Int, form: PaymentForm, now: Instant = Instant.now()): LocalDbSnapshot {
+fun applyPayment(snapshot: LocalDbSnapshot, reservationId: Int, form: PaymentForm, now: Instant = Instant.now(), recordHistory: Boolean = true): LocalDbSnapshot {
     val before = snapshot.reservations.firstOrNull { it.id == reservationId } ?: return snapshot
     val entries = normalizedEntries(form)
     if (entries.isEmpty()) return snapshot
@@ -128,7 +128,7 @@ fun applyPayment(snapshot: LocalDbSnapshot, reservationId: Int, form: PaymentFor
     }
     return snapshot.copy(
         reservations = snapshot.reservations.map { if (it.id == reservationId) after else it },
-        history = snapshot.history + ReservationHistoryEntry(reservationId, before, after, now.toString()),
+        history = if (recordHistory) snapshot.history + ReservationHistoryEntry(reservationId, before, after, now.toString()) else snapshot.history,
         customers = customers,
     )
 }
