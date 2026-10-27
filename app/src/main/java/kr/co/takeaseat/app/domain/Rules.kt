@@ -82,6 +82,13 @@ private fun assigneeNameOrder(name: String): Int = when {
 /** 캘린더 담당자 필터 값 — null 전체보기, [UNASSIGNED_FILTER] 미지정, 그 밖은 담당자 id(웹 calendarAssigneeId). */
 const val UNASSIGNED_FILTER = 0
 
+/**
+ * 실제로 거를 값 — 고른 담당자가 지워졌으면(다른 기기에서 지운 게 들어옴) 전체보기. 지운 담당자의 예약은 미지정으로 옮겨져
+ * 그 id 로는 아무것도 안 걸리는데, 칸은 '전체보기'로 보여 화면이 빈 채로 어긋났다(웹 select 도 같은 버그).
+ */
+fun effectiveCalendarAssignee(filterId: Int?, assignees: List<Assignee>): Int? =
+    filterId.takeIf { it == null || it == UNASSIGNED_FILTER || assignees.any { a -> a.id == it } }
+
 /** 웹 Calendar·Timeline·Month·Year 거르기 — 미지정은 담당자 없음(null·0, 웹 `!reservation.assigneeId`). */
 fun matchesCalendarAssignee(reservation: Reservation, filterId: Int?): Boolean = when (filterId) {
     null -> true

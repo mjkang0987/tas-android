@@ -20,6 +20,7 @@ import kr.co.takeaseat.app.data.GuestStore
 import kr.co.takeaseat.app.domain.storeLabels
 import kr.co.takeaseat.app.domain.UNASSIGNED_FILTER
 import kr.co.takeaseat.app.domain.matchesCalendarAssignee
+import kr.co.takeaseat.app.domain.effectiveCalendarAssignee
 import kr.co.takeaseat.app.domain.CalendarView
 import kr.co.takeaseat.app.domain.UNASSIGNED_COLOR
 import kr.co.takeaseat.app.domain.bellIndicator
@@ -84,14 +85,15 @@ fun CalendarScreen(
     val scale = remember(snapshot.services) { timelineScaleFor(snapshot.services) }
 
     // 담당자 필터로 거른 예약 — 타임라인·월·연·아래 목록이 모두 이걸 본다. 알림 종·신규 배지(첫 방문)는 거르지 않는다(웹과 같다).
-    val shown = remember(snapshot, assigneeFilter) {
-        if (assigneeFilter == null) snapshot else snapshot.copy(reservations = snapshot.reservations.filter { matchesCalendarAssignee(it, assigneeFilter) })
+    val filterId = effectiveCalendarAssignee(assigneeFilter, snapshot.assignees)
+    val shown = remember(snapshot, filterId) {
+        if (filterId == null) snapshot else snapshot.copy(reservations = snapshot.reservations.filter { matchesCalendarAssignee(it, filterId) })
     }
-    // 웹 ReservationListSection — 목록 제목 뒤 ' · 이름'(지운 담당자면 붙이지 않는다)
-    val filterName = when (assigneeFilter) {
+    // 웹 ReservationListSection — 목록 제목 뒤 ' · 이름'
+    val filterName = when (filterId) {
         null -> null
         UNASSIGNED_FILTER -> "미지정"
-        else -> snapshot.assignees.firstOrNull { it.id == assigneeFilter }?.name
+        else -> snapshot.assignees.firstOrNull { it.id == filterId }?.name
     }
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     // 취소·노쇼도 그대로 그린다(웹과 같이 빗금으로 구분).
@@ -153,7 +155,7 @@ fun CalendarScreen(
             dateKey = it.toDateKey()
             listDateKey = listDateWithin(LocalDate.parse(listDateKey), it).toDateKey()
         }, onCreate = { creating = "" }, bell = bellIndicator(todo = 0, soon = upcoming.soon.size), onBell = { notifying = true },
-            assignees = snapshot.assignees, assigneeFilter = assigneeFilter, onAssigneeFilter = { assigneeFilter = it }, assigneeLabel = labels.assignee)
+            assignees = snapshot.assignees, assigneeFilter = filterId, onAssigneeFilter = { assigneeFilter = it }, assigneeLabel = labels.assignee)
         // 넓은 화면은 왼쪽 메뉴가 보기를 고른다(웹 MobileViewTabs 는 640px 이하만)
         if (LocalAsideToggle.current == null) CalendarViewTabs(selected = view, onSelect = ::selectView)
         if (view == CalendarView.Year) {

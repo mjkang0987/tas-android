@@ -17,4 +17,12 @@ class CalendarAssigneeFilterTest {
     @Test fun `담당자는 그 담당자만`() = assertEquals(listOf(2), shown(2))
 
     @Test fun `없는 담당자는 아무것도`() = assertEquals(emptyList<Int>(), shown(99))
+
+    @Test fun `지운 담당자를 고르고 있으면 전체보기로`() {
+        val assignees = listOf(Assignee(1, "원장"))
+        assertEquals(null, effectiveCalendarAssignee(99, assignees))
+        assertEquals(1, effectiveCalendarAssignee(1, assignees))
+        assertEquals(UNASSIGNED_FILTER, effectiveCalendarAssignee(UNASSIGNED_FILTER, assignees))
+        assertEquals(null, effectiveCalendarAssignee(null, assignees))
+    }
 }
