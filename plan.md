@@ -17,8 +17,18 @@
 | 20-2 | 고객 합치기 | 게스트는 숨김(tas #303) | `CustomerMergePicker` | ⏭ 안 함 — 웹 게스트처럼 숨김 유지, iOS 도 숨김(tas-ios #67) |
 | 20-3 | 넓은 화면 매출 차트(추이·담당자별) | `RevenueChartGrid`(데스크톱) | `RevenueView` extraCharts | ✅ v0.4.0 |
 | 20-4 | 예약 등록하며 결제완료 | 없음 | `ReservationCreateView` 결제 칸 | ⬜ |
-| 20-5 | 캘린더 담당자 필터 | 헤더 둘째 줄 '전체보기' 선택(`Header.tsx` StyledAssigneeFilter — 전체·미지정·담당자·휴직자 묶음) | `CalendarView` 필터 바 | ⬜ |
+| 20-5 | 캘린더 담당자 필터 | 헤더 둘째 줄 '전체보기' 선택(`Header.tsx` StyledAssigneeFilter — 전체·미지정·담당자·휴직자 묶음) | `CalendarView` 필터 바 | 🟡 |
 | 20-6 | 고객 상세 방문 통계·첫 방문 | 없음 | (삭제, tas-ios #67) | ⏭ 안 함 — 지시자 2026-10-27 "특별히 추가 안해도" |
+
+### 20-5 캘린더 담당자 필터 (`claude/android-calendar-assignee-filter`) — 🟡
+- 웹 `layout/Header.tsx` StyledToolRow(헤더 둘째 줄): 왼쪽 담당자 고르기(`StyledAssigneeFilter` — 알약, 32 높이, 12 글자, 최소 폭 128·좁으면 96, 오른쪽 12 화살표)
+  · 오른쪽 알림 종(· 고객 검색 — 안드로이드엔 헤더 검색이 없어 해당 없음). 넓은 화면(641 이상)은 한 줄에 이어 붙는다.
+  → 안드로이드 좁은 화면: 1줄 '오늘 · ‹ › · 날짜 · ＋예약', 2줄 '담당자 고르기 …… 종'(종을 1줄에서 2줄로 옮긴다 — 웹과 같게). 넓은 화면: 한 줄에 날짜 뒤 '담당자 고르기 · 종'.
+- 고르는 목록(웹 option·optgroup): 전체보기 · 미지정(회색 점) · 재직 담당자(색 점) · '휴직자' 묶음 · '퇴직자' 묶음. 고른 줄은 연보라 바탕 + 굵게. 기존 `TasSelect` 에 알약 모양만 더해 재사용.
+- 거르기(웹 Calendar·Timeline·Month·Year·ReservationListSection): 전체 = 모두, 미지정(0) = 담당자 없음(null·0), 그 밖 = 그 담당자.
+  일·3일·주 타임라인, 월 칸·아래 목록, 연 달별 건수·합계·아래 목록에 모두. 목록 제목 뒤 ' · 이름'(웹 modalTitle). 알림 종(곧 시작)·신규 배지(첫 방문)는 거르지 않는다(웹과 같다).
+- 고른 값은 화면 상태(rememberSaveable) — 웹도 저장하지 않는다(새로 열면 전체보기).
+- 테스트: 거르기 판정(전체·미지정 null/0·담당자) 유닛. 검증 3회차(리뷰·유닛/빌드·에뮬레이터 휴대폰/폴드).
 
 ### 20-3 넓은 화면 매출 차트 (`claude/android-revenue-charts`, v0.4.0) — ✅ (신규 컴포넌트 지시자 승인 2026-10-27)
 - 웹 `RevenueChartGrid` 는 641px 이상에서만 보인다(640 이하 `display: none` — 휴대폰은 요약 카드·일별 목록만). 안드로이드도 640dp 초과(펼친 폴드·태블릿)에서만.
