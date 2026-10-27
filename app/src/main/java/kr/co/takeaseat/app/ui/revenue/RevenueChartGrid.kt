@@ -255,7 +255,7 @@ private fun RowScope.TrendBars(charts: RevenueCharts, from: String, to: String, 
                                 // 매출이 있는 날은 아주 작아도 3 — 0원인 날과 구분
                                 // heightIn 이 먼저 — fillMaxHeight 뒤에 두면 고정된 높이를 못 넘어 최소값이 묻힌다
                                 Box(Modifier.fillMaxWidth().heightIn(min = 3.dp).fillMaxHeight(ratio)
-                                    .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(TasColors.BrandFill))
+                                    .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(TasColors.Brand)) // 글자색 브랜드 — 어두운 화면 대비 5.6:1(BrandFill 은 2.3:1)
                             }
                         }
                     }
@@ -271,10 +271,11 @@ private fun RowScope.TrendBars(charts: RevenueCharts, from: String, to: String, 
 
 // ── ② 결제수단 비중 · ③ 예약비중 (도넛) ──
 
-/** 웹 StyledDonutChart — 150 원, 두께 22, 가운데 값·이름. 합이 0이면 회색 한 바퀴(#E5E7EB). */
+/** 웹 StyledDonutChart — 150 원, 두께 22, 가운데 값·이름. 합이 0이면 회색 한 바퀴(웹 --light-gray-color — 어두운 화면에서 어두워진다). */
 @Composable
 private fun Donut(segments: List<Pair<Color, Int>>, value: String, label: String, twoColumns: Boolean) {
     val sum = segments.sumOf { it.second }
+    val empty = TasColors.LightGray
     Box(
         Modifier.padding(horizontal = if (twoColumns) 50.dp else 10.dp, vertical = if (twoColumns) 25.dp else 10.dp).size(150.dp)
             .clearAndSetSemantics { contentDescription = "$label $value" },
@@ -285,7 +286,7 @@ private fun Donut(segments: List<Pair<Color, Int>>, value: String, label: String
             val inset = stroke / 2
             val arcSize = Size(size.width - stroke, size.height - stroke)
             if (sum <= 0) {
-                drawArc(DonutEmpty, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
+                drawArc(empty, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
             } else {
                 // 웹 conic-gradient 는 12시에서 시계방향
                 var start = -90f
@@ -526,7 +527,6 @@ private fun NoshowCard(
 
 private val MinBar = 6.dp
 private val MaxBar = 48.dp
-private val DonutEmpty = Color(0xE5, 0xE7, 0xEB)
 /** 웹 rgba(101, 38, 217, 0.1) — 추이 상자 오른쪽 위 빛 */
 private val TasBrandGlow = Color(101, 38, 217).copy(alpha = 0.1f)
 /** 웹 rgba(101, 38, 217, 0.08) — 추이 상자 테두리 */
