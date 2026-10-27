@@ -16,9 +16,18 @@
 | 20-1 | 고객 명단 검색어 하이라이트 | `search-highlight.ts`·`HighlightMatch` | `SearchHighlight.swift` | ✅ v0.3.0 |
 | 20-2 | 고객 합치기 | 게스트는 숨김(tas #303) | `CustomerMergePicker` | ⏭ 안 함 — 웹 게스트처럼 숨김 유지, iOS 도 숨김(tas-ios #67) |
 | 20-3 | 넓은 화면 매출 차트(추이·담당자별) | `RevenueChartGrid`(데스크톱) | `RevenueView` extraCharts | ✅ v0.4.0 |
-| 20-4 | 예약 등록하며 결제완료 | 없음 | `ReservationCreateView` 결제 칸 | ⬜ |
+| 20-4 | 예약 등록하며 결제완료 | 없음 | `ReservationCreateView` 결제 칸 | 🟡 |
 | 20-5 | 캘린더 담당자 필터 | 헤더 둘째 줄 '전체보기' 선택(`Header.tsx` StyledAssigneeFilter — 전체·미지정·담당자·휴직자 묶음) | `CalendarView` 필터 바 | ✅ v0.5.0 |
 | 20-6 | 고객 상세 방문 통계·첫 방문 | 없음 | (삭제, tas-ios #67) | ⏭ 안 함 — 지시자 2026-10-27 "특별히 추가 안해도" |
+
+### 20-4 예약 등록하며 결제완료 (`claude/android-create-paid`) — 🟡
+- 웹 예약 추가(`ReservationCreate`)엔 없고 iOS(`ReservationCreateView` paymentSection)에만 있다 — 웹에 없는 기능이라 생김새는 웹 결제 칸(`ReservationPaymentSection` 의 '적립 적용' 체크 행·고르는 칸)을 따른다.
+- 예약 추가 시트 맨 아래(요청사항 다음)에 위 1px 선 · '결제완료로 등록' 체크 · 켜면 '결제수단'(기본 카드, 웹 PAYMENT_METHOD_OPTIONS 에서 '적립금' 뺀 9종 — 잔액 확인이 필요해 상세 결제에서) · 안내 한 줄.
+  안내: 적립을 켠 매장이면 '결제 n원 · 적립률 r% → m원 적립', 아니면 'n원으로 결제완료 처리됩니다.'(iOS 문구).
+- 저장: 예약을 만든 뒤 기존 결제 저장(`applyPayment`)을 그대로 — 한 줄(고른 수단, 가격 전액), 적립은 웹 결제 규칙(서비스 적립을 켠 매장만, 받은 돈 × 적립률 — 할인 등은 0). 새 예약이라 변경 이력은 남기지 않는다.
+  iOS 는 할인으로 결제해도 적립했는데, 웹 결제 규칙을 따른다(차이로 기록).
+- 가격 0원에 결제완료를 켜면 저장 막기('결제할 금액이 없습니다.').
+- 테스트: 등록+결제(줄·결제완료·적립·고객 잔액·이력 없음), 할인 결제 적립 0, 적립 끈 매장, 0원 막기. 검증 3회차.
 
 ### 20-5 캘린더 담당자 필터 (`claude/android-calendar-assignee-filter`, v0.5.0) — ✅
 - 웹 `layout/Header.tsx` StyledToolRow(헤더 둘째 줄): 왼쪽 담당자 고르기(`StyledAssigneeFilter` — 알약, 32 높이, 12 글자, 최소 폭 128·좁으면 96, 오른쪽 12 화살표)
