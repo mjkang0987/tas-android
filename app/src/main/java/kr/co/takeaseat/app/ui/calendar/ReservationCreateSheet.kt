@@ -6,8 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -18,7 +23,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,15 +38,19 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import kr.co.takeaseat.app.data.GuestStore
+import kr.co.takeaseat.app.domain.CREATE_PAYMENT_METHODS
 import kr.co.takeaseat.app.domain.FormError
 import kr.co.takeaseat.app.domain.FormField
-import kr.co.takeaseat.app.domain.ReservationForm
+import kr.co.takeaseat.app.domain.PointSettings
 import kr.co.takeaseat.app.domain.RESERVATION_CHANNELS
+import kr.co.takeaseat.app.domain.ReservationForm
 import kr.co.takeaseat.app.domain.activeAssignees
 import kr.co.takeaseat.app.domain.applyCreate
 import kr.co.takeaseat.app.domain.assigneeStatus
 import kr.co.takeaseat.app.domain.buildCatalogMap
 import kr.co.takeaseat.app.domain.buildServiceColorMap
+import kr.co.takeaseat.app.domain.createPointPreview
+import kr.co.takeaseat.app.domain.formatPrice
 import kr.co.takeaseat.app.domain.isSelectableCustomer
 import kr.co.takeaseat.app.domain.roundedStartTime
 import kr.co.takeaseat.app.domain.sortCustomersByName
@@ -55,6 +70,7 @@ import kr.co.takeaseat.app.ui.components.TasSelect
 import kr.co.takeaseat.app.ui.components.TasTextField
 import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasSizes
+import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 
 
 /**
@@ -147,6 +163,54 @@ fun ReservationCreateSheet(store: GuestStore, onDismiss: () -> Unit, initialDate
                 errorFor = ::errorFor,
                 errorSeq = errorSeq,
             )
+            CreatePaymentFields(form, ::edit, snapshot.storeSettings.pointSettings, errorFor(FormField.Payment), errorSeq)
         }
+    }
+}
+
+/**
+ * '결제완료로 등록' — 웹 추가 화면엔 없는 앱 기능(iOS 와 같다). 생김새는 웹 결제 칸('적립 적용' 체크 행·고르는 칸)을 따른다.
+ * 켜면 결제수단(기본 카드) · 안내 한 줄. 저장은 상세 결제와 같은 규칙([createPaymentForm]).
+ */
+@Composable
+private fun CreatePaymentFields(form: ReservationForm, onChange: (ReservationForm) -> Unit, settings: PointSettings, error: String?, errorSeq: Int) {
+    Column(
+        Modifier.fillMaxWidth().drawBehindThemed { colors -> drawRect(colors.LightGray, size = Size(size.width, 1.dp.toPx())) }.padding(top = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            Modifier.toggleable(form.markPaid, role = Role.Checkbox) { onChange(form.copy(markPaid = it)) }.heightIn(min = 30.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Checkbox(checked = form.markPaid, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = TasColors.BrandFill), modifier = Modifier.size(20.dp))
+            Text("결제완료로 등록", color = TasColors.DarkGray, fontSize = TasSizes.SmallFont, fontWeight = FontWeight.SemiBold)
+        }
+        if (form.markPaid) {
+            TasSelect(
+                label = "결제수단",
+                options = CREATE_PAYMENT_METHODS,
+                selectedIndex = CREATE_PAYMENT_METHODS.indexOf(form.payMethod),
+                onSelect = { onChange(form.copy(payMethod = CREATE_PAYMENT_METHODS[it])) },
+            )
+            val earned = createPointPreview(form, settings)
+            // 적립률은 설정에서 정수만 받지만 소수가 들어와도 틀리게 보이지 않게(2.5 → "2.5", 5.0 → "5")
+            val rate = settings.serviceRate.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }
+            // 저장 오류가 떠 있으면(같은 뜻) 안내는 숨긴다
+            if (error == null) Text(
+                when {
+                    // 저장하면 막힌다 — 미리 고칠 곳을 알려 준다
+                    form.price <= 0 -> "가격을 입력해야 결제완료로 등록할 수 있습니다."
+                    earned != null -> "결제 ${formatPrice(form.price)} · 적립률 $rate% → ${formatPrice(earned)} 적립"
+                    // 금액은 늘 "원"(받침)으로 끝나 "으로"
+                    else -> "결제 ${formatPrice(form.price)}으로 결제완료 처리됩니다."
+                },
+                color = TasColors.DarkGray2,
+                fontSize = TasSizes.SmallFont,
+                // 결제수단·가격을 바꾸면 문구가 바뀐다 — 낭독기도 알려 준다
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+        if (error != null) FieldError(error, scrollKey = errorSeq)
     }
 }
