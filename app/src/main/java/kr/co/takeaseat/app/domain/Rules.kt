@@ -79,6 +79,16 @@ private fun assigneeNameOrder(name: String): Int = when {
     else -> 2
 }
 
+/** 캘린더 담당자 필터 값 — null 전체보기, [UNASSIGNED_FILTER] 미지정, 그 밖은 담당자 id(웹 calendarAssigneeId). */
+const val UNASSIGNED_FILTER = 0
+
+/** 웹 Calendar·Timeline·Month·Year 거르기 — 미지정은 담당자 없음(null·0, 웹 `!reservation.assigneeId`). */
+fun matchesCalendarAssignee(reservation: Reservation, filterId: Int?): Boolean = when (filterId) {
+    null -> true
+    UNASSIGNED_FILTER -> reservation.assigneeId == null || reservation.assigneeId == 0
+    else -> reservation.assigneeId == filterId
+}
+
 /** 웹 compareAssigneeName — 영문 → 한글 → 그 밖, 같은 묶음은 가나다순. */
 fun compareAssigneeName(a: String, b: String): Int {
     val oa = assigneeNameOrder(a)
