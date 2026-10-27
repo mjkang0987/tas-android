@@ -8,7 +8,7 @@ import java.time.temporal.ChronoUnit
 
 // 웹 `utils/revenue.ts`(resolveRevenue·집계 대상·getRangeRevenue·getRevenueInsights 중 요약 카드 몫),
 // `features/sales/model.ts`(buildStoreSales·addSalesToRevenue), `revenueChartUtils.ts`(기간 이동·상한),
-// `pages/settings.tsx`(기본 기간·빠른 기간) 이식. 그래프·지표별 분포는 웹 모바일도 숨겨 옮기지 않았다.
+// `pages/settings.tsx`(기본 기간·빠른 기간) 이식. 넓은 화면 그래프 몫은 `RevenueCharts.kt`.
 
 /** 웹 RevenueFilterMode — 예약완료만 / 취소·노쇼·요청 뺀 전체 예약. */
 enum class RevenueFilterMode { Completed, Booked }
@@ -82,12 +82,14 @@ fun isRevenueTarget(r: Reservation, assigneeId: Int?, mode: RevenueFilterMode): 
     }
 }
 
-/** 웹 resolvePaymentEntries 합 — 받은 돈 줄(할인·적립금·회원권 뺌), 줄 없는 옛 결제는 결제수단 하나 + 매출 전체. */
-private fun paidAmount(r: Reservation, catalog: List<ServiceItem>): Int = when {
-    !r.paymentEntries.isNullOrEmpty() -> r.paymentEntries.filter { it.amount > 0 && isRevenuePaymentMethod(it.method) }.sumOf { it.amount }
-    r.paymentCompleted == true && !r.paymentMethod.isNullOrEmpty() -> reservationRevenue(r, catalog)
-    else -> 0
+/** 웹 resolvePaymentEntries — 받은 돈 줄(할인·적립금·회원권 뺌), 줄 없는 옛 결제는 결제수단 하나 + 매출 전체. */
+fun receivedPayments(r: Reservation, catalog: List<ServiceItem>): List<PaymentEntry> = when {
+    !r.paymentEntries.isNullOrEmpty() -> r.paymentEntries.filter { it.amount > 0 && isRevenuePaymentMethod(it.method) }
+    r.paymentCompleted == true && !r.paymentMethod.isNullOrEmpty() -> listOf(PaymentEntry(r.paymentMethod, reservationRevenue(r, catalog)))
+    else -> emptyList()
 }
+
+private fun paidAmount(r: Reservation, catalog: List<ServiceItem>): Int = receivedPayments(r, catalog).sumOf { it.amount }
 
 /** 웹 StoreSale — 예약 밖에서 받은 돈. 게스트는 적립금 충전뿐(회원권 판매는 서버 전용). */
 data class StoreSale(val date: LocalDate, val amount: Int, val method: String?, val customerId: Int, val label: String)

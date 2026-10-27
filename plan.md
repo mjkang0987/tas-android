@@ -15,10 +15,29 @@
 |---|------|----|-----|------|
 | 20-1 | 고객 명단 검색어 하이라이트 | `search-highlight.ts`·`HighlightMatch` | `SearchHighlight.swift` | ✅ v0.3.0 |
 | 20-2 | 고객 합치기 | 게스트는 숨김(tas #303) | `CustomerMergePicker` | ⏭ 안 함 — 웹 게스트처럼 숨김 유지, iOS 도 숨김(tas-ios #67) |
-| 20-3 | 넓은 화면 매출 차트(추이·담당자별) | `RevenueChartGrid`(데스크톱) | `RevenueView` extraCharts | ⬜ |
+| 20-3 | 넓은 화면 매출 차트(추이·담당자별) | `RevenueChartGrid`(데스크톱) | `RevenueView` extraCharts | ✅ v0.4.0 |
 | 20-4 | 예약 등록하며 결제완료 | 없음 | `ReservationCreateView` 결제 칸 | ⬜ |
 | 20-5 | 캘린더 담당자 필터 | 헤더 둘째 줄 '전체보기' 선택(`Header.tsx` StyledAssigneeFilter — 전체·미지정·담당자·휴직자 묶음) | `CalendarView` 필터 바 | ⬜ |
 | 20-6 | 고객 상세 방문 통계·첫 방문 | 없음 | (삭제, tas-ios #67) | ⏭ 안 함 — 지시자 2026-10-27 "특별히 추가 안해도" |
+
+### 20-3 넓은 화면 매출 차트 (`claude/android-revenue-charts`, v0.4.0) — ✅ (신규 컴포넌트 지시자 승인 2026-10-27)
+- 웹 `RevenueChartGrid` 는 641px 이상에서만 보인다(640 이하 `display: none` — 휴대폰은 요약 카드·일별 목록만). 안드로이드도 640dp 초과(펼친 폴드·태블릿)에서만.
+  위치: 요약 카드(KPI) 아래, 일별 목록 위. 보기 '전체'·'매출 그래프'에서(웹 revenueViewTab all/chart, '매출 그래프' 칩도 넓은 화면만).
+- 카드 6장(웹 순서·문구 그대로, 2열 → 900dp 이하 1열):
+  ① 기간별 매출 추이(막대 + 0·절반·최대 눈금, 눌러 그날 상세) ② 결제수단 비중(도넛 + 범례 7종, 결제완료 기준)
+  ③ 예약비중(도넛, 전화·방문·네이버·온라인) ④ 담당자별 매출(전체비율 띠 + 막대) ⑤ 담당자별 취소율(상위 5) ⑥ 고객별 노쇼율(상위 5, 이름 → 고객 상세)
+- 계산(`domain/RevenueCharts.kt`, 웹 `getRevenueInsights`·`getOperationInsights`·`revenueChartUtils` 이식): 날짜별 합계(충전 포함·담당자 필터 땐 뺌),
+  결제수단별(받은 돈 7종만), 채널별, 담당자별, 담당자 취소율·고객 노쇼율(반올림 %, 웹 정렬). 색 `PAYMENT_METHOD_COLORS`·`CHANNEL_COLORS` 그대로.
+- 누르면 상세: 기존 `RevenueMetricSheet` 를 제목·요약을 받는 꼴로 넓혀 재사용(웹도 같은 `RevenueMetricModal`).
+- 신규 컴포넌트: `RevenueChartGrid`(웹 같은 이름 이식, 카드·도넛·막대는 이 파일 안 private) — 안드로이드에 차트 그리는 화면이 없다. 지시자 승인 후 작성.
+- 남은 문제(이 단계 밖): 폭이 640dp 를 넘나들면(폴드 접고 펴기) 매출 화면 기간·보기·열린 상세가 처음으로 — `MainActivity` 가 좁을 때·넓을 때 화면을 다른 자리에서 그려 저장 키가 달라서(18-1 '그대로'와 어긋남). 차트 상세 저장은 넓은 화면 안의 회전·900dp 넘나듦에만 듣는다.
+- 웹과 다르게 둔 것: 좁은 화면에서 '매출 그래프'가 골라져 있으면 웹은 요약 카드만(차트는 CSS 로 숨김), 안드로이드는 '전체'(요약 + 일별 목록)로 보인다. 막대 툴팁(마우스 hover 전용)은 안 옮김 — 낭독은 막대마다 '날짜 금액'. 긴 기간이면 막대가 6dp 까지 좁아 누르기 어렵다(웹도 같다, 같은 날 상세는 일별 목록에서도).
+- 테스트: 계산 유닛(웹 revenue 테스트 경우 + 충전·담당자 필터·0원 기간 빈 상태).
+- 검증 3회차(리뷰는 따로 띄운 QA):
+  1회차 — 막대 최소 높이 순서, 비율 반올림(나누기 먼저), 동점 정렬(날짜순), 노쇼 행 낭독, remember, 빈 상태 여백, Y축 글자 위치 고침.
+  2회차 — 2열 같은 높이에서 FlowRow 범례 줄이 빠지던 것(IntrinsicSize·고정 높이 둘 다) → SubcomposeLayout 최소 높이, 차트 상세 저장.
+  3회차 — 큰 금액·큰 글자 Y축 잘림, RTL 배치, 카드 제목 heading.
+  에뮬레이터: 폴드 1열·2열(922dp)·접힘, 밝은/어두운, 담당자 9명, 회전 유지, 글자 1.3배, 휴대폰 회귀.
 
 ### 20-1 검색어 하이라이트 (`claude/android-search-highlight`)
 - `domain/CustomerList.kt` 에 `findMatchRange` — 웹 `findMatchRange` 이식(일반 부분일치 먼저 → 초성 부분일치, 대소문자 무시는 선택). Kotlin 문자열도 UTF-16 이라 웹과 같은 인덱스.
