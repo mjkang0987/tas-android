@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +46,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -123,9 +125,10 @@ private fun EqualHeightPair(start: @Composable () -> Unit, end: @Composable () -
         val loose = Constraints(minWidth = half, maxWidth = half)
         val height = subcompose("measure") { start(); end() }.maxOf { it.measure(loose).height }
         val (pa, pb) = subcompose("place") { start(); end() }.map { it.measure(Constraints(half, half, height)) }
-        layout(constraints.maxWidth, height) {
-            pa.place(0, 0)
-            pb.place(half + gap, 0)
+        // 열어 둔 최대 높이로 더 크게 재지면 다음 줄과 겹치지 않게
+        layout(constraints.maxWidth, maxOf(height, pa.height, pb.height)) {
+            pa.placeRelative(0, 0)
+            pb.placeRelative(half + gap, 0)
         }
     }
 }
@@ -150,7 +153,7 @@ private fun ChartCard(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, color = TasColors.DarkGray, fontSize = TasSizes.LargeFont, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(title, color = TasColors.DarkGray, fontSize = TasSizes.LargeFont, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).semantics { heading() })
             Text(meta, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, textAlign = TextAlign.End)
         }
         content()
@@ -209,8 +212,9 @@ private fun TrendCard(charts: RevenueCharts, range: RevenueRange, twoColumns: Bo
 private fun BoxScope.YLabel(text: String, alignment: Alignment) {
     // 웹은 글자 가운데를 눈금선에 맞춘다(translateY(-50%)) — 위·아래 끝은 글자 높이 반만큼 밖으로
     val sign = when (alignment) { Alignment.TopStart -> -1; Alignment.BottomStart -> 1; else -> 0 }
-    Text(text, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, lineHeight = TasSizes.XSmallFont, maxLines = 1,
-        modifier = Modifier.align(alignment).layout { measurable, constraints ->
+    // 웹 StyledYAxisLabel 은 absolute 라 64 칸을 넘어도 다 보인다(큰 금액·큰 글자) — 칸 폭에 묶지 않는다
+    Text(text, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, lineHeight = TasSizes.XSmallFont, softWrap = false,
+        modifier = Modifier.align(alignment).wrapContentWidth(Alignment.Start, unbounded = true).layout { measurable, constraints ->
             val p = measurable.measure(constraints)
             layout(p.width, p.height) { p.place(0, sign * p.height / 2) }
         })
