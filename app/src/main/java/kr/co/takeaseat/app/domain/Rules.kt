@@ -79,12 +79,15 @@ private fun assigneeNameOrder(name: String): Int = when {
     else -> 2
 }
 
-/** 웹 sortAssignees — 영문 → 한글 → 그 밖, 같은 묶음은 가나다순. */
-fun sortAssignees(list: List<Assignee>): List<Assignee> = list.sortedWith { a, b ->
-    val oa = assigneeNameOrder(a.name)
-    val ob = assigneeNameOrder(b.name)
-    if (oa != ob) oa - ob else koCollator.compare(a.name, b.name)
+/** 웹 compareAssigneeName — 영문 → 한글 → 그 밖, 같은 묶음은 가나다순. */
+fun compareAssigneeName(a: String, b: String): Int {
+    val oa = assigneeNameOrder(a)
+    val ob = assigneeNameOrder(b)
+    return if (oa != ob) oa - ob else koCollator.compare(a, b)
 }
+
+/** 웹 sortAssignees. */
+fun sortAssignees(list: List<Assignee>): List<Assignee> = list.sortedWith { a, b -> compareAssigneeName(a.name, b.name) }
 
 /** 새 예약에 고를 수 있는 담당자(재직), 이름순. */
 fun activeAssignees(assignees: List<Assignee>): List<Assignee> = sortAssignees(assignees).filter { assigneeStatus(it) == "재직" }
