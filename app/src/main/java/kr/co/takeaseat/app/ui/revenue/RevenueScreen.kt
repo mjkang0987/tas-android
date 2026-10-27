@@ -113,7 +113,7 @@ import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.drawBehindThemed
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
-/** 웹 RevenueViewTab(모바일) — 그래프 탭은 웹 모바일도 숨긴다. */
+/** 웹 RevenueViewTab — 전체 · 매출 그래프(넓은 화면만, 웹 $mobileHide) · 매출 일별목록. */
 private enum class RevenueView { All, Chart, List }
 
 /**
@@ -152,6 +152,8 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     val assigneeColors = remember(snapshot.assignees) { buildAssigneeColorMap(snapshot.assignees) }
     val serviceColorMap = remember(snapshot.services, snapshot.categoryBaseColors) { buildServiceColorMap(snapshot.services, snapshot.categoryBaseColors) }
     val customerNames = remember(snapshot.customers) { snapshot.customers.associate { it.id to it.name } }
+    val customersById = remember(snapshot.customers) { snapshot.customers.associateBy { it.id } }
+    val rawAssigneeColors = remember(snapshot.assignees) { snapshot.assignees.associate { it.id to it.color } }
     val labels = remember(snapshot.shopType) { storeLabels(snapshot.shopType) }
     val firstVisits = remember(snapshot.reservations) { firstVisitDates(snapshot.reservations) }
 
@@ -211,8 +213,8 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
                         assigneeSelected = assigneeId != null,
                         assigneeLabel = labels.assignee,
                         assigneeNames = assigneeNames,
-                        rawAssigneeColors = snapshot.assignees.associate { it.id to it.color },
-                        customers = snapshot.customers.associateBy { it.id },
+                        rawAssigneeColors = rawAssigneeColors,
+                        customers = customersById,
                         onDetail = { chartDetailKey = it },
                         onCustomerClick = { details.openCustomer(it) },
                     )
