@@ -44,20 +44,21 @@ import kr.co.takeaseat.app.ui.theme.TasColors
 import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
- * 웹 `RevenueMetricModal`(모바일 바텀시트) — 요약 카드를 누르면. 총 매출·예약 건수·결제완료는 예약 카드 목록(날짜가 위),
- * 신규·재방문은 고객 카드 목록. 아래 줄 = 요약 + 닫기. 예약·고객을 누르면 그 상세가 위로 뜬다(부르는 쪽이 이 창 뒤에 그린다).
+ * 웹 `RevenueMetricModal`(모바일 바텀시트) — 요약 카드·넓은 화면 차트를 누르면. 총 매출·예약 건수·결제완료·차트는 예약 카드 목록(날짜가 위),
+ * 신규·재방문([customerMetric])은 고객 카드 목록. 아래 줄 = 요약 + 닫기. 예약·고객을 누르면 그 상세가 위로 뜬다(부르는 쪽이 이 창 뒤에 그린다).
  */
 @Composable
 internal fun RevenueMetricSheet(
-    metric: RevenueMetric,
+    title: String,
     subtitle: String?,
     detail: RevenueMetricDetail,
     onCustomerClick: (Int) -> Unit,
     onDismiss: () -> Unit,
+    customerMetric: RevenueMetric? = null,
     reservationCard: @Composable (Reservation) -> Unit,
 ) {
     DetailSheet(
-        title = metric.title,
+        title = title,
         subtitle = subtitle,
         onDismiss = onDismiss,
         footer = {
@@ -65,17 +66,17 @@ internal fun RevenueMetricSheet(
             ActionButton("닫기", onClick = onDismiss)
         },
     ) {
-        val customerMetric = metric == RevenueMetric.New || metric == RevenueMetric.Returning
-        val empty = if (customerMetric) detail.customers.isEmpty() else detail.reservations.isEmpty()
+        val customerList = customerMetric == RevenueMetric.New || customerMetric == RevenueMetric.Returning
+        val empty = if (customerList) detail.customers.isEmpty() else detail.reservations.isEmpty()
         if (empty) {
             Text("등록된 데이터가 없습니다", color = TasColors.DarkGray2, fontSize = TasSizes.MediumFont, textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 54.dp))
             return@DetailSheet
         }
         // 웹 StyledMetricBodyInner — 위 10, 고객 카드 사이 12 · 예약 카드 사이 8
-        Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(if (customerMetric) 12.dp else 8.dp)) {
-            if (customerMetric) {
-                detail.customers.forEach { MetricCustomerCard(it, isNew = metric == RevenueMetric.New) { onCustomerClick(it.customer.id) } }
+        Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(if (customerList) 12.dp else 8.dp)) {
+            if (customerList) {
+                detail.customers.forEach { MetricCustomerCard(it, isNew = customerMetric == RevenueMetric.New) { onCustomerClick(it.customer.id) } }
             } else {
                 detail.reservations.forEach { reservationCard(it) }
             }
