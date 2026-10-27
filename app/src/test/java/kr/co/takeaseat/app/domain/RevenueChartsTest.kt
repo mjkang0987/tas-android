@@ -111,6 +111,7 @@ class RevenueChartsTest {
         listOf(
             ChartDetailKey.Date(LocalDate.of(2026, 10, 19)), ChartDetailKey.Payment("지역화폐+현금영수증"), ChartDetailKey.Assignee(3),
             ChartDetailKey.Cancellation(null), ChartDetailKey.Cancellation(2), ChartDetailKey.Noshow(7), ChartDetailKey.Channel("네이버예약"),
+            ChartDetailKey.Payment("카드|현금"), // 첫 | 에서만 나눈다
         ).forEach { assertEquals(it, decodeChartDetailKey(it.encode())) }
         assertEquals(null, decodeChartDetailKey("모름"))
     }

@@ -86,7 +86,6 @@ import kr.co.takeaseat.app.domain.quickRevenueRange
 import kr.co.takeaseat.app.domain.revenueMetricDetail
 import kr.co.takeaseat.app.domain.revenueSummary
 import kr.co.takeaseat.app.domain.servicePriceTotal
-import kr.co.takeaseat.app.domain.ChartDetailKey
 import kr.co.takeaseat.app.domain.RevenueMetricDetail
 import kr.co.takeaseat.app.domain.chartDetail
 import kr.co.takeaseat.app.domain.decodeChartDetailKey
