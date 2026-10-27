@@ -56,6 +56,7 @@ enum class LabelTone {
     Neutral, // --neutral-* (7.0)
     Danger, // --danger-* (4.65)
     Success, // --success-* (4.52)
+    Purple, // --brand-color-* (곧 시작 '20분 후' 태그)
     ;
 
     // 색은 테마(밝은/어두운)를 따라야 해서 enum 값이 아니라 그 자리에서 읽는다
@@ -67,6 +68,7 @@ enum class LabelTone {
             Neutral -> TasColors.NeutralText
             Danger -> TasColors.Danger
             Success -> TasColors.SuccessText
+            Purple -> TasColors.Brand
         }
 
     val bg: Color
@@ -77,6 +79,7 @@ enum class LabelTone {
             Neutral -> TasColors.NeutralBg
             Danger -> TasColors.DangerBg
             Success -> TasColors.SuccessBg
+            Purple -> TasColors.BrandBg
         }
 
     val border: Color
@@ -87,6 +90,7 @@ enum class LabelTone {
             Neutral -> TasColors.NeutralBorder
             Danger -> TasColors.DangerBorder
             Success -> TasColors.SuccessBorder
+            Purple -> TasColors.BrandBorder
         }
 }
 
