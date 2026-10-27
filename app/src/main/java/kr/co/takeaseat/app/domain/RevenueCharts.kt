@@ -123,6 +123,29 @@ sealed interface ChartDetailKey {
     data class Channel(val channel: String) : ChartDetailKey
 }
 
+/** 회전·폭 바뀜에도 열린 상세가 남게 글자 한 줄로(rememberSaveable). */
+fun ChartDetailKey.encode(): String = when (this) {
+    is ChartDetailKey.Date -> "date|${date.toDateKey()}"
+    is ChartDetailKey.Payment -> "payment|$method"
+    is ChartDetailKey.Assignee -> "assignee|$assigneeId"
+    is ChartDetailKey.Cancellation -> "cancellation|${assigneeId ?: ""}"
+    is ChartDetailKey.Noshow -> "noshow|$customerId"
+    is ChartDetailKey.Channel -> "channel|$channel"
+}
+
+fun decodeChartDetailKey(text: String): ChartDetailKey? {
+    val (kind, value) = text.split("|", limit = 2).takeIf { it.size == 2 } ?: return null
+    return when (kind) {
+        "date" -> runCatching { ChartDetailKey.Date(LocalDate.parse(value)) }.getOrNull()
+        "payment" -> ChartDetailKey.Payment(value)
+        "assignee" -> value.toIntOrNull()?.let { ChartDetailKey.Assignee(it) }
+        "cancellation" -> ChartDetailKey.Cancellation(value.toIntOrNull())
+        "noshow" -> value.toIntOrNull()?.let { ChartDetailKey.Noshow(it) }
+        "channel" -> ChartDetailKey.Channel(value)
+        else -> null
+    }
+}
+
 data class ChartDetail(val title: String, val summary: String, val reservations: List<Reservation>)
 
 /**

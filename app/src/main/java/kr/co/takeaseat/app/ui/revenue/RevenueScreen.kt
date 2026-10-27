@@ -89,6 +89,8 @@ import kr.co.takeaseat.app.domain.servicePriceTotal
 import kr.co.takeaseat.app.domain.ChartDetailKey
 import kr.co.takeaseat.app.domain.RevenueMetricDetail
 import kr.co.takeaseat.app.domain.chartDetail
+import kr.co.takeaseat.app.domain.decodeChartDetailKey
+import kr.co.takeaseat.app.domain.encode
 import kr.co.takeaseat.app.domain.revenueCharts
 import kr.co.takeaseat.app.ui.nav.LocalAsideToggle
 import kr.co.takeaseat.app.domain.sortAssignees
@@ -139,7 +141,8 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     var openDates by rememberSaveable { mutableStateOf(listOf<String>()) }
     val details = rememberDetailStack()
     var metric by rememberSaveable { mutableStateOf<RevenueMetric?>(null) }
-    var chartDetailKey by remember { mutableStateOf<ChartDetailKey?>(null) }
+    var chartDetailText by rememberSaveable { mutableStateOf<String?>(null) }
+    val chartDetailKey = chartDetailText?.let(::decodeChartDetailKey)
     // 웹 그래프는 641px 이상만 — 넓은 화면(왼쪽 메뉴)일 때. 좁아지면(폴드 접음) 그래프 보기는 전체로
     val wide = LocalAsideToggle.current != null
     val shownView = if (!wide && view == RevenueView.Chart) RevenueView.All else view
@@ -215,7 +218,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
                         assigneeNames = assigneeNames,
                         rawAssigneeColors = rawAssigneeColors,
                         customers = customersById,
-                        onDetail = { chartDetailKey = it },
+                        onDetail = { chartDetailText = it.encode() },
                         onCustomerClick = { details.openCustomer(it) },
                     )
                 }
@@ -243,7 +246,7 @@ fun RevenueScreen(store: GuestStore, modifier: Modifier = Modifier) {
     chartDetailKey?.let { key ->
         val detail = remember(snapshot, range, assigneeId, mode, key) { chartDetail(snapshot, range, assigneeId, mode, key) }
         RevenueMetricSheet(detail.title, null, RevenueMetricDetail(detail.summary, detail.reservations, emptyList()),
-            onCustomerClick = { details.openCustomer(it) }, onDismiss = { chartDetailKey = null }) { reservationCard(it, true) }
+            onCustomerClick = { details.openCustomer(it) }, onDismiss = { chartDetailText = null }) { reservationCard(it, true) }
     }
     // 지표 창 위에 상세 창들 — 연 순서대로 쌓인다(지표 창에서 연 예약에서 다시 고객을 열어도 위로)
     DetailSheets(store, details)

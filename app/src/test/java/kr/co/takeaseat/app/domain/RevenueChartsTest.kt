@@ -107,6 +107,14 @@ class RevenueChartsTest {
         assertEquals(listOf(2, 1), revenueCharts(s, range, null, RevenueFilterMode.Completed, seoul).noshows.map { it.id })
     }
 
+    @Test fun `차트 상세 열림 저장 - 글자로 갔다 와도 같다`() {
+        listOf(
+            ChartDetailKey.Date(LocalDate.of(2026, 10, 19)), ChartDetailKey.Payment("지역화폐+현금영수증"), ChartDetailKey.Assignee(3),
+            ChartDetailKey.Cancellation(null), ChartDetailKey.Cancellation(2), ChartDetailKey.Noshow(7), ChartDetailKey.Channel("네이버예약"),
+        ).forEach { assertEquals(it, decodeChartDetailKey(it.encode())) }
+        assertEquals(null, decodeChartDetailKey("모름"))
+    }
+
     @Test fun `차트 상세 - 웹 chartDetailLayer 제목·요약`() {
         val s = snap(
             r(1, "2026-10-19", entries = listOf(PaymentEntry("카드", 15000), PaymentEntry("현금", 5000))),
