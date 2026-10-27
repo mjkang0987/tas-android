@@ -19,12 +19,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,12 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.co.takeaseat.app.domain.ChartDetailKey
+import kr.co.takeaseat.app.domain.chartPercent
 import kr.co.takeaseat.app.domain.Customer
 import kr.co.takeaseat.app.domain.RevenueCharts
 import kr.co.takeaseat.app.domain.RevenueRange
@@ -80,7 +83,8 @@ internal fun RevenueChartGrid(
     onDetail: (ChartDetailKey) -> Unit,
     onCustomerClick: (Int) -> Unit,
 ) {
-    val twoColumns = LocalConfiguration.current.screenWidthDp > 900
+    // 웹 900px 기준은 창(뷰포트) 폭 — 본문 폭이 아니라
+    val twoColumns = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } > 900.dp
     val trend = @Composable { TrendCard(charts, range, twoColumns, onDetail) }
     val payment = @Composable { PaymentCard(charts, twoColumns, onDetail) }
     val channel = @Composable { m: Modifier -> ChannelCard(charts, twoColumns, m, onDetail) }
@@ -90,7 +94,8 @@ internal fun RevenueChartGrid(
     }
     val noshow = @Composable { m: Modifier -> NoshowCard(charts, customers, twoColumns, m, onDetail, onCustomerClick) }
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // 웹 StyledDashboard gap 12 — 요약 카드 아래 여백 8 에 4 를 더한다
+    Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         trend()
         payment()
         if (twoColumns) {
@@ -143,8 +148,8 @@ private fun ChartCard(
 @Composable
 private fun ColumnScope.ChartEmpty(fill: Boolean) {
     Box(
-        (if (fill) Modifier.weight(1f) else Modifier).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(TasColors.Gray2)
-            .padding(horizontal = 12.dp, vertical = 20.dp),
+        // 웹 StyledChartEmpty 는 StyledEmpty 여백을 0 으로 덮는다 — 1열은 글자 한 줄 띠, 2열은 남은 높이를 채운다
+        (if (fill) Modifier.weight(1f) else Modifier).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(TasColors.Gray2),
         contentAlignment = Alignment.Center,
     ) { Text("등록된 데이터가 없습니다", color = TasColors.DarkGray2, fontSize = TasSizes.SmallFont, textAlign = TextAlign.Center) }
 }
@@ -189,10 +194,13 @@ private fun TrendCard(charts: RevenueCharts, range: RevenueRange, twoColumns: Bo
 
 @Composable
 private fun BoxScope.YLabel(text: String, alignment: Alignment) {
-    // 웹은 글자 가운데를 눈금선에 맞춘다(translateY(-50%)) — 위·아래 끝은 반 줄 밖으로
-    val shift = when (alignment) { Alignment.TopStart -> (-6).dp; Alignment.BottomStart -> 6.dp; else -> 0.dp }
+    // 웹은 글자 가운데를 눈금선에 맞춘다(translateY(-50%)) — 위·아래 끝은 글자 높이 반만큼 밖으로
+    val sign = when (alignment) { Alignment.TopStart -> -1; Alignment.BottomStart -> 1; else -> 0 }
     Text(text, color = TasColors.DarkGray2, fontSize = TasSizes.XSmallFont, lineHeight = TasSizes.XSmallFont, maxLines = 1,
-        modifier = Modifier.align(alignment).offset(y = shift))
+        modifier = Modifier.align(alignment).layout { measurable, constraints ->
+            val p = measurable.measure(constraints)
+            layout(p.width, p.height) { p.place(0, sign * p.height / 2) }
+        })
 }
 
 @Composable
@@ -201,6 +209,7 @@ private fun RowScope.TrendBars(charts: RevenueCharts, from: String, to: String, 
     // 웹: 간격은 밀도에 맞춰(45 초과 1 · 20 초과 2 · 그 밖 4), 막대 6~48, 넘치면 가로 스크롤
     val gap = when { count > 45 -> 1.dp; count > 20 -> 2.dp; else -> 4.dp }
     val guide = TasColors.Black.copy(alpha = 0.06f)
+    val max = charts.chartMax.toFloat()
     BoxWithConstraints(Modifier.weight(1f)) {
         val minContent = MinBar * count + gap * (count - 1)
         val contentWidth = maxOf(maxWidth, minContent)
@@ -217,7 +226,7 @@ private fun RowScope.TrendBars(charts: RevenueCharts, from: String, to: String, 
                 // 웹 justify-content: space-around — 막대 중심이 각 1/n 칸 가운데
                 Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.Bottom) {
                     charts.series.forEach { point ->
-                        val ratio = point.total.toFloat() / charts.chartMax
+                        val ratio = point.total / max
                         val label = "${point.date.toDateKey()} ${formatPrice(point.total)}"
                         Box(
                             Modifier.width(bar).fillMaxHeight()
@@ -227,7 +236,8 @@ private fun RowScope.TrendBars(charts: RevenueCharts, from: String, to: String, 
                         ) {
                             if (ratio > 0f) {
                                 // 매출이 있는 날은 아주 작아도 3 — 0원인 날과 구분
-                                Box(Modifier.fillMaxWidth().fillMaxHeight(ratio).heightIn(min = 3.dp)
+                                // heightIn 이 먼저 — fillMaxHeight 뒤에 두면 고정된 높이를 못 넘어 최소값이 묻힌다
+                                Box(Modifier.fillMaxWidth().heightIn(min = 3.dp).fillMaxHeight(ratio)
                                     .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(TasColors.BrandFill))
                             }
                         }
@@ -283,7 +293,6 @@ private fun LegendPill(color: Color, name: String, value: String, percent: Int, 
     Row(
         Modifier.clip(shape).border(1.dp, TasColors.LightGray, shape).background(TasColors.Surface)
             .clickable(role = Role.Button, onClickLabel = "상세 보기", onClick = onClick)
-            .semantics(mergeDescendants = true) {}
             .heightIn(min = 32.dp)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -296,8 +305,6 @@ private fun LegendPill(color: Color, name: String, value: String, percent: Int, 
     }
 }
 
-private fun percentOf(part: Int, total: Int) = if (total > 0) (part * 100.0 / total).roundToInt() else 0
-
 @Composable
 private fun PaymentCard(charts: RevenueCharts, twoColumns: Boolean, onDetail: (ChartDetailKey) -> Unit) {
     // 웹 $autoHeight — 높이 하한 없음. 받은 돈 7종은 늘 있어 빈 상태가 없다(웹과 같다).
@@ -308,7 +315,7 @@ private fun PaymentCard(charts: RevenueCharts, twoColumns: Boolean, onDetail: (C
         val legend = @Composable { m: Modifier ->
             FlowRow(m, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 charts.payments.forEach { item ->
-                    LegendPill(hexColor(item.color), item.method, formatPrice(item.total), percentOf(item.total, charts.paidTotal)) {
+                    LegendPill(hexColor(item.color), item.method, formatPrice(item.total), chartPercent(item.total, charts.paidTotal)) {
                         onDetail(ChartDetailKey.Payment(item.method))
                     }
                 }
@@ -337,7 +344,7 @@ private fun ChannelCard(charts: RevenueCharts, twoColumns: Boolean, modifier: Mo
             Donut(charts.channels.map { hexColor(it.color) to it.count }, "${total}건", "전체예약", twoColumns)
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 charts.channels.forEach { item ->
-                    LegendPill(hexColor(item.color), item.channel, "${item.count}건", percentOf(item.count, total)) {
+                    LegendPill(hexColor(item.color), item.channel, "${item.count}건", chartPercent(item.count, total)) {
                         onDetail(ChartDetailKey.Channel(item.channel))
                     }
                 }
@@ -369,7 +376,7 @@ private fun AssigneeCard(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Swatch(hexColor(item.color))
                         Text(item.name, color = TasColors.DarkGray, fontSize = TasSizes.XSmallFont)
-                        Text("${percentOf(item.total, sum)}%", color = TasColors.Black, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.SemiBold)
+                        Text("${chartPercent(item.total, sum)}%", color = TasColors.Black, fontSize = TasSizes.XSmallFont, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -383,8 +390,7 @@ private fun AssigneeCard(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items.forEach { item ->
                 Column(
-                    Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "상세 보기") { onDetail(ChartDetailKey.Assignee(item.assigneeId)) }
-                        .semantics(mergeDescendants = true) {},
+                    Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "상세 보기") { onDetail(ChartDetailKey.Assignee(item.assigneeId)) },
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -420,11 +426,13 @@ private fun OperationSummary(label: String, rate: Int) {
 
 /** 웹 StyledClickableOperationRow — 이름·'n건 중 m건' / 파랑 %. 행을 누르면 그 취소·노쇼 상세. */
 @Composable
-private fun OperationRow(sub: String, rate: Int, onClick: () -> Unit, name: @Composable () -> Unit) {
+private fun OperationRow(label: String, sub: String, rate: Int, onClick: () -> Unit, name: @Composable () -> Unit) {
     val shape = RoundedCornerShape(8.dp)
     Row(
         Modifier.fillMaxWidth().clip(shape).border(1.dp, TasColors.LightGray, shape).background(TasColors.Surface)
             .clickable(role = Role.Button, onClickLabel = "상세 보기", onClick = onClick)
+            // 안의 이름 버튼(노쇼)은 따로 읽혀 행에서 빠진다 — 행은 누구의 몇 건인지 한 문장으로
+            .semantics { contentDescription = "$label $sub $rate%" }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -457,7 +465,7 @@ private fun CancellationCard(
         }.sortedWith { a, b -> compareAssigneeName(a.second, b.second) }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             rows.forEach { (item, name, color) ->
-                OperationRow("${item.total}건 중 ${item.hit}건", item.rate, { onDetail(ChartDetailKey.Cancellation(item.id)) }) {
+                OperationRow(name, "${item.total}건 중 ${item.hit}건", item.rate, { onDetail(ChartDetailKey.Cancellation(item.id)) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Swatch(hexColor(color))
                         Text(name, color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.SemiBold)
@@ -482,13 +490,13 @@ private fun NoshowCard(
         if (charts.noshows.isEmpty()) { ChartEmpty(fill = twoColumns); return@ChartCard }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             charts.noshows.forEach { item ->
-                val id = item.id ?: return@forEach
+                val id = item.id!! // 노쇼는 고객별이라 늘 있다(Reservation.customerId 는 null 이 아니다)
                 val customer = customers[id]
-                OperationRow("${item.total}건 중 ${item.hit}건", item.rate, { onDetail(ChartDetailKey.Noshow(id)) }) {
+                OperationRow(customer?.name ?: "고객 미지정", "${item.total}건 중 ${item.hit}건", item.rate, { onDetail(ChartDetailKey.Noshow(id)) }) {
                     if (customer != null) {
                         // 웹 StyledOperationCustomerButton — 이름만 누르면 고객 상세(행은 노쇼 상세)
                         Text(customer.name, color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.widthIn(min = 24.dp).heightIn(min = 24.dp)
+                            modifier = Modifier.widthIn(min = 24.dp).heightIn(min = 24.dp).wrapContentHeight(Alignment.CenterVertically)
                                 .clickable(role = Role.Button, onClickLabel = "고객 정보 보기") { onCustomerClick(id) })
                     } else {
                         Text("고객 미지정", color = TasColors.DarkGray, fontSize = TasSizes.MediumFont, fontWeight = FontWeight.SemiBold)
