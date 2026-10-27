@@ -100,87 +100,96 @@ fun CalendarHeader(
         }
     }
     val aside = LocalAsideToggle.current
+    // 펼침은 여기서 기억 — 한 줄↔두 줄로 바뀌어 고르는 칸 자리가 옮겨가도(폴드 접고 펴기) 펼친 채로
+    var filterOpen by rememberSaveable { mutableStateOf(false) }
     val filter = @Composable {
-        AssigneeFilter(assignees, assigneeFilter, assigneeLabel, narrow = aside == null, onSelect = onAssigneeFilter)
+        AssigneeFilter(assignees, assigneeFilter, assigneeLabel, narrow = aside == null, open = filterOpen, onOpenChange = { filterOpen = it }, onSelect = onAssigneeFilter)
     }
     // 웹 헤더의 알림 종(곧 시작하는 예약)
     val notificationBell = @Composable { NotificationBell(count = bell.count, dot = bell.dot, onClick = onBell) }
     // 웹 641px 이상은 한 줄(날짜 칸이 좁아진다). 안드로이드는 폴드에 왼쪽 메뉴를 편 폭(약 470dp)에서 날짜가 잘려,
     // 헤더가 [ONE_ROW_MIN] 보다 좁으면 담당자·종 줄을 모바일처럼 다음 줄로 내린다(안드로이드 보완)
     BoxWithConstraints(modifier.fillMaxWidth()) {
-    val stacked = aside == null || maxWidth < ONE_ROW_MIN
-    // 웹: header padding 4 10 2 + 1줄 padding 3 0 5 · 2줄(모바일) padding 4 0
-    Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 7.dp, bottom = if (stacked) 2.dp else 7.dp)) {
-        Row(
-            Modifier.fillMaxWidth().padding(bottom = if (stacked) 5.dp else 0.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            aside?.let { AsideToggleButton(it.open, it.toggle) }
-            PillButton(onClick = { onDateChange(LocalDate.now()) }, contentPadding = PaddingValues(horizontal = 12.dp)) {
-                Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1, modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont))
+        val stacked = aside == null || maxWidth < ONE_ROW_MIN
+        // 웹: header padding 4 10 2 + 1줄 padding 3 0 5 · 2줄(모바일) padding 4 0
+        Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 7.dp, bottom = if (stacked) 2.dp else 7.dp)) {
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = if (stacked) 5.dp else 0.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                aside?.let { AsideToggleButton(it.open, it.toggle) }
+                PillButton(onClick = { onDateChange(LocalDate.now()) }, contentPadding = PaddingValues(horizontal = 12.dp)) {
+                    Text("오늘", color = TasColors.Black, fontSize = TasSizes.SmallFont, maxLines = 1, modifier = Modifier.lineBox(ButtonLine, TasSizes.SmallFont))
+                }
+                PillButton(onClick = { onDateChange(moveDate(date, view, forward = false)) }, description = "이전${view.a11y}") {
+                    Icon(arrowLeft, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
+                }
+                PillButton(onClick = { onDateChange(moveDate(date, view, forward = true)) }, description = "다음${view.a11y}") {
+                    Icon(arrowRight, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
+                }
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Row(
+                        Modifier
+                            .height(32.dp)
+                            .clip(TasShapes.Chip)
+                            .background(TasColors.Gray2)
+                            // 웹 aria-label "날짜 선택" + 값. 보이는 "2026 / 10 / 17" 은 읽지 않는다(아래 clearAndSetSemantics).
+                            .semantics { contentDescription = "날짜 선택, ${date.year}년 ${date.monthValue}월 ${date.dayOfMonth}일" }
+                            .clickable(role = Role.Button) { picking = true }
+                            .padding(start = 10.dp, end = 6.dp), // 웹 모바일 padding 0 6 0 10
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            calendarHeading(date, view),
+                            color = TasColors.Black,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            // 해가 걸친 주("2025 / 12 - 2026 / 1")는 16sp 로 안 들어간다 — 잘리지 않게 그때만 줄인다(웹은 두 줄로 접힌다).
+                            autoSize = TextAutoSize.StepBased(minFontSize = TasSizes.SmallFont, maxFontSize = TasSizes.LargeFont),
+                            modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics {},
+                        )
+                        Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
+                    }
+                }
+                if (!stacked) {
+                    // 넓은 화면 — 웹 StyledToolRow 가 같은 줄에 붙는다
+                    filter()
+                    notificationBell()
+                }
+                // 넓은 화면은 왼쪽 메뉴의 '예약추가'를 쓴다(웹 StyledMobileAddPill 은 641px 이상 숨김)
+                if (aside == null) AddPill("예약", description = "예약 추가", onClick = onCreate)
             }
-            PillButton(onClick = { onDateChange(moveDate(date, view, forward = false)) }, description = "이전${view.a11y}") {
-                Icon(arrowLeft, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
-            }
-            PillButton(onClick = { onDateChange(moveDate(date, view, forward = true)) }, description = "다음${view.a11y}") {
-                Icon(arrowRight, contentDescription = null, tint = TasColors.Icon, modifier = Modifier.size(18.dp))
-            }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Row(
-                    Modifier
-                        .height(32.dp)
-                        .clip(TasShapes.Chip)
-                        .background(TasColors.Gray2)
-                        // 웹 aria-label "날짜 선택" + 값. 보이는 "2026 / 10 / 17" 은 읽지 않는다(아래 clearAndSetSemantics).
-                        .semantics { contentDescription = "날짜 선택, ${date.year}년 ${date.monthValue}월 ${date.dayOfMonth}일" }
-                        .clickable(role = Role.Button) { picking = true }
-                        .padding(start = 10.dp, end = 6.dp), // 웹 모바일 padding 0 6 0 10
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        calendarHeading(date, view),
-                        color = TasColors.Black,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        // 해가 걸친 주("2025 / 12 - 2026 / 1")는 16sp 로 안 들어간다 — 잘리지 않게 그때만 줄인다(웹은 두 줄로 접힌다).
-                        autoSize = TextAutoSize.StepBased(minFontSize = TasSizes.SmallFont, maxFontSize = TasSizes.LargeFont),
-                        modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics {},
-                    )
-                    Icon(ChevronDownIcon, contentDescription = null, tint = TasColors.DarkGray2, modifier = Modifier.size(16.dp))
+            if (stacked) {
+                // 웹 StyledToolRow(모바일) — 담당자 고르기가 왼쪽(margin-right auto), 종은 오른쪽 끝
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    filter()
+                    Spacer(Modifier.weight(1f))
+                    notificationBell()
                 }
             }
-            if (!stacked) {
-                // 넓은 화면 — 웹 StyledToolRow 가 같은 줄에 붙는다
-                filter()
-                notificationBell()
-            }
-            // 넓은 화면은 왼쪽 메뉴의 '예약추가'를 쓴다(웹 StyledMobileAddPill 은 641px 이상 숨김)
-            if (aside == null) AddPill("예약", description = "예약 추가", onClick = onCreate)
         }
-        if (stacked) {
-            // 웹 StyledToolRow(모바일) — 담당자 고르기가 왼쪽(margin-right auto), 종은 오른쪽 끝
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                filter()
-                Spacer(Modifier.weight(1f))
-                notificationBell()
-            }
-        }
-    }
     }
 }
 
-/** 한 줄에 '메뉴 · 오늘 · ‹ › · 날짜(최소 약 150) · 담당자(128) · 종'이 들어가는 헤더 폭. 모자라면 두 줄. */
-private val ONE_ROW_MIN = 520.dp
+/** 한 줄에 '메뉴 · 오늘 · ‹ › · 날짜(최소 약 150) · 담당자(128~200) · 종'이 들어가는 헤더 폭. 모자라면 두 줄. */
+private val ONE_ROW_MIN = 600.dp
 
 /**
  * 웹 StyledAssigneeFilter — 알약 select. 전체보기 · 미지정(회색 점) · 재직(색 점) · '휴직자' · '퇴직자' 묶음.
  * 고른 줄은 연보라 바탕 + 굵게(웹 option:checked). [selected] 는 지운 담당자를 걸러 낸 값(effectiveCalendarAssignee).
  */
 @Composable
-private fun AssigneeFilter(assignees: List<Assignee>, selected: Int?, label: String, narrow: Boolean, onSelect: (Int?) -> Unit) {
-    var open by rememberSaveable { mutableStateOf(false) }
+private fun AssigneeFilter(
+    assignees: List<Assignee>,
+    selected: Int?,
+    label: String,
+    narrow: Boolean,
+    open: Boolean,
+    onOpenChange: (Boolean) -> Unit,
+    onSelect: (Int?) -> Unit,
+) {
     val (active, onLeave, resigned) = remember(assignees) { splitAssigneesByStatus(assignees) }
     val valueText = when (selected) {
         null -> "전체보기"
@@ -190,13 +199,13 @@ private fun AssigneeFilter(assignees: List<Assignee>, selected: Int?, label: Str
     TasSelect(
         label = "달력 $label 필터",
         valueText = valueText,
-        onClick = { open = true },
+        onClick = { onOpenChange(true) },
         // 웹 min-width 128(모바일 96), 넓어도 글자만큼만 — 긴 이름·큰 글자에 날짜 칸이 밀리지 않게 상한(넘치면 말줄임)
         modifier = Modifier.widthIn(min = if (narrow) 96.dp else 128.dp, max = 200.dp).width(IntrinsicSize.Max),
         showLabel = false,
         pill = true,
     ) {
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenu(expanded = open, onDismissRequest = { onOpenChange(false) }) {
             @Composable
             fun option(text: String, value: Int?, color: String?) {
                 val checked = value == selected
@@ -209,7 +218,7 @@ private fun AssigneeFilter(assignees: List<Assignee>, selected: Int?, label: Str
                         }
                     },
                     onClick = {
-                        open = false
+                        onOpenChange(false)
                         onSelect(value)
                     },
                     modifier = Modifier
