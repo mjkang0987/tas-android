@@ -49,6 +49,7 @@ fun YearView(
     today: LocalDate,
     selectedMonth: Int,
     snapshot: LocalDbSnapshot,
+    filterName: String?,
     customerNames: Map<Int, String>,
     firstVisit: Map<Int, String>,
     assigneeColors: Map<Int, String>,
@@ -87,7 +88,7 @@ fun YearView(
         },
         list = { lazy, listModifier ->
             ReservationListSection(
-                title = "${year}년 ${selectedMonth}월",
+                title = "${year}년 ${selectedMonth}월" + filterName?.let { " · $it" }.orEmpty(),
                 listKey = year to selectedMonth,
                 reservations = byMonth[selectedMonth - 1],
                 grouped = true,

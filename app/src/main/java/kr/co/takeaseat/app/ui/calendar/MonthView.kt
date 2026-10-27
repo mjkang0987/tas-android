@@ -80,6 +80,7 @@ fun MonthView(
     today: LocalDate,
     selected: LocalDate,
     snapshot: LocalDbSnapshot,
+    filterName: String?,
     reservationsByDate: Map<String, List<Reservation>>,
     customerNames: Map<Int, String>,
     firstVisit: Map<Int, String>,
@@ -113,7 +114,7 @@ fun MonthView(
         },
         list = { lazy, listModifier ->
             ReservationListSection(
-                title = "${selected.monthValue}월 ${selected.dayOfMonth}일",
+                title = "${selected.monthValue}월 ${selected.dayOfMonth}일" + filterName?.let { " · $it" }.orEmpty(),
                 listKey = selected,
                 reservations = selectedReservations,
                 grouped = false,

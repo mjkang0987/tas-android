@@ -73,12 +73,12 @@ import kr.co.takeaseat.app.ui.theme.TasSizes
 
 /**
  * 웹 formControlStyle — 흰 바탕, 1px #e3e3e3, 6 둥글게(36 높이), 아주 옅은 그림자. 초점이면 테두리 보라 + 바깥 3px 옅은 보라 링.
- * [compact] = 결제 줄 칸(웹 paymentEntryFieldStyles — 30 높이, 4 둥글게).
+ * [compact] = 결제 줄 칸(웹 paymentEntryFieldStyles — 30 높이, 4 둥글게). [pill] = 헤더 알약(웹 StyledAssigneeFilter — 32 높이, 끝까지 둥글게).
  */
 @Composable
-private fun Modifier.formControl(focused: Boolean, compact: Boolean = false): Modifier {
-    val shape = if (compact) TasShapes.RadiusSm else TasShapes.RadiusMd
-    val radius = if (compact) 4.dp else 6.dp
+private fun Modifier.formControl(focused: Boolean, compact: Boolean = false, pill: Boolean = false): Modifier {
+    val shape = when { pill -> TasShapes.Chip; compact -> TasShapes.RadiusSm; else -> TasShapes.RadiusMd }
+    val radius = when { pill -> 16.dp; compact -> 4.dp; else -> 6.dp }
     return this
         .drawBehindThemed { colors ->
             if (focused) {
@@ -96,7 +96,7 @@ private fun Modifier.formControl(focused: Boolean, compact: Boolean = false): Mo
         .background(TasColors.Surface)
         .border(1.dp, if (focused) TasColors.Brand else TasColors.LightGray, shape)
         // 최소 높이 — 큰 글자(시스템 글꼴 크기)에선 글자에 맞춰 늘어난다(고정이면 글자가 잘렸다)
-        .heightIn(min = if (compact) 30.dp else 36.dp)
+        .heightIn(min = when { pill -> 32.dp; compact -> 30.dp; else -> 36.dp })
 }
 
 @Composable
@@ -240,6 +240,7 @@ fun TasSelect(
     showLabel: Boolean = true,
     compact: Boolean = false,
     enabled: Boolean = true,
+    pill: Boolean = false,
     menu: @Composable () -> Unit = {},
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -250,7 +251,7 @@ fun TasSelect(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .formControl(focused, compact)
+                    .formControl(focused, compact, pill)
                     // 웹 formControlStyle :disabled — 옅은 회색 바탕 · 회색 글자(TasTextField 와 같게)
                     .then(if (enabled) Modifier else Modifier.background(TasColors.Gray2))
                     .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.DropdownList, onClick = onClick)
@@ -259,13 +260,15 @@ fun TasSelect(
                         stateDescription = valueDescription
                         if (error != null) error(error)
                     }
-                    .padding(horizontal = 10.dp),
+                    // 웹 StyledAssigneeFilter padding 0 28 0 8(화살표 오른쪽 10) — 화살표는 줄 안이라 끝 여백 10
+                    .padding(start = if (pill) 8.dp else 10.dp, end = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(if (pill) 6.dp else 0.dp),
             ) {
                 Text(
                     valueText,
-                    color = if (!enabled) TasColors.DarkGray2 else if (compact) TasColors.DarkGray else TasColors.Black,
-                    fontSize = if (compact) TasSizes.SmallFont else TasSizes.MediumFont,
+                    color = if (!enabled) TasColors.DarkGray2 else if (compact || pill) TasColors.DarkGray else TasColors.Black,
+                    fontSize = if (compact || pill) TasSizes.SmallFont else TasSizes.MediumFont,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = if (centered) TextAlign.Center else TextAlign.Start,
