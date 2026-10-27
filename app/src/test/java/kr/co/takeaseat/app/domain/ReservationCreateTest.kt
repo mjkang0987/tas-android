@@ -114,4 +114,39 @@ class ReservationCreateTest {
         val list = listOf(Assignee(1, "하늘"), Assignee(2, "Amy"), Assignee(3, "가람"), Assignee(4, "7번", status = "재직"), Assignee(5, "나리", status = "휴직"))
         assertEquals(listOf("Amy", "가람", "하늘", "7번"), activeAssignees(list).map { it.name })
     }
+
+    // 결제완료로 등록 — 상세 결제 저장(applyPayment)과 같은 규칙, 변경 이력은 남기지 않는다
+    private val rate10 = base.copy(storeSettings = base.storeSettings.copy(pointSettings = PointSettings(enableServiceRate = true, serviceRate = 10.0)))
+    private val now = java.time.Instant.parse("2026-10-19T01:00:00Z")
+
+    @Test fun `등록하며 결제 - 한 줄 전액, 결제완료, 받은 돈 기준 적립, 고객 잔액·적립 이력, 변경 이력 없음`() {
+        val f = valid().copy(customerId = 3, customerQuery = "김민수", markPaid = true, payMethod = "카드")
+        val next = applyCreate(f, rate10, now)
+        val r = next.reservations.last()
+        assertEquals(listOf(PaymentEntry("카드", f.price)), r.paymentEntries)
+        assertEquals(true, r.paymentCompleted)
+        assertEquals("카드", r.paymentMethod)
+        assertEquals(f.price / 10, r.pointEarned)
+        val kimAfter = next.customers.first { it.id == 3 }
+        assertEquals(f.price / 10, kimAfter.points)
+        assertEquals(listOf("payment_earn"), kimAfter.pointHistories.orEmpty().map { it.type })
+        assertEquals(base.history, next.history)
+        assertEquals(f.price / 10, createPointPreview(f, rate10.storeSettings.pointSettings))
+    }
+
+    @Test fun `등록하며 결제 - 할인은 받은 돈이 아니라 적립 0, 적립 끈 매장은 안내도 적립 없음`() {
+        val f = valid().copy(customerId = 3, customerQuery = "김민수", markPaid = true, payMethod = "할인")
+        assertEquals(0, applyCreate(f, rate10, now).reservations.last().pointEarned)
+        val card = f.copy(payMethod = "카드")
+        assertEquals(0, applyCreate(card, base, now).reservations.last().pointEarned)
+        assertNull(createPointPreview(card, base.storeSettings.pointSettings))
+    }
+
+    @Test fun `등록하며 결제 - 끄면 결제 없음, 0원이면 막는다, 적립금은 고를 수 없다`() {
+        val off = applyCreate(valid(), base, now).reservations.last()
+        assertNull(off.paymentEntries)
+        assertEquals(FormError(FormField.Payment, "결제할 금액이 없습니다."), validateCreate(valid().copy(markPaid = true).changePrice("0"), base, labels))
+        assertEquals(false, "적립금" in CREATE_PAYMENT_METHODS)
+        assertEquals(9, CREATE_PAYMENT_METHODS.size)
+    }
 }
